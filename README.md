@@ -23,8 +23,8 @@
 Do you ever use `print()` statements to debug your code? Of course you
 do. IceCream, or `ic` for short, makes `print()` debugging a little sweeter.
 
-IceCream is well tested, [permissively licensed](), and supports Python 2,
-Python 3, PyPy2, and PyPy3.
+IceCream is well tested, [permissively licensed](LICENSE.txt), and supports
+Python 2, Python 3, PyPy2, and PyPy3.
 
 
 ### Ice Cream with Toppings (Arguments)
