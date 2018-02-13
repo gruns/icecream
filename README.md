@@ -79,14 +79,14 @@ ic| d['d'][1]: 'one'
 ic| klass.attr: 'yep'
 ```
 
-Easy.
+Just give `ic()` a variable or expression and you're done. Easy.
 
 
 ### Plain Ice Cream (without Arguments)
 
 Do you ever add print statments to determine which parts of your program are
-executed, and in which order they're executed? If you've ever added prints to
-something like
+executed, and in which order they're executed? For example, if you've ever added
+prints statements to debug something like
 
 ```python
 def foo():
@@ -126,7 +126,7 @@ ic| example.py:4
 ic| example.py:11
 ```
 
-Simple.
+Just call `ic()` and you're done. Simple.
 
 
 ### Installation
