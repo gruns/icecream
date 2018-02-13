@@ -85,8 +85,8 @@ Easy.
 ### Plain Ice Cream (without Arguments)
 
 Do you ever add print statments to determine which parts of your program are
-executed, and in which order they're executed? If you've ever added `print()`s
-to something like
+executed, and in which order they're executed? If you've ever added prints to
+something like
 
 ```python
 def foo():
