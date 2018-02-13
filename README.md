@@ -29,18 +29,18 @@ Python 2, Python 3, PyPy2, and PyPy3.
 
 ### Ice Cream with Toppings (Arguments)
 
-Have you ever printed variables or expressions during debugging? If you've ever
-typed
+Have you ever printed variables or expressions to debug your program? If you've
+ever typed something like
 
 ```python
-print(foo(obj.attr))
+print(foo('123'))
 ```
 
 or the more thorough
 
 
 ```python
-print('foo(obj.attr)', foo(obj.attr))
+print("foo('123')", foo('123'))
 ```
 
 then `ic()` is here to help. With arguments, `ic()` inspects itself and prints
@@ -49,15 +49,16 @@ both its arguments and its argument's values.
 ```python
 from icecream import ic
 
-def foo():
-    return 'bar'
-ic(foo())
+def foo(s):
+    return s[::-1]
+
+ic(foo('123'))
 ```
 
 Prints
 
 ```
-ic| foo(): bar
+ic| foo('123'): 321
 ```
 
 Similarly,
@@ -71,7 +72,7 @@ class klass():
 ic(klass.attr)
 ```
 
-Prints
+prints
 
 ```
 ic| d['d'][1]: 'one'
@@ -84,8 +85,8 @@ Easy.
 ### Plain Ice Cream (without Arguments)
 
 Do you ever add print statments to determine which parts of your program are
-executed, and in which order they're executed? If you've ever typed something
-like
+executed, and in which order they're executed? If you've ever added `print()`s
+to something like
 
 ```python
 def foo():
@@ -101,7 +102,7 @@ def foo():
 ```
 
 then `ic()` helps here, too. Without arguments, `ic()` inspects itself and
-prints the call's filename and line number.
+prints the calling filename and line number.
 
 ```python
 from icecream import ic
