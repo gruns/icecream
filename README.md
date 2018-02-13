@@ -144,4 +144,4 @@ language.
 
 If you'd like a similar `ic()` method in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
-`ic()` function to in every language.
+`ic()` function in every language.
