@@ -142,6 +142,15 @@ class TestIceCream(unittest.TestCase):
             """Comment."""; ic(); # Comment.
         assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, 1)[0][0])
 
+    def testMethodArguments(self):
+        class Foo:
+            def foo(self):
+                return 'foo'
+        f = Foo()
+        with captureStdout() as out:
+            ic(f.foo())
+        assert parseOutputIntoPairs(out, 1)[0][0] == ('f.foo()', "'foo'")
+
     def testComplicated(self):
         with captureStdout() as out:
             noop(); ic(); noop(); ic(1,

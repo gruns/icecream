@@ -45,6 +45,12 @@ def calcuateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
 
 
+def nodeIsIcCall(node, funcName):
+    return (
+        classname(node) == 'Call' and
+        classname(node.func) == 'Name' and
+        node.func.id == funcName)
+
 def getCallSourceLines(funcName, callFrame):
     code = callFrame.f_code
 
@@ -93,8 +99,7 @@ def getCallSourceLines(funcName, callFrame):
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
         node for node in ast.walk(ast.parse(parentBlockSource))
-        if classname(node) == 'Call' and classname(node.func) == 'Name' and
-        node.func.id == funcName and (
+        if nodeIsIcCall(node, funcName) and (
             node.lineno == linenoRelativeToParent or
             any(arg.lineno == linenoRelativeToParent for arg in node.args))]
 
@@ -112,13 +117,12 @@ def getCallSourceLines(funcName, callFrame):
 def splitExpressionsOntoSeparateLines(source):
     """
     Split every expression onto its own line so any preceeding and/or trailing
-
     expressions, like foo(1) and foo(2) of
 
       foo(1); ic(1); foo(2)
 
     are properly separated from ic(1) for dis.findlinestarts(). Otherwise,
-    preceeding and trailer expressions, like foo(1) and foo(2) above, break the
+    preceeding and trailing expressions, like foo(1) and foo(2) above, break the
     calculation of ic(1)'s the bytecode offsets with dis.findlinestarts().
     """
     indices = [expr.col_offset for expr in ast.parse(source).body]
@@ -149,7 +153,7 @@ def splitCallsOntoSeparateLines(funcName, source):
     """
     callIndices = [
         node.func.col_offset for node in ast.walk(ast.parse(source))
-        if classname(node) == 'Call' and node.func.id == funcName]
+        if nodeIsIcCall(node, funcName)]
     toks = splitStringAtIndices(source, callIndices)
     sourceWithNewlinesBeforeInvocations = '\n'.join(toks)
 
@@ -223,7 +227,7 @@ def icWithoutArgs(callFrame, funcName):
     #   ic(
     #      )
     #
-    # report the call start line, not the call ending line. I.e. report the
+    # report the call start line, not the call end line. That is, report the
     # line number of 'ic(' in the example above, not ')'. Unfortunately the
     # readily available <frameInfo.lineno> is the end line, not the start line,
     # so it can't be used.
@@ -243,8 +247,8 @@ def icWithArgs(callFrame, funcName, args):
     relativeCallOffset = callOffset - callSourceOffset
 
     # Insert newlines before every expression and every ic() call so a mapping
-    # between col_offsets (in characters) and f_lastis (in bytecode) can be
-    # determined with dis.findlinestarts().
+    # between `col_offset`s (in characters) and `f_lasti`s (in bytecode) can be
+    # made with dis.findlinestarts().
     oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
     splitSource = splitCallsOntoSeparateLines(funcName, oneExpressionPerLine)
 
