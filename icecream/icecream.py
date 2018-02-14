@@ -47,19 +47,27 @@ def calcuateLineOffsets(code):
 
 def getCallSourceLines(funcName, callFrame):
     code = callFrame.f_code
-    parentBlockStartLine = code.co_firstlineno
-    lineno = inspect.getframeinfo(callFrame)[1]
-    linenoRelativeToParent = lineno - parentBlockStartLine + 1
 
     # inspect.getblock(), which is called internally by inspect.getsource(),
     # only returns the first line of <code> when <code> represents a top-level
-    # module, not the entire module's source, as needed here. A workaround is
-    # to call findsource() directly on top-level modules, which bypasses
-    # getblock().
+    # module, not the entire module's source, as needed here. The
+    #
+    #   if ismodule(object): return lines, 0
+    #
+    # check in inspect.py doesn't account for code objects that represent
+    # modules, only module objects themselves.
+    # 
+    # A workaround is to call findsource() directly on top-level modules, which
+    # bypasses getblock().
     if code.co_name == '<module>':  # Module -> use workaround explained above.
+        parentBlockStartLine = 1
         parentBlockSource = ''.join(inspect.findsource(code)[0])
     else:  # Not a module -> use inspect.getsource() normally.
+        parentBlockStartLine = code.co_firstlineno
         parentBlockSource = inspect.getsource(code)
+
+    lineno = inspect.getframeinfo(callFrame)[1]
+    linenoRelativeToParent = lineno - parentBlockStartLine + 1
 
     # There could be multiple ic() calls on the same line(s), like
     #
