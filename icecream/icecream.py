@@ -92,9 +92,9 @@ def getCallSourceLines(funcName, callFrame):
     #
     # and
     #
-    #   class foo():
+    #   class Foo:
     #     blah = ic
-    #   foo.ic()
+    #   Foo.blah()
     #
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
@@ -266,11 +266,11 @@ def ic(*args):
     # renaming. For example, this function's name can be different if it was
     # imported under a different name, like
     #
-    #   from ic import ic as newname
+    #   from icecream import ic as newname
     #
     # Or simply renamed
     #
-    #   from ic import ic
+    #   from icecream import ic
     #   newname = ic
     #   newname('blah')
     #
