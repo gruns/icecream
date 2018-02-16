@@ -41,7 +41,7 @@ def splitStringAtIndices(s, indices):
     return [s[i:j] for i, j in zip([0] + indices, indices + [None]) if s[i:j]]
 
 
-def calcuateLineOffsets(code):
+def calculateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
 
 
@@ -110,7 +110,7 @@ def getCallSourceLines(funcName, callFrame):
 
     callOffset = callFrame.f_lasti
     absoluteStartLineNum = parentBlockStartLine + startLine - 1
-    startLineOffset = calcuateLineOffsets(code)[absoluteStartLineNum]
+    startLineOffset = calculateLineOffsets(code)[absoluteStartLineNum]
 
     return source, absoluteStartLineNum, startLineOffset
 
@@ -162,7 +162,7 @@ def splitCallsOntoSeparateLines(funcName, source):
 
 def extractCallStrByOffset(splitSource, callOffset):
     code = compile(splitSource, '<string>', 'exec')
-    lineOffsets = sorted(calcuateLineOffsets(code).items())
+    lineOffsets = sorted(calculateLineOffsets(code).items())
 
     # For lines with multiple invocations, like 'ic(1); ic(2)', determine which
     # invocation was called.
