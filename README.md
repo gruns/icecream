@@ -84,7 +84,7 @@ Just give `ic()` a variable or expression and you're done. Easy.
 
 ### Plain Ice Cream (without Arguments)
 
-Do you ever add print statments to determine which parts of your program are
+Do you ever add print statements to determine which parts of your program are
 executed, and in which order they're executed? For example, if you've ever added
 prints statements to debug something like
 

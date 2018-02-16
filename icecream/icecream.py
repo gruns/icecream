@@ -126,13 +126,13 @@ def getCallSourceLines(funcName, callFrame):
 
 def splitExpressionsOntoSeparateLines(source):
     """
-    Split every expression onto its own line so any preceeding and/or trailing
+    Split every expression onto its own line so any preceding and/or trailing
     expressions, like 'foo(1); ' and '; foo(2)' of
 
       foo(1); ic(1); foo(2)
 
     are properly separated from ic(1) for dis.findlinestarts(). Otherwise, any
-    preceeding and/or trailing expressions break ic(1)'s bytecode offset
+    preceding and/or trailing expressions break ic(1)'s bytecode offset
     calculation with dis.findlinestarts().
     """
     indices = [expr.col_offset for expr in ast.parse(source).body]
