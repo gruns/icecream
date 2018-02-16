@@ -131,8 +131,8 @@ Just call `ic()` and you're done. Simple.
 
 ### Return Value
 
-`ic()` returns its argument(s), so `ic()` can be inserted into, and debug, a
-pre-existing expression without problem.
+`ic()` returns its argument(s), so `ic()` can be inserted into, and debug,
+pre-existing expressions without problem.
 
 ```pycon
 >>> def foo(i):
