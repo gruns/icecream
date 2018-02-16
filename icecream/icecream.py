@@ -45,7 +45,7 @@ def calculateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
 
 
-def nodeIsIcCall(node, funcName):
+def isAstNodeIceCreamCall(node, funcName):
     return (
         classname(node) == 'Call' and
         classname(node.func) == 'Name' and
@@ -99,7 +99,7 @@ def getCallSourceLines(funcName, callFrame):
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
         node for node in ast.walk(ast.parse(parentBlockSource))
-        if nodeIsIcCall(node, funcName) and (
+        if isAstNodeIceCreamCall(node, funcName) and (
             node.lineno == linenoRelativeToParent or
             any(arg.lineno == linenoRelativeToParent for arg in node.args))]
 
@@ -153,7 +153,7 @@ def splitCallsOntoSeparateLines(funcName, source):
     """
     callIndices = [
         node.func.col_offset for node in ast.walk(ast.parse(source))
-        if nodeIsIcCall(node, funcName)]
+        if isAstNodeIceCreamCall(node, funcName)]
     toks = splitStringAtIndices(source, callIndices)
     sourceWithNewlinesBeforeInvocations = '\n'.join(toks)
 
