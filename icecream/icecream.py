@@ -117,13 +117,13 @@ def getCallSourceLines(funcName, callFrame):
 def splitExpressionsOntoSeparateLines(source):
     """
     Split every expression onto its own line so any preceeding and/or trailing
-    expressions, like foo(1) and foo(2) of
+    expressions, like 'foo(1); ' and '; foo(2)' of
 
       foo(1); ic(1); foo(2)
 
-    are properly separated from ic(1) for dis.findlinestarts(). Otherwise,
-    preceeding and trailing expressions, like foo(1) and foo(2) above, break the
-    calculation of ic(1)'s the bytecode offsets with dis.findlinestarts().
+    are properly separated from ic(1) for dis.findlinestarts(). Otherwise, any
+    preceeding and/or trailing expressions break ic(1)'s bytecode offset
+    calculation with dis.findlinestarts().
     """
     indices = [expr.col_offset for expr in ast.parse(source).body]
     lines = [s.rstrip(' ;') for s in splitStringAtIndices(source, indices)]
@@ -248,7 +248,7 @@ def icWithArgs(callFrame, funcName, args):
 
     # Insert newlines before every expression and every ic() call so a mapping
     # between `col_offset`s (in characters) and `f_lasti`s (in bytecode) can be
-    # made with dis.findlinestarts().
+    # established with dis.findlinestarts().
     oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
     splitSource = splitCallsOntoSeparateLines(funcName, oneExpressionPerLine)
 
