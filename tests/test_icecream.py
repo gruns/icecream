@@ -163,6 +163,7 @@ class TestIceCream(unittest.TestCase):
             ('noop ()', 'None')]
 
     def testReturnValue(self):
-        assert ic() is None
-        assert ic(1) == 1
-        assert ic(1, 2, 3) == (1, 2, 3)
+        with captureStdout() as out:
+            assert ic() is None
+            assert ic(1) == 1
+            assert ic(1, 2, 3) == (1, 2, 3)
