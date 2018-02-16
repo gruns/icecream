@@ -12,12 +12,12 @@
 
 import sys
 import unittest
-from os.path import basename
 try:  # Python 2.x.
     from StringIO import StringIO
 except ImportError:  # Python 3.x.
     from io import StringIO
 from contextlib import contextmanager
+from os.path import basename, splitext
 
 from icecream import ic, PREFIX
 
@@ -40,7 +40,10 @@ def captureStdout():
 
 
 def pairIsNoArgumentsOutput(pair):
-    return pair[0] == MYFILENAME and int(pair[1]) > 0
+    name, ext = splitext(pair[0])
+    return (
+        name == splitext(MYFILENAME)[0] and ext in ['.py', '.pyc', '.pyo'] and
+        int(pair[1]) > 0)
 
 
 def parseOutputIntoPairs(out, assertNumLines):
