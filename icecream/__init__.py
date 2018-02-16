@@ -14,7 +14,7 @@ from .icecream import *
 
 __title__ = 'icecream'
 __license__ = 'MIT'
-__version__ = '0.4'
+__version__ = '0.5'
 __author__ = 'Ansgar Grunseid'
 __contact__ = 'grunseid@gmail.com'
 __url__ = 'https://github.com/gruns/icecream'
