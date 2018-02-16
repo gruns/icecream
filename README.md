@@ -134,7 +134,7 @@ Just call `ic()` and you're done. Simple.
 `ic()` returns its argument(s), so `ic()` can be inserted into, and debug, a
 pre-existing expression without problem.
 
-```python
+```pycon
 >>> def foo(i):
 >>>     return i / 2
 >>> b = ic(foo(6))
