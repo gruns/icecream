@@ -161,3 +161,8 @@ class TestIceCream(unittest.TestCase):
         assert pairs[1] == [
             ('1', '1'), ('2', '2'), ('noop.__class__.__name__', "'function'"),
             ('noop ()', 'None')]
+
+    def testReturnValue(self):
+        assert ic() is None
+        assert ic(1) == 1
+        assert ic(1, 2, 3) == (1, 2, 3)

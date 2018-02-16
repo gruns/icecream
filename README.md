@@ -129,6 +129,21 @@ ic| example.py:11
 Just call `ic()` and you're done. Simple.
 
 
+### Return Value
+
+`ic()` returns its argument(s), so `ic()` can be inserted into, and debug, a
+pre-existing expression without problem.
+
+```python
+>>> def foo(i):
+>>>     return i / 2
+>>> b = ic(foo(6))
+ic| foo(6): 3
+>>> ic(b)
+ic| b: 3
+```
+
+
 ### Installation
 
 Installing IceCream with pip is easy.

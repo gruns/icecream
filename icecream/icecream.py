@@ -45,11 +45,20 @@ def calculateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
 
 
+def joinContinuedLines(lines):
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1 and not line.endswith('\\'):
+            lines[i] += ' \\'
+    joined = '\n'.join(lines)
+    return joined
+
+
 def isAstNodeIceCreamCall(node, funcName):
     return (
         classname(node) == 'Call' and
         classname(node.func) == 'Name' and
         node.func.id == funcName)
+
 
 def getCallSourceLines(funcName, callFrame):
     code = callFrame.f_code
@@ -114,6 +123,7 @@ def getCallSourceLines(funcName, callFrame):
 
     return source, absoluteStartLineNum, startLineOffset
 
+
 def splitExpressionsOntoSeparateLines(source):
     """
     Split every expression onto its own line so any preceeding and/or trailing
@@ -126,8 +136,8 @@ def splitExpressionsOntoSeparateLines(source):
     calculation with dis.findlinestarts().
     """
     indices = [expr.col_offset for expr in ast.parse(source).body]
-    lines = [s.rstrip(' ;') for s in splitStringAtIndices(source, indices)]
-    oneExpressionPerLine = '\n'.join(lines)
+    lines = [s.strip() for s in splitStringAtIndices(source, indices)]
+    oneExpressionPerLine = joinContinuedLines(lines)
 
     return oneExpressionPerLine
 
@@ -154,8 +164,8 @@ def splitCallsOntoSeparateLines(funcName, source):
     callIndices = [
         node.func.col_offset for node in ast.walk(ast.parse(source))
         if isAstNodeIceCreamCall(node, funcName)]
-    toks = splitStringAtIndices(source, callIndices)
-    sourceWithNewlinesBeforeInvocations = '\n'.join(toks)
+    lines = splitStringAtIndices(source, callIndices)
+    sourceWithNewlinesBeforeInvocations = joinContinuedLines(lines)
 
     return sourceWithNewlinesBeforeInvocations
 
@@ -183,24 +193,23 @@ def extractCallStrByOffset(splitSource, callOffset):
     #     foo(
     #       {
     #         ic(
-    #           bar())}))
+    #           bar()) == 3}))
     #
-    # where the <line> 'ic(bar())}))' needs to be trimmed to just 'ic(foo())'.
-    # Unfortunately, afaik there's no way to determine the character width of a
-    # function call, or its last argument, from the AST, so a workaround is to
-    # truncate right parens (and any non-right-paren junk thereafter) from
-    # <line> until ic()'s matching right paren is found. Bit of a hack, but
-    # ¯\_(ツ)_/¯.
-    line = line[:line.rfind(')') + 1]  # Remove everything after the last ')'.
+    # where the <line> 'ic(bar()) == 3}))' needs to be trimmed to just
+    # 'ic(foo())'. Unfortunately, afaik there's no way to determine the
+    # character width of a function call, or its last argument, from the AST,
+    # so a workaround is to loop and test each successive right paren in
+    # <line>, from left to right, until ic()'s matching right paren is
+    # found. Bit of a hack, but ¯\_(ツ)_/¯.
+    tmp = line[:line.find(')') + 1]
     while True:
         try:
-            ast.parse(line)  # Mismatched parens raises SyntaxError.
+            ast.parse(tmp)
             break
         except SyntaxError:
-            rightmostClosingParen = line.rfind(')')
-            line = line[:line.rfind(')', 0, rightmostClosingParen) + 1]
+            tmp = line[:line.find(')', len(tmp)) + 1]
 
-    callStr = line
+    callStr = tmp
     return callStr
 
 
@@ -282,3 +291,12 @@ def ic(*args):
         icWithoutArgs(callFrame, funcName)
     else:
         icWithArgs(callFrame, funcName, args)
+
+    if not args:  # E.g. ic().
+        ret = None
+    elif len(args) == 1:  # E.g. ic(1).
+        ret = args[0]
+    else:  # E.g. ic(1, 2, 3).
+        ret = args
+
+    return ret
