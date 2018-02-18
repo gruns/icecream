@@ -53,14 +53,38 @@ def joinContinuedLines(lines):
     return joined
 
 
-def isAstNodeIceCreamCall(node, funcName):
+def isAstNodeIceCreamCall(node, icNames):
     return (
         classname(node) == 'Call' and
         classname(node.func) == 'Name' and
-        node.func.id == funcName)
+        node.func.id in icNames)
 
 
-def getCallSourceLines(funcName, callFrame):
+def determinePossibleIcNames(callFrame):
+    # TODO(grun): Determe possible function names dynamically from the source
+    # to account for name indirection. For example, ic() could be invoked like
+    #
+    #   class Foo:
+    #     blah = ic
+    #   Foo.blah()
+    #
+    # This function, as it exists now, fails to detect the above and only
+    # checks for variables in globals() and locals() that are equal to
+    # ic(). Like
+    #
+    #   from icecream import ic as foo
+    #   foo()
+    #
+    # and
+    #
+    #   from icecream import ic newname = ic newname('blah')
+    localNames = [name for name, v in callFrame.f_locals.items() if v == ic]
+    globalNames = [name for name, v in callFrame.f_globals.items() if v == ic]
+
+    return list(set(localNames + globalNames))
+
+
+def getCallSourceLines(icNames, callFrame):
     code = callFrame.f_code
 
     # inspect.getblock(), which is called internally by inspect.getsource(),
@@ -108,7 +132,7 @@ def getCallSourceLines(funcName, callFrame):
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
         node for node in ast.walk(ast.parse(parentBlockSource))
-        if isAstNodeIceCreamCall(node, funcName) and (
+        if isAstNodeIceCreamCall(node, icNames) and (
             node.lineno == linenoRelativeToParent or
             any(arg.lineno == linenoRelativeToParent for arg in node.args))]
 
@@ -142,7 +166,7 @@ def splitExpressionsOntoSeparateLines(source):
     return oneExpressionPerLine
 
 
-def splitCallsOntoSeparateLines(funcName, source):
+def splitCallsOntoSeparateLines(icNames, source):
     """
     To determine the bytecode offsets of ic() calls with dis.findlinestarts(),
     every ic() invocation needs to start its own line. That is, this
@@ -163,7 +187,7 @@ def splitCallsOntoSeparateLines(funcName, source):
     """
     callIndices = [
         node.func.col_offset for node in ast.walk(ast.parse(source))
-        if isAstNodeIceCreamCall(node, funcName)]
+        if isAstNodeIceCreamCall(node, icNames)]
     lines = splitStringAtIndices(source, callIndices)
     sourceWithNewlinesBeforeInvocations = joinContinuedLines(lines)
 
@@ -230,7 +254,7 @@ def extractArgumentsFromCallStr(callStr):
     return argStrs
 
 
-def icWithoutArgs(callFrame, funcName):
+def icWithoutArgs(callFrame, icNames):
     # For multiline invocations, like
     #
     #   ic(
@@ -240,7 +264,7 @@ def icWithoutArgs(callFrame, funcName):
     # line number of 'ic(' in the example above, not ')'. Unfortunately the
     # readily available <frameInfo.lineno> is the end line, not the start line,
     # so it can't be used.
-    _, startLine, _ = getCallSourceLines(funcName, callFrame)
+    _, startLine, _ = getCallSourceLines(icNames, callFrame)
 
     frameInfo = inspect.getframeinfo(callFrame)
     filename = basename(frameInfo.filename)
@@ -249,8 +273,8 @@ def icWithoutArgs(callFrame, funcName):
     printOut(out)
 
 
-def icWithArgs(callFrame, funcName, args):
-    callSource, _, callSourceOffset = getCallSourceLines(funcName, callFrame)
+def icWithArgs(callFrame, icNames, args):
+    callSource, _, callSourceOffset = getCallSourceLines(icNames, callFrame)
 
     callOffset = callFrame.f_lasti
     relativeCallOffset = callOffset - callSourceOffset
@@ -259,7 +283,7 @@ def icWithArgs(callFrame, funcName, args):
     # between `col_offset`s (in characters) and `f_lasti`s (in bytecode) can be
     # established with dis.findlinestarts().
     oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
-    splitSource = splitCallsOntoSeparateLines(funcName, oneExpressionPerLine)
+    splitSource = splitCallsOntoSeparateLines(icNames, oneExpressionPerLine)
 
     callStr = extractCallStrByOffset(splitSource, relativeCallOffset)
     argStrs = extractArgumentsFromCallStr(callStr)
@@ -271,26 +295,13 @@ def icWithArgs(callFrame, funcName, args):
 
 
 def ic(*args):
-    # TODO(grun): Determine the function name dynamically to account for
-    # renaming. For example, this function's name can be different if it was
-    # imported under a different name, like
-    #
-    #   from icecream import ic as newname
-    #
-    # Or simply renamed
-    #
-    #   from icecream import ic
-    #   newname = ic
-    #   newname('blah')
-    #
-    # Account for both scenarios.
-    funcName = inspect.stack()[0][3]
     callFrame = inspect.currentframe().f_back
+    icNames = determinePossibleIcNames(callFrame)
 
     if not args:
-        icWithoutArgs(callFrame, funcName)
+        icWithoutArgs(callFrame, icNames)
     else:
-        icWithArgs(callFrame, funcName, args)
+        icWithArgs(callFrame, icNames, args)
 
     if not args:  # E.g. ic().
         ret = None

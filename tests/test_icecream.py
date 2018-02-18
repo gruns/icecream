@@ -170,3 +170,16 @@ class TestIceCream(unittest.TestCase):
             assert ic() is None
             assert ic(1) == 1
             assert ic(1, 2, 3) == (1, 2, 3)
+
+    def testDifferentName(self):
+        from icecream import ic as foo
+        with captureStdout() as out:
+            foo()
+        pair = parseOutputIntoPairs(out, 1)[0][0]
+        assert pairIsNoArgumentsOutput(pair)
+
+        newname = foo
+        with captureStdout() as out:
+            newname(1)
+        pairs = parseOutputIntoPairs(out, 1)
+        assert pairs[0][0] == ('1', '1')
