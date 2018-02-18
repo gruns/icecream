@@ -20,8 +20,8 @@
 
 ### IceCream is a little library for sweet and creamy print debugging.
 
-Do you ever use `print()` statements to debug your code? Of course you
-do. IceCream, or `ic` for short, makes `print()` debugging a little sweeter.
+Do you ever use `print()` to debug your code? Of course you do. IceCream, or
+`ic` for short, makes `print()` debugging a little sweeter.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and supports
 Python 2, Python 3, PyPy2, and PyPy3.
@@ -84,9 +84,9 @@ Just give `ic()` a variable or expression and you're done. Easy.
 
 ### Plain Ice Cream (without Arguments)
 
-Do you ever add print statements to determine which parts of your program are
-executed, and in which order they're executed? For example, if you've ever added
-prints statements to debug something like
+Do you ever use `print()` to determine which parts of your program are executed,
+and in which order they're executed? For example, if you've ever added prints
+statements to debug something like
 
 ```python
 def foo():
@@ -131,8 +131,8 @@ Just call `ic()` and you're done. Simple.
 
 ### Return Value
 
-`ic()` returns its argument(s), so `ic()` can be inserted into, and debug,
-pre-existing expressions without problem.
+`ic()` returns its argument(s), so `ic()` can be added to, and debug,
+pre-existing code without problem.
 
 ```pycon
 >>> def foo(i):
