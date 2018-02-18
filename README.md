@@ -155,8 +155,10 @@ $ pip install icecream
 
 ### Other Flavors (Languages)
 
-- [node-icecream](https://github.com/jmerle/node-icecream)
+IceCream should be enjoyed with every language.
 
-If you'd like a similar `ic()` method in your favorite language, please open a
+- JavaScript: [node-icecream](https://github.com/jmerle/node-icecream)
+
+If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
 `ic()` function in every language.
