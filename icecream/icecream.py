@@ -11,30 +11,30 @@
 # License: MIT
 #
 
+from __future__ import print_function
+
 import ast
 import dis
+import sys
 import inspect
 import textwrap
 from os.path import basename
 
 
+_absent = object()
+
+
+def errprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 MYNAME = 'ic'
-PREFIX = '%s| ' % MYNAME
-
-
-# TODO(grun): Allow for configuration of output. Support output not just to
-# stdout, but other places, too (logging, custom function, etc). Also add
-# support for the output of additional fields, like timestamps.
-def configureOutput():
-    raise NotImplementedError
+DEFAULT_PREFIX = '%s| ' % MYNAME
+DEFAULT_OUTPUT_FUNCTION = errprint
 
 
 def classname(obj):
     return obj.__class__.__name__
-
-
-def printOut(s, inludeTimestamp=False):
-    print(''.join([PREFIX, s]))
 
 
 def splitStringAtIndices(s, indices):
@@ -61,7 +61,7 @@ def isAstNodeIceCreamCall(node, icNames):
 
 
 def determinePossibleIcNames(callFrame):
-    # TODO(grun): Determe possible function names dynamically from the source
+    # TODO(grun): Determine possible function names dynamically from the source
     # to account for name indirection. For example, ic() could be invoked like
     #
     #   class Foo:
@@ -254,7 +254,7 @@ def extractArgumentsFromCallStr(callStr):
     return argStrs
 
 
-def icWithoutArgs(callFrame, icNames):
+def icWithoutArgs(callFrame, icNames, outputFunction):
     # For multiline invocations, like
     #
     #   ic(
@@ -270,10 +270,10 @@ def icWithoutArgs(callFrame, icNames):
     filename = basename(frameInfo.filename)
 
     out = '%s:%s' % (filename, startLine)
-    printOut(out)
+    outputFunction(out)
 
 
-def icWithArgs(callFrame, icNames, args):
+def icWithArgs(callFrame, icNames, args, outputFunction):
     callSource, _, callSourceOffset = getCallSourceLines(icNames, callFrame)
 
     callOffset = callFrame.f_lasti
@@ -291,23 +291,48 @@ def icWithArgs(callFrame, icNames, args):
     pairs = list(zip(argStrs, args))
 
     output = ', '.join('%s: %r' % (arg, value) for arg, value in pairs)
-    printOut(output)
+    outputFunction(output)
 
 
-def ic(*args):
-    callFrame = inspect.currentframe().f_back
-    icNames = determinePossibleIcNames(callFrame)
+class IceCreamDebugger:
+    def __init__(self, prefix=DEFAULT_PREFIX,
+                 outputFunction=DEFAULT_OUTPUT_FUNCTION):
+        self.prefix = prefix
+        self.outputFunction = outputFunction
 
-    if not args:
-        icWithoutArgs(callFrame, icNames)
-    else:
-        icWithArgs(callFrame, icNames, args)
+    def __call__(self, *args):
+        callFrame = inspect.currentframe().f_back
+        icNames = determinePossibleIcNames(callFrame)
+        
+        if not args:
+            icWithoutArgs(callFrame, icNames, self._printOut)
+        else:
+            icWithArgs(callFrame, icNames, args, self._printOut)
 
-    if not args:  # E.g. ic().
-        ret = None
-    elif len(args) == 1:  # E.g. ic(1).
-        ret = args[0]
-    else:  # E.g. ic(1, 2, 3).
-        ret = args
+        if not args:  # E.g. ic().
+            ret = None
+        elif len(args) == 1:  # E.g. ic(1).
+            ret = args[0]
+        else:  # E.g. ic(1, 2, 3).
+            ret = args
+        
+        return ret
 
-    return ret
+    def _printOut(self, s):
+        if callable(self.prefix):
+            prefix = self.prefix()
+        else:
+            prefix = self.prefix
+
+        out = ''.join([prefix, s])
+        self.outputFunction(out)
+
+    def configureOutput(self, prefix=_absent, outputFunction=_absent):
+        if prefix is not _absent:
+            self.prefix = prefix
+
+        if outputFunction is not _absent:
+            self.outputFunction = outputFunction
+
+
+ic = IceCreamDebugger()

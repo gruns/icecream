@@ -144,6 +144,49 @@ ic| b: 3
 ```
 
 
+### Configuration
+
+`ic.configureOutput(prefix, outputFunction)` can be used to adopt a custom
+prefix (default is `ic| `) and/or output function (default is to write output to
+stderr).
+
+```pycon
+>>> from icecream import ic
+>>> ic.configureOutput(prefix='hello -> ')
+>>> ic('world')
+hello -> 'world': 'world'
+```
+
+`prefix` can optionally be a function, too.
+
+```pycon
+>>> import time
+>>> from icecream import ic
+>>>  
+>>> def unixTimestamp():
+>>>     return '%i |> ' % int(time.time())
+>>>
+>>> ic.configureOutput(prefix=unixTimestamp)
+>>> ic('world')
+1519185860 |> 'world': 'world'
+```
+
+`outputFunction`, if provided, is called with `ic()`s output and `ic()`s output
+is no longer written to stderr.
+
+```pycon
+>>> import logging
+>>> from icecream import ic
+>>>
+>>> def warn(s):
+>>>     logging.warning(s)
+>>>
+>>> ic.configureOutput(outputFunction=warn)
+>>> ic('eep')
+WARNING:root:ic| 'eep': 'eep'
+```
+
+
 ### Installation
 
 Installing IceCream with pip is easy.

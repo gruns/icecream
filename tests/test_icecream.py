@@ -19,7 +19,8 @@ except ImportError:  # Python 3.x.
 from contextlib import contextmanager
 from os.path import basename, splitext
 
-from icecream import ic, PREFIX
+import icecream
+from icecream import ic
 
 MYFILENAME = basename(__file__)
 
@@ -29,14 +30,33 @@ def noop(*args, **kwargs):
 
 
 @contextmanager
-def captureStdout():
+def configureIcecreamOutput(prefix=None, outputFunction=None):
+    oldPrefix = ic.prefix
+    oldOutputFunction = ic.outputFunction
+
+    if prefix:
+        ic.configureOutput(prefix=prefix)
+    if outputFunction:
+        ic.configureOutput(outputFunction=outputFunction)
+
+    yield
+
+    ic.configureOutput(oldPrefix, oldOutputFunction)
+
+
+@contextmanager
+def captureStandardStreams():
     newStdout = StringIO()
+    newStderr = StringIO()
     realStdout = sys.stdout
+    realStderr = sys.stderr
     try:
         sys.stdout = newStdout
-        yield newStdout
+        sys.stderr = newStderr
+        yield newStdout, newStderr
     finally:
         sys.stdout = realStdout
+        sys.stderr = realStderr
 
 
 def pairIsNoArgumentsOutput(pair):
@@ -46,17 +66,23 @@ def pairIsNoArgumentsOutput(pair):
         int(pair[1]) > 0)
 
 
-def parseOutputIntoPairs(out, assertNumLines):
-    out = out.getvalue()
+def parseOutputIntoPairs(out, err, assertNumLines,
+                         prefix=icecream.DEFAULT_PREFIX):
+    if isinstance(out, StringIO):
+        out = out.getvalue()
+    if isinstance(err, StringIO):
+        err = err.getvalue()
 
-    lines = out.splitlines()
+    assert not out
+
+    lines = err.splitlines()
     for line in lines:
-        assert line.startswith(PREFIX)
+        assert line.startswith(prefix)
     if assertNumLines:
         assert len(lines) == assertNumLines
 
     linePairs = []
-    prefixStripped = [line[len(PREFIX):] for line in lines]
+    prefixStripped = [line[len(prefix):] for line in lines]
     for line in prefixStripped:
         pairStrs = line.split(', ')
         split = [s.split(':', 1) for s in pairStrs]
@@ -68,118 +94,152 @@ def parseOutputIntoPairs(out, assertNumLines):
 
 class TestIceCream(unittest.TestCase):
     def testWithoutArgs(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic()
-        pairs = parseOutputIntoPairs(out, 1)[0]
-        assert pairIsNoArgumentsOutput(pairs[0])
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pairIsNoArgumentsOutput(pair)
 
     def testAsArgument(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             noop(ic(1), ic(2))
-        pairs = parseOutputIntoPairs(out, 2)
+        pairs = parseOutputIntoPairs(out, err, 2)
         assert pairs[0][0] == ('1', '1') and pairs[1][0] == ('2', '2')
 
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             d = {1: ic(1)}
             l = [ic(2), ic()]
-        pairs = parseOutputIntoPairs(out, 3)
+        pairs = parseOutputIntoPairs(out, err, 3)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1][0] == ('2', '2')
         assert pairIsNoArgumentsOutput(pairs[2][0])
 
     def testSingleArgument(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(1)
-        assert parseOutputIntoPairs(out, 1)[0][0] == ('1', '1')
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('1', '1')
 
     def testMultipleArguments(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(1, 2)
-        pairs = parseOutputIntoPairs(out, 1)[0]
+        pairs = parseOutputIntoPairs(out, err, 1)[0]
         assert pairs == [('1', '1'), ('2', '2')]
 
     def testNestedMultiline(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(
                 )
-        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, 1)[0][0])
+        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, err, 1)[0][0])
 
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(1,
                'foo')
-        pairs = parseOutputIntoPairs(out, 1)[0]
+        pairs = parseOutputIntoPairs(out, err, 1)[0]
         assert pairs == [('1', '1'), ("'foo'", "'foo'")]
 
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             noop(noop(noop({1: ic(
                 noop())})))
-        assert parseOutputIntoPairs(out, 1)[0][0] == ('noop()', 'None')
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('noop()', 'None')
 
     def testExpressionArguments(self):
         class klass():
             attr = 'yep'
         d = {'d': {1: 'one'}, 'k': klass}
 
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(d['d'][1])
-        assert parseOutputIntoPairs(out, 1)[0][0] == ("d['d'][1]", "'one'")
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ("d['d'][1]", "'one'")
 
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(d['k'].attr)
-        assert parseOutputIntoPairs(out, 1)[0][0] == ("d['k'].attr", "'yep'")
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ("d['k'].attr", "'yep'")
 
     def testMultipleCallsOnSameLine(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(1); ic(2, 3)
-        pairs = parseOutputIntoPairs(out, 2)
+        pairs = parseOutputIntoPairs(out, err, 2)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1] == [('2', '2'), ('3', '3')]
 
     def testCallSurroundedByExpressions(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             noop(); ic(1); noop()
-        assert parseOutputIntoPairs(out, 1)[0][0] == ('1', '1')
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('1', '1')
 
     def testComments(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             """Comment."""; ic(); # Comment.
-        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, 1)[0][0])
+        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, err, 1)[0][0])
 
     def testMethodArguments(self):
         class Foo:
             def foo(self):
                 return 'foo'
         f = Foo()
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             ic(f.foo())
-        assert parseOutputIntoPairs(out, 1)[0][0] == ('f.foo()', "'foo'")
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('f.foo()', "'foo'")
 
     def testComplicated(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             noop(); ic(); noop(); ic(1,
                                      2, noop.__class__.__name__,
                                          noop ()); noop()
-        pairs = parseOutputIntoPairs(out, 2)
+        pairs = parseOutputIntoPairs(out, err, 2)
         assert pairIsNoArgumentsOutput(pairs[0][0])
         assert pairs[1] == [
             ('1', '1'), ('2', '2'), ('noop.__class__.__name__', "'function'"),
             ('noop ()', 'None')]
 
     def testReturnValue(self):
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             assert ic() is None
             assert ic(1) == 1
             assert ic(1, 2, 3) == (1, 2, 3)
 
     def testDifferentName(self):
         from icecream import ic as foo
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             foo()
-        pair = parseOutputIntoPairs(out, 1)[0][0]
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
         assert pairIsNoArgumentsOutput(pair)
 
         newname = foo
-        with captureStdout() as out:
+        with captureStandardStreams() as (out, err):
             newname(1)
-        pairs = parseOutputIntoPairs(out, 1)
-        assert pairs[0][0] == ('1', '1')
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ('1', '1')
+
+    def testPrefixConfiguration(self):
+        prefix = 'lolsup '
+        with configureIcecreamOutput(prefix):
+            with captureStandardStreams() as (out, err):
+                ic(1)
+        pair = parseOutputIntoPairs(out, err, 1, prefix=prefix)[0][0]
+        assert pair == ('1', '1')
+
+        def prefixFunction():
+            return 'lolsup '
+        with configureIcecreamOutput(prefix=prefixFunction):
+            with captureStandardStreams() as (out, err):
+                ic(2)
+        pair = parseOutputIntoPairs(out, err, 1, prefix=prefixFunction())[0][0]
+        assert pair == ('2', '2')
+
+    def testOutputFunction(self):
+        l = []
+        def appendTo(s):
+            l.append(s)
+
+        with configureIcecreamOutput(ic.prefix, appendTo):
+            with captureStandardStreams() as (out, err):
+                ic(1)
+        assert not out.getvalue() and not err.getvalue()
+
+        with configureIcecreamOutput(outputFunction=appendTo):
+            with captureStandardStreams() as (out, err):
+                ic(2)
+        assert not out.getvalue() and not err.getvalue()
+
+        pairs = parseOutputIntoPairs(out, '\n'.join(l), 2)
+        assert pairs == [[('1', '1')], [('2', '2')]]
