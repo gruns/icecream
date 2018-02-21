@@ -44,21 +44,21 @@ print("foo('123')", foo('123'))
 ```
 
 then `ic()` is here to help. With arguments, `ic()` inspects itself and prints
-both its arguments and its argument's values.
+both its own arguments and those argument's values.
 
 ```python
 from icecream import ic
 
-def foo(s):
-    return s[::-1]
+def foo(i):
+    return i + 333
 
-ic(foo('123'))
+ic(foo(123))
 ```
 
 Prints
 
 ```
-ic| foo('123'): 321
+ic| foo(123): 456
 ```
 
 Similarly,
@@ -129,10 +129,10 @@ ic| example.py:11
 Just call `ic()` and you're done. Simple.
 
 
-### Return Value
+### Ice Cream Infusion (Return Value)
 
-`ic()` returns its argument(s), so `ic()` can be added to, and debug,
-pre-existing code without problem.
+`ic()` returns its argument(s), so `ic()` can easily be added to, and debug,
+pre-existing code.
 
 ```pycon
 >>> def foo(i):
@@ -144,7 +144,7 @@ ic| b: 3
 ```
 
 
-### Configuration
+### Custom Ice Cream
 
 `ic.configureOutput(prefix, outputFunction)` can be used to adopt a custom
 prefix (default is `ic| `) and/or output function (default is to write output to
@@ -171,8 +171,8 @@ hello -> 'world': 'world'
 1519185860 |> 'world': 'world'
 ```
 
-`outputFunction`, if provided, is called with `ic()`s output and `ic()`s output
-is no longer written to stderr.
+`outputFunction`, if provided, is called with `ic()`'s output instead of that
+output being written to stderr (the default).
 
 ```pycon
 >>> import logging
