@@ -69,9 +69,11 @@ setup(
     author='Ansgar Grunseid',
     author_email='grunseid@gmail.com',
     url='https://github.com/gruns/icecream',
-    description='A little library for sweet and creamy print debugging.',
+    description=(
+        'Inspect variables, expressions, and code execution with a '
+        'single, simple function call.'),
     long_description=(
-        'Information and documentation on icecream can be found at '
+        'Information and documentation can be found at '
         'https://github.com/gruns/icecream.'),
     platforms=['any'],
     packages=find_packages(),
