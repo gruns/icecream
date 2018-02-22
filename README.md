@@ -147,7 +147,7 @@ ic| b: 3
 ### Custom Ice Cream
 
 `ic.configureOutput(prefix, outputFunction)` can be used to adopt a custom
-prefix (default is `ic| `) and/or output function (default is to write output to
+prefix (default is `ic| `) and/or output function (default is to output to
 stderr).
 
 ```pycon
