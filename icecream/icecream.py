@@ -31,6 +31,7 @@ def errprint(*args, **kwargs):
 MYNAME = 'ic'
 DEFAULT_PREFIX = '%s| ' % MYNAME
 DEFAULT_OUTPUT_FUNCTION = errprint
+DEFAULT_PRINT_LINE_NUMBER = False
 
 
 def classname(obj):
@@ -273,7 +274,7 @@ def icWithoutArgs(callFrame, icNames, outputFunction):
     outputFunction(out)
 
 
-def icWithArgs(callFrame, icNames, args, outputFunction):
+def icWithArgs(callFrame, icNames, args, printLineNumber, outputFunction):
     callSource, _, callSourceOffset = getCallSourceLines(icNames, callFrame)
 
     callOffset = callFrame.f_lasti
@@ -290,15 +291,24 @@ def icWithArgs(callFrame, icNames, args, outputFunction):
 
     pairs = list(zip(argStrs, args))
 
-    output = ', '.join('%s: %r' % (arg, value) for arg, value in pairs)
+    if printLineNumber:
+        _, startLine, _ = getCallSourceLines(icNames, callFrame)
+        frameInfo = inspect.getframeinfo(callFrame)
+        filename = basename(frameInfo.filename)
+        output = '%s:%s - ' % (filename, startLine)
+    else:
+        output = ""
+    output += ', '.join('%s: %r' % (arg, value) for arg, value in pairs)
     outputFunction(output)
 
 
 class IceCreamDebugger:
     def __init__(self, prefix=DEFAULT_PREFIX,
-                 outputFunction=DEFAULT_OUTPUT_FUNCTION):
+                 outputFunction=DEFAULT_OUTPUT_FUNCTION,
+                 printLineNumber=DEFAULT_PRINT_LINE_NUMBER):
         self.prefix = prefix
         self.outputFunction = outputFunction
+        self.printLineNumber = printLineNumber
 
     def __call__(self, *args):
         callFrame = inspect.currentframe().f_back
@@ -307,7 +317,8 @@ class IceCreamDebugger:
         if not args:
             icWithoutArgs(callFrame, icNames, self._printOut)
         else:
-            icWithArgs(callFrame, icNames, args, self._printOut)
+            icWithArgs(callFrame, icNames, args, self.printLineNumber,
+                       self._printOut)
 
         if not args:  # E.g. ic().
             ret = None
@@ -327,12 +338,16 @@ class IceCreamDebugger:
         out = ''.join([prefix, s])
         self.outputFunction(out)
 
-    def configureOutput(self, prefix=_absent, outputFunction=_absent):
+    def configureOutput(self, prefix=_absent, outputFunction=_absent,
+                        printLineNumber=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
         if outputFunction is not _absent:
             self.outputFunction = outputFunction
+
+        if printLineNumber is not _absent:
+            self.printLineNumber = printLineNumber
 
 
 ic = IceCreamDebugger()
