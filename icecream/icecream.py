@@ -19,6 +19,7 @@ import sys
 import inspect
 import textwrap
 from os.path import basename
+from contextlib import contextmanager
 
 
 _absent = object()
@@ -299,6 +300,7 @@ class IceCreamDebugger:
                  outputFunction=DEFAULT_OUTPUT_FUNCTION):
         self.prefix = prefix
         self.outputFunction = outputFunction
+        self.indentation = 0
 
     def __call__(self, *args):
         callFrame = inspect.currentframe().f_back
@@ -318,12 +320,20 @@ class IceCreamDebugger:
         
         return ret
 
+    @contextmanager
+    def block(self, name):
+        self._printOut('+' + name)
+        self.indentation += 1
+        yield
+        self.indentation -= 1
+        self._printOut('-' + name)
+
     def _printOut(self, s):
         if callable(self.prefix):
             prefix = self.prefix()
         else:
             prefix = self.prefix
-
+        prefix += self.indentation * 4 * " "
         out = ''.join([prefix, s])
         self.outputFunction(out)
 
