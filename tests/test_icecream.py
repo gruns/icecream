@@ -245,8 +245,8 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [[('1', '1')], [('2', '2')]]
 
     def testEnableDisable(self):
-        def noDebug():
-            raise RuntimeError('you shall not pass')
+        def noDebug(*args):
+            raise RuntimeError('you shall not pass with args: %s' % args)
 
         with captureStandardStreams() as (out, err):
             assert ic(1) == 1

@@ -311,9 +311,8 @@ class IceCreamDebugger:
                 icWithoutArgs(callFrame, icNames, self._printOut)
             else:
                 icWithArgs(callFrame, icNames, args, self._printOut)
-
         elif callable(self.callInstead):
-            return self.callInstead()
+            return self.callInstead(*args)
 
         if not args:  # E.g. ic().
             ret = None
