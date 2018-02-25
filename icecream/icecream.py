@@ -303,18 +303,17 @@ class IceCreamDebugger:
         self.outputFunction = outputFunction
 
     def __call__(self, *args):
-        if not self.enabled:
-            if callable(self.callInstead):
-                return self.callInstead()
-            return
+        if self.enabled:
+            callFrame = inspect.currentframe().f_back
+            icNames = determinePossibleIcNames(callFrame)
 
-        callFrame = inspect.currentframe().f_back
-        icNames = determinePossibleIcNames(callFrame)
+            if not args:
+                icWithoutArgs(callFrame, icNames, self._printOut)
+            else:
+                icWithArgs(callFrame, icNames, args, self._printOut)
 
-        if not args:
-            icWithoutArgs(callFrame, icNames, self._printOut)
-        else:
-            icWithArgs(callFrame, icNames, args, self._printOut)
+        elif callable(self.callInstead):
+            return self.callInstead()
 
         if not args:  # E.g. ic().
             ret = None
