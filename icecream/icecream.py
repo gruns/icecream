@@ -298,18 +298,23 @@ class IceCreamDebugger:
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION):
         self.enabled = True
+        self.callInstead = None
         self.prefix = prefix
         self.outputFunction = outputFunction
 
     def __call__(self, *args):
-        if self.enabled:
-            callFrame = inspect.currentframe().f_back
-            icNames = determinePossibleIcNames(callFrame)
-        
-            if not args:
-                icWithoutArgs(callFrame, icNames, self._printOut)
-            else:
-                icWithArgs(callFrame, icNames, args, self._printOut)
+        if not self.enabled:
+            if callable(self.callInstead):
+                return self.callInstead()
+            return
+
+        callFrame = inspect.currentframe().f_back
+        icNames = determinePossibleIcNames(callFrame)
+
+        if not args:
+            icWithoutArgs(callFrame, icNames, self._printOut)
+        else:
+            icWithArgs(callFrame, icNames, args, self._printOut)
 
         if not args:  # E.g. ic().
             ret = None
@@ -332,8 +337,9 @@ class IceCreamDebugger:
     def enable(self):
         self.enabled = True
 
-    def disable(self):
+    def disable(self, callInstead=None):
         self.enabled = False
+        self.callInstead = callInstead
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent):
         if prefix is not _absent:
