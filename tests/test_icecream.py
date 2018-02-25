@@ -243,3 +243,19 @@ class TestIceCream(unittest.TestCase):
 
         pairs = parseOutputIntoPairs(out, '\n'.join(l), 2)
         assert pairs == [[('1', '1')], [('2', '2')]]
+
+    def testEnableDisable(self):
+        with captureStandardStreams() as (out, err):
+            assert ic(1) == 1
+            assert ic.enabled
+
+            ic.disable()
+            assert not ic.enabled
+            assert ic(2) == 2
+
+            ic.enable()
+            assert ic.enabled
+            assert ic(3) == 3
+
+        pairs = parseOutputIntoPairs(out, err, 2)
+        assert pairs == [[('1', '1')], [('3', '3')]]

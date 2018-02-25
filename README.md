@@ -186,6 +186,31 @@ output being written to stderr (the default).
 WARNING:root:ic| 'eep': 'eep'
 ```
 
+Additionally, `ic()`'s output can be entirely disabled, and later re-enabled,
+with `ic.disable()` and `ic.enable()` respectively.
+
+```
+from icecream import ic
+
+ic(1)
+
+ic.disable()
+ic(2)
+
+ic.enable()
+ic(3)
+```
+
+prints
+
+```
+ic| 1: 1
+ic| 3: 3
+```
+
+`ic()` continues to return its arguments, even with disabled, of course. Only
+`ic()`'s output is disabled.
+
 
 ### Installation
 

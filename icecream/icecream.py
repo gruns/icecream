@@ -297,17 +297,19 @@ def icWithArgs(callFrame, icNames, args, outputFunction):
 class IceCreamDebugger:
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION):
+        self.enabled = True
         self.prefix = prefix
         self.outputFunction = outputFunction
 
     def __call__(self, *args):
-        callFrame = inspect.currentframe().f_back
-        icNames = determinePossibleIcNames(callFrame)
+        if self.enabled:
+            callFrame = inspect.currentframe().f_back
+            icNames = determinePossibleIcNames(callFrame)
         
-        if not args:
-            icWithoutArgs(callFrame, icNames, self._printOut)
-        else:
-            icWithArgs(callFrame, icNames, args, self._printOut)
+            if not args:
+                icWithoutArgs(callFrame, icNames, self._printOut)
+            else:
+                icWithArgs(callFrame, icNames, args, self._printOut)
 
         if not args:  # E.g. ic().
             ret = None
@@ -326,6 +328,12 @@ class IceCreamDebugger:
 
         out = ''.join([prefix, s])
         self.outputFunction(out)
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent):
         if prefix is not _absent:
