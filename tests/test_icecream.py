@@ -245,17 +245,27 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [[('1', '1')], [('2', '2')]]
 
     def testEnableDisable(self):
+        def noDebug(*args):
+            raise RuntimeError('you shall not pass with args: %s' % args)
+
         with captureStandardStreams() as (out, err):
             assert ic(1) == 1
             assert ic.enabled
 
+            ic.disable(noDebug)
+            assert not ic.enabled
+            assert ic.callInstead
+            with self.assertRaises(RuntimeError):
+                ic(2)
+
             ic.disable()
             assert not ic.enabled
-            assert ic(2) == 2
+            assert not ic.callInstead
+            assert ic(3) == 3
 
             ic.enable()
             assert ic.enabled
-            assert ic(3) == 3
+            assert ic(4) == 4
 
         pairs = parseOutputIntoPairs(out, err, 2)
-        assert pairs == [[('1', '1')], [('3', '3')]]
+        assert pairs == [[('1', '1')], [('4', '4')]]
