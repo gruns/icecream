@@ -72,7 +72,7 @@ class klass():
 ic(klass.attr)
 ```
 
-prints
+Prints
 
 ```
 ic| d['d'][1]: 'one'
