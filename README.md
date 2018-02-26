@@ -208,8 +208,8 @@ ic| 1: 1
 ic| 3: 3
 ```
 
-`ic()` continues to return its arguments, even with disabled, of course; only
-`ic()`'s output is disabled.
+`ic()` continues to return its arguments when disabled, of course; no existing
+code with `ic()` breaks.
 
 
 ### Installation
