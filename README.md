@@ -18,10 +18,10 @@
 </p>
 
 
-### IceCream is a little library for sweet and creamy print debugging.
+### IceCream is a little library for sweet and creamy debugging.
 
-Do you ever use `print()` to debug your code? Of course you do. IceCream, or
-`ic` for short, makes `print()` debugging a little sweeter.
+Do you ever use `print()` or `log()` to debug your code? Of course you
+do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and supports
 Python 2, Python 3, PyPy2, and PyPy3.
