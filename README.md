@@ -64,8 +64,8 @@ ic| foo(123): 456
 Similarly,
 
 ```python
-d = {'d': {1: 'one'}}
-ic(d['d'][1])
+d = {'key': {1: 'one'}}
+ic(d['key'][1])
 
 class klass():
     attr = 'yep'
@@ -75,7 +75,7 @@ ic(klass.attr)
 Prints
 
 ```
-ic| d['d'][1]: 'one'
+ic| d['key'][1]: 'one'
 ic| klass.attr: 'yep'
 ```
 
