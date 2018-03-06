@@ -61,15 +61,16 @@ def isAstNodeIceCreamCall(node, icNames):
 
 
 def determinePossibleIcNames(callFrame):
-    # TODO(grun): Determine possible function names dynamically from the source
-    # to account for name indirection. For example, ic() could be invoked like
+    # TODO(grun): Determine possible ic() invocation names dynamically from the
+    # source to account for name indirection. For example, ic() could be
+    # invoked like
     #
     #   class Foo:
     #     blah = ic
     #   Foo.blah()
     #
-    # This function, as it exists now, fails to detect the above and only
-    # checks for variables in globals() and locals() that are equal to
+    # This function, as it exists now, fails to detect the above. Instead, it
+    # only checks for variables in locals() and globals() that are equal to
     # ic(). Like
     #
     #   from icecream import ic as foo
