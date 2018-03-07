@@ -79,8 +79,8 @@ def determinePossibleIcNames(callFrame):
     # and
     #
     #   from icecream import ic newname = ic newname('blah')
-    localNames = [name for name, v in callFrame.f_locals.items() if v == ic]
-    globalNames = [name for name, v in callFrame.f_globals.items() if v == ic]
+    localNames = [name for name, v in callFrame.f_locals.items() if v is ic]
+    globalNames = [name for name, v in callFrame.f_globals.items() if v is ic]
 
     return list(set(localNames + globalNames))
 
