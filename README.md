@@ -135,10 +135,11 @@ Just call `ic()` and you're done. Simple.
 pre-existing code.
 
 ```pycon
->>> def foo(i):
+>>> a = 6
+>>> def half(i):
 >>>     return i / 2
->>> b = ic(foo(6))
-ic| foo(6): 3
+>>> b = half(ic(a))
+ic| a: 6
 >>> ic(b)
 ic| b: 3
 ```
