@@ -70,7 +70,7 @@ setup(
     author_email='grunseid@gmail.com',
     url='https://github.com/gruns/icecream',
     description=(
-        'Inspect variables, expressions, and code execution with a '
+        'Inspect variables, expressions, and program execution with a '
         'single, simple function call.'),
     long_description=(
         'Information and documentation can be found at '
