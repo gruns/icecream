@@ -147,9 +147,10 @@ ic| b: 3
 
 ### Custom Ice Cream
 
-`ic.configureOutput(prefix, outputFunction)` can be used to adopt a custom
-prefix (the default is `ic| `) and/or output function (default is to output to
-stderr).
+`ic.configureOutput(prefix, outputFunction, argToStringFunction)` can be used to
+adopt a custom output prefix (the default is `ic| `), change the output function
+(default is to write to stderr), and/or customize how arguments are serialized
+to strings.
 
 ```pycon
 >>> from icecream import ic
@@ -185,6 +186,25 @@ output being written to stderr (the default).
 >>> ic.configureOutput(outputFunction=warn)
 >>> ic('eep')
 WARNING:root:ic| 'eep': 'eep'
+```
+
+`argToStringFunction`, if provided, is called with argument values to be
+serialized to printable strings. The default is PrettyPrinter's
+[pprint.pformat](https://docs.python.org/3/library/pprint.html#pprint.pformat),
+but this can be changed to, for example, handle non-standard datatypes in a
+custom fashion.
+
+```pycon
+>>> from icecream import ic
+>>> 
+>>> def toString(obj):
+>>>    if isinstance(obj, str):
+>>>        return '[!string %r with length %i!]' % (obj, len(obj))
+>>>    return repr(obj)
+>>> 
+>>> ic.configureOutput(argToStringFunction=toString)
+>>> ic(7, 'hello')
+ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
 Additionally, `ic()`'s output can be entirely disabled, and later re-enabled,

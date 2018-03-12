@@ -30,18 +30,22 @@ def noop(*args, **kwargs):
 
 
 @contextmanager
-def configureIcecreamOutput(prefix=None, outputFunction=None):
+def configureIcecreamOutput(prefix=None, outputFunction=None,
+                            argToStringFunction=None):
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
+    oldArgToStringFunction = ic.argToStringFunction
 
     if prefix:
         ic.configureOutput(prefix=prefix)
     if outputFunction:
         ic.configureOutput(outputFunction=outputFunction)
+    if argToStringFunction:
+        ic.configureOutput(argToStringFunction=argToStringFunction)
 
     yield
 
-    ic.configureOutput(oldPrefix, oldOutputFunction)
+    ic.configureOutput(oldPrefix, oldOutputFunction, oldArgToStringFunction)
 
 
 @contextmanager
@@ -76,18 +80,25 @@ def parseOutputIntoPairs(out, err, assertNumLines,
     assert not out
 
     lines = err.splitlines()
-    for line in lines:
-        assert line.startswith(prefix)
     if assertNumLines:
         assert len(lines) == assertNumLines
 
     linePairs = []
-    prefixStripped = [line[len(prefix):] for line in lines]
-    for line in prefixStripped:
+    for line in lines:
+        if line.startswith(prefix):
+            line = line[len(prefix) : ]
+
         pairStrs = line.split(', ')
         split = [s.split(':', 1) for s in pairStrs]
-        pairs = [(arg.strip(), val.strip()) for arg, val in split]
-        linePairs.append(pairs)
+        if len(split[0]) == 1:  # A line of a multiline value.
+            arg, value = linePairs[-1][-1]
+            looksLikeAString = value[0] in ["'", '"']
+            prefix = (arg + ': ') + (' ' if looksLikeAString else '')
+            dedented = line[len(ic.prefix) + len(prefix) : ]
+            linePairs[-1][-1] = (arg, value + '\n' + dedented)
+        else:
+            pairs = [(arg.strip(), value.strip()) for arg, value in split]
+            linePairs.append(pairs)
 
     return linePairs
 
@@ -259,3 +270,41 @@ class TestIceCream(unittest.TestCase):
 
         pairs = parseOutputIntoPairs(out, err, 2)
         assert pairs == [[('1', '1')], [('3', '3')]]
+
+    def testArgToStringFunction(self):
+        hello = lambda obj: 'hello'
+
+        with configureIcecreamOutput(argToStringFunction=hello):
+            with captureStandardStreams() as (out, err):
+                ic(1)
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ('1', 'hello')
+
+    def testSingleArgumentLongLineNotWrapped(self):
+        # A single long line with one argument is not line wrapped.
+        longStr = '*' * (ic.lineWrapWidth + 1)
+        with captureStandardStreams() as (out, err):
+            ic(longStr)
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert len(err.getvalue()) > ic.lineWrapWidth
+        assert pair == ('longStr', ic.argToStringFunction(longStr))
+
+    def testMultipleArgumentsLongLineWrapped(self):
+        # A single long line with multiple variables is line wrapped.
+        v1 = v2 = v3 = v4 = '*' * int(ic.lineWrapWidth / 4)
+        with captureStandardStreams() as (out, err):
+            ic(v1, v2, v3, v4)
+        pairs = parseOutputIntoPairs(out, err, 4)
+        assert pairs == [
+            [('v1', ic.argToStringFunction(v1))],
+            [('v2', ic.argToStringFunction(v2))],
+            [('v3', ic.argToStringFunction(v3))],
+            [('v4', ic.argToStringFunction(v4))],]
+
+    def testMultilineValueWrapped(self):
+        # Multiline values are line wrapped.
+        multilineStr = 'line1\nline2'
+        with captureStandardStreams() as (out, err):
+            ic(multilineStr)
+        pair = parseOutputIntoPairs(out, err, 2)[0][0]
+        assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
