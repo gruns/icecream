@@ -84,9 +84,9 @@ Just give `ic()` a variable or expression and you're done. Easy.
 
 ### Plain Ice Cream (without Arguments)
 
-Do you ever use `print()` to determine which parts of your program are executed,
-and in which order they're executed? For example, if you've ever added prints
-statements to debug something like
+Have you ever used `print()` to determine which parts of your program are
+executed, and in which order they're executed? For example, if you've ever added
+prints statements to debug code like
 
 ```python
 def foo():
