@@ -86,7 +86,7 @@ Just give `ic()` a variable or expression and you're done. Easy.
 
 Have you ever used `print()` to determine which parts of your program are
 executed, and in which order they're executed? For example, if you've ever added
-prints statements to debug code like
+print statements to debug code like
 
 ```python
 def foo():
