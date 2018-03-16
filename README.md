@@ -145,10 +145,10 @@ ic| b: 3
 ```
 
 
-### Ice Cream Servings
+### Other Ice Cream
 
-`ic.format(*args)` can be used to generate and return `ic()` output as a string
-directly.
+`ic.format(*args)` generates and returns `ic()` output as a string. It's like
+`ic()`, but the output is returned as a string instead of written to stderr.
 
 ```pycon
 >>> from icecream import ic
@@ -228,7 +228,7 @@ WARNING:root:ic| 'eep': 'eep'
 ```
 
 `argToStringFunction`, if provided, is called with argument values to be
-serialized to printable strings. The default is PrettyPrinter's
+serialized to displayable strings. The default is PrettyPrint's
 [pprint.pformat](https://docs.python.org/3/library/pprint.html#pprint.pformat),
 but this can be changed to, for example, handle non-standard datatypes in a
 custom fashion.
@@ -257,11 +257,6 @@ default.
 >>> def foo():
 >>>   ic('str')
 >>> foo()
-```
-
-Prints
-
-```
 ic| example.py:12 in foo()- 'str': 'str'
 ```
 
