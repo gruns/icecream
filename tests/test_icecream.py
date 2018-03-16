@@ -22,6 +22,7 @@ from os.path import basename, splitext
 import icecream
 from icecream import ic
 
+
 MYFILENAME = basename(__file__)
 
 
@@ -31,10 +32,11 @@ def noop(*args, **kwargs):
 
 @contextmanager
 def configureIcecreamOutput(prefix=None, outputFunction=None,
-                            argToStringFunction=None):
+                            argToStringFunction=None, includeContext=None):
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
     oldArgToStringFunction = ic.argToStringFunction
+    oldIncludeContext = ic.includeContext
 
     if prefix:
         ic.configureOutput(prefix=prefix)
@@ -42,10 +44,13 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
         ic.configureOutput(outputFunction=outputFunction)
     if argToStringFunction:
         ic.configureOutput(argToStringFunction=argToStringFunction)
+    if includeContext:
+        ic.configureOutput(includeContext=includeContext)
 
     yield
 
-    ic.configureOutput(oldPrefix, oldOutputFunction, oldArgToStringFunction)
+    ic.configureOutput(
+        oldPrefix, oldOutputFunction, oldArgToStringFunction, oldIncludeContext)
 
 
 @contextmanager
@@ -63,11 +68,30 @@ def captureStandardStreams():
         sys.stderr = realStderr
 
 
-def pairIsNoArgumentsOutput(pair):
-    name, ext = splitext(pair[0])
+def lineIsContext(line):
+    context = line.strip()[len(ic.prefix) : ]  # ic| file.py:33 in foo().
+    sourceLocation, function = context.split(' in ')  # file.py:33 in foo().
+    filename, lineNumber = sourceLocation.split(':')
+    name, ext = splitext(filename)
+
     return (
-        name == splitext(MYFILENAME)[0] and ext in ['.py', '.pyc', '.pyo'] and
-        int(pair[1]) > 0)
+        int(lineNumber) > 0 and
+        ext in ['.py', '.pyc', '.pyo'] and
+        name == splitext(MYFILENAME)[0] and
+        (function == '<module>' or function.endswith('()')))
+
+
+def lineAfterContext(line, prefix):
+    if line.startswith(prefix):
+        line = line[len(prefix) : ]
+
+    toks = line.split(' in ', 1)
+    if len(toks) == 2:
+        rest = toks[1].split(' ')
+        context = ' in '.join([toks[0], rest[0]])
+        line = ' '.join(rest[1 : ])
+
+    return line
 
 
 def parseOutputIntoPairs(out, err, assertNumLines,
@@ -85,8 +109,11 @@ def parseOutputIntoPairs(out, err, assertNumLines,
 
     linePairs = []
     for line in lines:
-        if line.startswith(prefix):
-            line = line[len(prefix) : ]
+        line = lineAfterContext(line, prefix)
+
+        if not line:
+            linePairs.append([])
+            continue
 
         pairStrs = line.split(', ')
         split = [s.split(':', 1) for s in pairStrs]
@@ -107,8 +134,7 @@ class TestIceCream(unittest.TestCase):
     def testWithoutArgs(self):
         with captureStandardStreams() as (out, err):
             ic()
-        pair = parseOutputIntoPairs(out, err, 1)[0][0]
-        assert pairIsNoArgumentsOutput(pair)
+        assert lineIsContext(err.getvalue())
 
     def testAsArgument(self):
         with captureStandardStreams() as (out, err):
@@ -122,7 +148,7 @@ class TestIceCream(unittest.TestCase):
         pairs = parseOutputIntoPairs(out, err, 3)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1][0] == ('2', '2')
-        assert pairIsNoArgumentsOutput(pairs[2][0])
+        assert lineIsContext(err.getvalue().splitlines()[-1])
 
     def testSingleArgument(self):
         with captureStandardStreams() as (out, err):
@@ -139,7 +165,7 @@ class TestIceCream(unittest.TestCase):
         with captureStandardStreams() as (out, err):
             ic(
                 )
-        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, err, 1)[0][0])
+        assert lineIsContext(err.getvalue())
 
         with captureStandardStreams() as (out, err):
             ic(1,
@@ -180,7 +206,7 @@ class TestIceCream(unittest.TestCase):
     def testComments(self):
         with captureStandardStreams() as (out, err):
             """Comment."""; ic(); # Comment.
-        assert pairIsNoArgumentsOutput(parseOutputIntoPairs(out, err, 1)[0][0])
+        assert lineIsContext(err.getvalue())
 
     def testMethodArguments(self):
         class Foo:
@@ -197,7 +223,7 @@ class TestIceCream(unittest.TestCase):
                                      2, noop.__class__.__name__,
                                          noop ()); noop()
         pairs = parseOutputIntoPairs(out, err, 2)
-        assert pairIsNoArgumentsOutput(pairs[0][0])
+        assert lineIsContext(err.getvalue().splitlines()[0])
         assert pairs[1] == [
             ('1', '1'), ('2', '2'), ('noop.__class__.__name__', "'function'"),
             ('noop ()', 'None')]
@@ -212,8 +238,7 @@ class TestIceCream(unittest.TestCase):
         from icecream import ic as foo
         with captureStandardStreams() as (out, err):
             foo()
-        pair = parseOutputIntoPairs(out, err, 1)[0][0]
-        assert pairIsNoArgumentsOutput(pair)
+        assert lineIsContext(err.getvalue())
 
         newname = foo
         with captureStandardStreams() as (out, err):
@@ -291,15 +316,22 @@ class TestIceCream(unittest.TestCase):
 
     def testMultipleArgumentsLongLineWrapped(self):
         # A single long line with multiple variables is line wrapped.
-        v1 = v2 = v3 = v4 = '*' * int(ic.lineWrapWidth / 4)
+        val = '*' * int(ic.lineWrapWidth / 4)
+        valStr = ic.argToStringFunction(val)
+
+        v1 = v2 = v3 = v4 = val
         with captureStandardStreams() as (out, err):
             ic(v1, v2, v3, v4)
+
         pairs = parseOutputIntoPairs(out, err, 4)
-        assert pairs == [
-            [('v1', ic.argToStringFunction(v1))],
-            [('v2', ic.argToStringFunction(v2))],
-            [('v3', ic.argToStringFunction(v3))],
-            [('v4', ic.argToStringFunction(v4))],]
+        assert pairs == [[(k, valStr)] for k in ['v1', 'v2', 'v3', 'v4']]
+
+        lines = err.getvalue().splitlines()
+        assert (
+            lines[0].startswith(ic.prefix) and
+            lines[1].startswith(' ' * len(ic.prefix)) and
+            lines[2].startswith(' ' * len(ic.prefix)) and
+            lines[3].startswith(' ' * len(ic.prefix)))
 
     def testMultilineValueWrapped(self):
         # Multiline values are line wrapped.
@@ -308,3 +340,23 @@ class TestIceCream(unittest.TestCase):
             ic(multilineStr)
         pair = parseOutputIntoPairs(out, err, 2)[0][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
+
+    def testIncludeContext(self):
+        multilineStr = 'line1\nline2'
+        with configureIcecreamOutput(includeContext=True):
+            with captureStandardStreams() as (out, err):
+                ic(multilineStr)
+
+        assert lineIsContext(err.getvalue().splitlines()[0])
+
+        pair = parseOutputIntoPairs(out, err, 3)[1][0]
+        assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
+
+    def testFormat(self):
+        with captureStandardStreams() as (out, err):
+            """comment"""; noop(); ic(
+                'sup'); noop()
+        """comment"""; noop(); s = ic.format(
+            'sup'); noop()
+        assert s == err.getvalue().rstrip()
+

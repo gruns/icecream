@@ -31,14 +31,20 @@ def errprint(*args, **kwargs):
 
 
 MYNAME = 'ic'
-LINE_WRAP_WIDTH = 80  # Characters.
+DEFAULT_INDENT = ' ' * 4
+DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_PREFIX = '%s| ' % MYNAME
+DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = errprint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
 def classname(obj):
     return obj.__class__.__name__
+
+
+def callOrValue(obj):
+    return obj() if callable(obj) else obj
 
 
 def splitStringAtIndices(s, indices):
@@ -57,14 +63,23 @@ def joinContinuedLines(lines):
     return joined
 
 
-def isAstNodeIceCreamCall(node, icNames):
-    return (
+def isAstNodeIceCreamCall(node, icNames, methodName):
+    callMatch = (
         classname(node) == 'Call' and
         classname(node.func) == 'Name' and
         node.func.id in icNames)
 
+    methodMatch = (
+        classname(node) == 'Call' and
+        classname(node.func) == 'Attribute' and
+        classname(node.func.value) == 'Name' and
+        node.func.value.id in icNames and
+        node.func.attr == methodName)
 
-def prefixLinesAfterFirst(s, prefix):
+    return callMatch or methodMatch
+
+
+def prefixLinesAfterFirst(prefix, s):
     lines = s.splitlines(True)
 
     for i in range(1, len(lines)):
@@ -73,9 +88,14 @@ def prefixLinesAfterFirst(s, prefix):
     return ''.join(lines)
 
 
-def prefixIndent(s, prefix):
+def prefixIndent(prefix, s):
     indent = ' ' * len(prefix)
-    return prefixLinesAfterFirst(prefix + s, indent)
+
+    looksLikeAString = s[0] + s[-1] in ["''", '""']
+    if looksLikeAString:  # Align the start of multiline strings.
+        s = prefixLinesAfterFirst(' ', s)
+
+    return prefixLinesAfterFirst(indent, prefix + s)
 
 
 def determinePossibleIcNames(callFrame):
@@ -97,13 +117,14 @@ def determinePossibleIcNames(callFrame):
     # and
     #
     #   from icecream import ic newname = ic newname('blah')
-    localNames = [name for name, v in callFrame.f_locals.items() if v is ic]
-    globalNames = [name for name, v in callFrame.f_globals.items() if v is ic]
+    items = list(callFrame.f_locals.items()) + list(callFrame.f_globals.items())
+    names = [name for name, value in items if value is ic]
+    unique = list(set(names))
 
-    return list(set(localNames + globalNames))
+    return unique
 
 
-def getCallSourceLines(icNames, callFrame):
+def getCallSourceLines(icNames, icMethod, callFrame):
     code = callFrame.f_code
 
     # inspect.getblock(), which is called internally by inspect.getsource(),
@@ -152,7 +173,7 @@ def getCallSourceLines(icNames, callFrame):
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
         node for node in ast.walk(ast.parse(parentBlockSource))
-        if isAstNodeIceCreamCall(node, icNames) and (
+        if isAstNodeIceCreamCall(node, icNames, icMethod) and (
             node.lineno == linenoRelativeToParent or
             any(arg.lineno == linenoRelativeToParent for arg in node.args))]
 
@@ -186,7 +207,7 @@ def splitExpressionsOntoSeparateLines(source):
     return oneExpressionPerLine
 
 
-def splitCallsOntoSeparateLines(icNames, source):
+def splitCallsOntoSeparateLines(icNames, icMethod, source):
     """
     To determine the bytecode offsets of ic() calls with dis.findlinestarts(),
     every ic() invocation needs to start its own line. That is, this
@@ -206,8 +227,9 @@ def splitCallsOntoSeparateLines(icNames, source):
     like foo(ic(1)), to be extracted correctly.
     """
     callIndices = [
-        node.func.col_offset for node in ast.walk(ast.parse(source))
-        if isAstNodeIceCreamCall(node, icNames)]
+        node.func.col_offset if hasattr(node, 'func') else node.col_offset
+        for node in ast.walk(ast.parse(source))
+        if isAstNodeIceCreamCall(node, icNames, icMethod)]
     lines = splitStringAtIndices(source, callIndices)
     sourceWithNewlinesBeforeInvocations = joinContinuedLines(lines)
 
@@ -275,31 +297,30 @@ def extractArgumentsFromCallStr(callStr):
 
 
 def argumentToString(obj):
-    """Preserve string newlines."""
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
-    return s.replace('\\n', '\n')
+    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
+    return s
 
 
 class IceCreamDebugger:
-    lineWrapWidth = LINE_WRAP_WIDTH
+    indent = DEFAULT_INDENT
+    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
+    contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString):
+                 argToStringFunction=argumentToString, includeContext=False):
         self.enabled = True
         self.prefix = prefix
+        self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
 
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
-            icNames = determinePossibleIcNames(callFrame)
-
-            if not args:
-                self._callWithoutArgs(callFrame, icNames)
-            else:
-                self._callWithArgs(callFrame, icNames, args)
+            out = self._format(callFrame, *args)
+            self.outputFunction(out)
 
         if not args:  # E.g. ic().
             ret = None
@@ -310,7 +331,116 @@ class IceCreamDebugger:
 
         return ret
 
-    def _callWithoutArgs(self, callFrame, icNames):
+    def format(self, *args):
+        callFrame = inspect.currentframe().f_back
+        out = self._format(callFrame, *args)
+        return out
+
+    def _format(self, callFrame, *args):
+        icNames = determinePossibleIcNames(callFrame)
+
+        parentFrame = inspect.currentframe().f_back
+        icMethod = inspect.getframeinfo(parentFrame).function
+
+        prefix = callOrValue(self.prefix)
+        context = self._formatContext(callFrame, icNames, icMethod)
+        if not args:
+            out = prefix + context
+        else:
+            if not self.includeContext:
+                context = ''
+            out = self._formatArgs(
+                callFrame, icNames, icMethod, prefix, context, args)
+
+        return out
+
+    def _formatArgs(self, callFrame, icNames, icMethod, prefix, context, args):
+        callSource, _, callSourceOffset = getCallSourceLines(
+            icNames, icMethod, callFrame)
+
+        callOffset = callFrame.f_lasti
+        relativeCallOffset = callOffset - callSourceOffset
+        
+        # Insert newlines before every expression and every ic() call so a
+        # mapping between `col_offset`s (in characters) and `f_lasti`s (in
+        # bytecode) can be established with dis.findlinestarts().
+        oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
+        splitSource = splitCallsOntoSeparateLines(
+            icNames, icMethod, oneExpressionPerLine)
+
+        callStr = extractCallStrByOffset(splitSource, relativeCallOffset)
+        argStrs = extractArgumentsFromCallStr(callStr)
+
+        pairs = list(zip(argStrs, args))
+
+        out = self._constructArgumentOutput(prefix, context, pairs)
+        return out
+
+    def _constructArgumentOutput(self, prefix, context, pairs):
+        newline = os.linesep
+        def argPrefix(arg):
+            return '%s: ' % arg
+
+        pairs = [(arg, self.argToStringFunction(value)) for arg, value in pairs]
+
+        allArgsOnOneLine = ', '.join(argPrefix(arg) + val for arg, val in pairs)
+        multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
+
+        contextDelimiter = self.contextDelimiter if context else ''
+        allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
+        firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
+
+        if multilineArgs or firstLineTooLong:
+            # ic| foo.py:11 in foo()
+            #     multilineStr: 'line1
+            #                    line2'
+            #
+            # ic| foo.py:11 in foo()
+            #     a: 11111111111111111111
+            #     b: 22222222222222222222
+            if context:
+                remaining = pairs
+                start = prefix + context
+            # ic| multilineStr: 'line1
+            #                    line2'
+            #
+            # ic| a: 11111111111111111111
+            #     b: 22222222222222222222
+            else:
+                remaining = pairs[1 : ]
+                firstArg, firstVal = pairs[0]
+                start = prefixIndent(
+                    prefix + context + argPrefix(firstArg), firstVal)
+        # ic| foo.py:11 in foo()- a: 1, b: 2
+        elif context:
+            remaining = []
+            start = prefix + context + contextDelimiter + allArgsOnOneLine
+        # ic| a: 1, b: 2, c: 3
+        else:
+            remaining = []
+            start = prefix + allArgsOnOneLine
+
+        if remaining:
+            start += newline
+
+        formatted = [
+            prefixIndent(self.indent + argPrefix(arg), val)
+            for arg, val in remaining]
+
+        out = start + newline.join(formatted)
+        return out
+
+    def _formatContext(self, callFrame, icNames, icMethod):
+        filename, lineNumber, parentFunction = self._getContext(
+            callFrame, icNames, icMethod)
+
+        if parentFunction != '<module>':
+            parentFunction = '%s()' % parentFunction
+
+        context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
+        return context
+
+    def _getContext(self, callFrame, icNames, icMethod):
         # For multiline invocations, like
         #
         #   ic(
@@ -320,70 +450,13 @@ class IceCreamDebugger:
         # the line number of 'ic(' in the example above, not ')'. Unfortunately
         # the readily available <frameInfo.lineno> is the end line, not the
         # start line, so it can't be used.
-        _, startLine, _ = getCallSourceLines(icNames, callFrame)
-        
+        _, lineNumber, _ = getCallSourceLines(icNames, icMethod, callFrame)
+
         frameInfo = inspect.getframeinfo(callFrame)
+        parentFunction = frameInfo.function
         filename = basename(frameInfo.filename)
-        
-        out = '%s:%s' % (filename, startLine)
-        self._writeIcOutput(out)
 
-    def _callWithArgs(self, callFrame, icNames, args):
-        callSource, _, callSourceOffset = getCallSourceLines(icNames, callFrame)
-        
-        callOffset = callFrame.f_lasti
-        relativeCallOffset = callOffset - callSourceOffset
-        
-        # Insert newlines before every expression and every ic() call so a
-        # mapping between `col_offset`s (in characters) and `f_lasti`s (in
-        # bytecode) can be established with dis.findlinestarts().
-        oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
-        splitSource = splitCallsOntoSeparateLines(icNames, oneExpressionPerLine)
-
-        callStr = extractCallStrByOffset(splitSource, relativeCallOffset)
-        argStrs = extractArgumentsFromCallStr(callStr)
-
-        pairs = list(zip(argStrs, args))
-
-        out = self._constructArgumentOutput(pairs)
-        self._writeIcOutput(out)
-
-    def _constructArgumentOutput(self, pairs):
-        def argPrefix(arg):
-            return '%s: ' % arg
-        icPrefix = self._getPrefix()
-
-        pairs = [(arg, self.argToStringFunction(value)) for arg, value in pairs]
-
-        out = ', '.join(argPrefix(arg) + valStr for arg, valStr in pairs)
-
-        multipleLines = len(out.splitlines()) > 1
-        singleLongLine = (
-            len(pairs) > 1 and len(icPrefix + out) > self.lineWrapWidth)
-        if singleLongLine or multipleLines:
-            # Align the left side start of multiline strings.
-            for i, (arg, valStr) in enumerate(pairs):
-                looksLikeAString = valStr[0] + valStr[-1] in ["''", '""']
-                if looksLikeAString:
-                    pairs[i] = (arg, prefixLinesAfterFirst(valStr, ' '))
-
-            out = os.linesep.join(
-                prefixIndent(valStr, argPrefix(arg)) for arg, valStr in pairs)
-
-        return out
-
-    def _getPrefix(self):
-        if callable(self.prefix):
-            prefix = self.prefix()
-        else:
-            prefix = self.prefix
-
-        return prefix
-
-    def _writeIcOutput(self, s):
-        prefix = self._getPrefix()
-        out = prefixIndent(s, prefix)
-        self.outputFunction(out)
+        return filename, lineNumber, parentFunction
 
     def enable(self):
         self.enabled = True
@@ -392,7 +465,7 @@ class IceCreamDebugger:
         self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent):
+                        argToStringFunction=_absent, includeContext=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
@@ -401,6 +474,9 @@ class IceCreamDebugger:
 
         if argToStringFunction is not _absent:
             self.argToStringFunction = argToStringFunction
+
+        if includeContext is not _absent:
+            self.includeContext = includeContext
 
 
 ic = IceCreamDebugger()

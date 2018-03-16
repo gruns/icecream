@@ -122,8 +122,8 @@ def foo():
 Prints
 
 ```
-ic| example.py:4
-ic| example.py:11
+ic| example.py:4 in foo()
+ic| example.py:11 in foo()
 ```
 
 Just call `ic()` and you're done. Simple.
@@ -145,12 +145,51 @@ ic| b: 3
 ```
 
 
+### Ice Cream Servings
+
+`ic.format(*args)` can be used to generate and return `ic()` output as a string
+directly.
+
+```pycon
+>>> from icecream import ic
+>>> s = ic.format('sup')
+>>> print(s)
+ic| 'sup': 'sup'
+```
+
+Additionally, `ic()`'s output can be entirely disabled, and later re-enabled, with
+`ic.disable()` and `ic.enable()` respectively.
+
+```python
+from icecream import ic
+
+ic(1)
+
+ic.disable()
+ic(2)
+
+ic.enable()
+ic(3)
+```
+
+Prints
+
+```
+ic| 1: 1
+ic| 3: 3
+```
+
+`ic()` continues to return its arguments when disabled, of course; no existing
+code with `ic()` breaks.
+
+
 ### Custom Ice Cream
 
-`ic.configureOutput(prefix, outputFunction, argToStringFunction)` can be used to
-adopt a custom output prefix (the default is `ic| `), change the output function
-(default is to write to stderr), and/or customize how arguments are serialized
-to strings.
+`ic.configureOutput(prefix, outputFunction, argToStringFunction,
+includeContext)` can be used to adopt a custom output prefix (the default is
+`ic| `), change the output function (default is to write to stderr), customize
+how arguments are serialized to strings, and/or include the `ic()` call's
+context (filename, line number, and parent function) in `ic()`'s output.
 
 ```pycon
 >>> from icecream import ic
@@ -207,30 +246,24 @@ custom fashion.
 ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
-Additionally, `ic()`'s output can be entirely disabled, and later re-enabled,
-with `ic.disable()` and `ic.enable()` respectively.
+`includeContext`, if provided and True, adds the `ic()` call's filename, line
+number, and parent function to `ic()`'s output. `includeContext` is False by
+default.
 
-```python
-from icecream import ic
-
-ic(1)
-
-ic.disable()
-ic(2)
-
-ic.enable()
-ic(3)
+```pycon
+>>> from icecream import ic
+>>> ic.configureOutput(includeContext=True)
+>>> 
+>>> def foo():
+>>>   ic('str')
+>>> foo()
 ```
 
 Prints
 
 ```
-ic| 1: 1
-ic| 3: 3
+ic| example.py:12 in foo()- 'str': 'str'
 ```
-
-`ic()` continues to return its arguments when disabled, of course; no existing
-code with `ic()` breaks.
 
 
 ### Installation
