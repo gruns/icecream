@@ -30,10 +30,9 @@ def errprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-MYNAME = 'ic'
+DEFAULT_PREFIX = 'ic| '
 DEFAULT_INDENT = ' ' * 4
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
-DEFAULT_PREFIX = '%s| ' % MYNAME
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = errprint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
