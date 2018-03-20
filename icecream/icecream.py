@@ -322,13 +322,13 @@ class IceCreamDebugger:
             self.outputFunction(out)
 
         if not args:  # E.g. ic().
-            ret = None
+            passthrough = None
         elif len(args) == 1:  # E.g. ic(1).
-            ret = args[0]
+            passthrough = args[0]
         else:  # E.g. ic(1, 2, 3).
-            ret = args
+            passthrough = args
 
-        return ret
+        return passthrough
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
