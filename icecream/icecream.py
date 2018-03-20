@@ -123,7 +123,7 @@ def determinePossibleIcNames(callFrame):
     return unique
 
 
-def getCallSourceLines(icNames, icMethod, callFrame):
+def getCallSourceLines(callFrame, icNames, icMethod):
     code = callFrame.f_code
 
     # inspect.getblock(), which is called internally by inspect.getsource(),
@@ -355,7 +355,7 @@ class IceCreamDebugger:
 
     def _formatArgs(self, callFrame, icNames, icMethod, prefix, context, args):
         callSource, _, callSourceOffset = getCallSourceLines(
-            icNames, icMethod, callFrame)
+            callFrame, icNames, icMethod)
 
         callOffset = callFrame.f_lasti
         relativeCallOffset = callOffset - callSourceOffset
@@ -449,7 +449,7 @@ class IceCreamDebugger:
         # the line number of 'ic(' in the example above, not ')'. Unfortunately
         # the readily available <frameInfo.lineno> is the end line, not the
         # start line, so it can't be used.
-        _, lineNumber, _ = getCallSourceLines(icNames, icMethod, callFrame)
+        _, lineNumber, _ = getCallSourceLines(callFrame, icNames, icMethod)
 
         frameInfo = inspect.getframeinfo(callFrame)
         parentFunction = frameInfo.function
