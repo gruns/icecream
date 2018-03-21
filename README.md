@@ -229,7 +229,7 @@ WARNING:root:ic| 'eep': 'eep'
 
 `argToStringFunction`, if provided, is called with argument values to be
 serialized to displayable strings. The default is PrettyPrint's
-[pprint.pformat](https://docs.python.org/3/library/pprint.html#pprint.pformat),
+[pprint.pformat()](https://docs.python.org/3/library/pprint.html#pprint.pformat),
 but this can be changed to, for example, handle non-standard datatypes in a
 custom fashion.
 
