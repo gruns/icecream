@@ -247,8 +247,7 @@ ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
 `includeContext`, if provided and True, adds the `ic()` call's filename, line
-number, and parent function to `ic()`'s output. `includeContext` is False by
-default.
+number, and parent function to `ic()`'s output.
 
 ```pycon
 >>> from icecream import ic
@@ -259,6 +258,8 @@ default.
 >>> foo()
 ic| example.py:12 in foo()- 'str': 'str'
 ```
+
+`includeContext` is False by default.
 
 
 ### Installation
