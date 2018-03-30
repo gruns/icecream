@@ -189,7 +189,8 @@ code with `ic()` breaks.
 includeContext)` can be used to adopt a custom output prefix (the default is
 `ic| `), change the output function (default is to write to stderr), customize
 how arguments are serialized to strings, and/or include the `ic()` call's
-context (filename, line number, and parent function) in `ic()`'s output.
+context (filename, line number, and parent function) in `ic()`'s output with
+arguments.
 
 ```pycon
 >>> from icecream import ic
