@@ -116,8 +116,10 @@ def determinePossibleIcNames(callFrame):
     # and
     #
     #   from icecream import ic newname = ic newname('blah')
-    items = list(callFrame.f_locals.items()) + list(callFrame.f_globals.items())
-    names = [name for name, value in items if value is ic]
+    localItems = list(callFrame.f_locals.items())
+    globalItems = list(callFrame.f_globals.items())
+    allItems = localItems + globalItems
+    names = [name for name, value in allItems if value is ic]
     unique = list(set(names))
 
     return unique
@@ -135,7 +137,7 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     #
     # check in inspect.py doesn't account for code objects of modules, only
     # actual module objects themselves.
-    # 
+    #
     # A workaround is to call findsource() directly on code objects of modules,
     # which bypasses getblock().
     if code.co_name == '<module>':  # Module -> use workaround explained above.
@@ -178,10 +180,9 @@ def getCallSourceLines(callFrame, icNames, icMethod):
 
     endLine = lineno - parentBlockStartLine + 1
     startLine = min(call.lineno for call in potentialCalls)
-    lines = parentBlockSource.splitlines()[startLine - 1 : endLine]
+    lines = parentBlockSource.splitlines()[startLine - 1: endLine]
     source = ' '.join(line.strip() for line in lines)
 
-    callOffset = callFrame.f_lasti
     absoluteStartLineNum = parentBlockStartLine + startLine - 1
     startLineOffset = calculateLineOffsets(code)[absoluteStartLineNum]
 
@@ -210,15 +211,15 @@ def splitCallsOntoSeparateLines(icNames, icMethod, source):
     """
     To determine the bytecode offsets of ic() calls with dis.findlinestarts(),
     every ic() invocation needs to start its own line. That is, this
-    
+
       foo(ic(1), ic(2))
-    
+
     needs to be turned into
-    
+
       foo(
       ic(1),
       ic(2))
-    
+
     Then the bytecode offsets of ic(1) and ic(2) can be determined with
     dis.findlinestarts().
 
@@ -286,8 +287,8 @@ def extractArgumentsFromCallStr(callStr):
     """
     params = callStr.split('(', 1)[-1].rsplit(')', 1)[0].strip()
 
-    body = ast.parse(params).body[0]
-    eles = body.value.elts if classname(body.value) == 'Tuple' else [body.value]
+    value = ast.parse(params).body[0].value
+    eles = value.elts if classname(value) == 'Tuple' else [value]
 
     indices = [ele.col_offset for ele in eles]
     argStrs = [s.strip(' ,') for s in splitStringAtIndices(params, indices)]
@@ -359,7 +360,7 @@ class IceCreamDebugger:
 
         callOffset = callFrame.f_lasti
         relativeCallOffset = callOffset - callSourceOffset
-        
+
         # Insert newlines before every expression and every ic() call so a
         # mapping between `col_offset`s (in characters) and `f_lasti`s (in
         # bytecode) can be established with dis.findlinestarts().
@@ -377,16 +378,17 @@ class IceCreamDebugger:
 
     def _constructArgumentOutput(self, prefix, context, pairs):
         newline = os.linesep
+
         def argPrefix(arg):
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(value)) for arg, value in pairs]
+        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
 
-        allArgsOnOneLine = ', '.join(argPrefix(arg) + val for arg, val in pairs)
-        multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
+        allArgsOneLine = ', '.join(argPrefix(arg) + val for arg, val in pairs)
+        multilineArgs = len(allArgsOneLine.splitlines()) > 1
 
         contextDelimiter = self.contextDelimiter if context else ''
-        allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
+        allPairs = prefix + context + contextDelimiter + allArgsOneLine
         firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
 
         if multilineArgs or firstLineTooLong:
@@ -406,18 +408,18 @@ class IceCreamDebugger:
             # ic| a: 11111111111111111111
             #     b: 22222222222222222222
             else:
-                remaining = pairs[1 : ]
+                remaining = pairs[1:]
                 firstArg, firstVal = pairs[0]
                 start = prefixIndent(
                     prefix + context + argPrefix(firstArg), firstVal)
         # ic| foo.py:11 in foo()- a: 1, b: 2
         elif context:
             remaining = []
-            start = prefix + context + contextDelimiter + allArgsOnOneLine
+            start = prefix + context + contextDelimiter + allArgsOneLine
         # ic| a: 1, b: 2, c: 3
         else:
             remaining = []
-            start = prefix + allArgsOnOneLine
+            start = prefix + allArgsOneLine
 
         if remaining:
             start += newline
