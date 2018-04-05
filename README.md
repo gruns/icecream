@@ -102,7 +102,7 @@ def foo():
 ```
 
 then `ic()` helps here, too. Without arguments, `ic()` inspects itself and
-prints the calling filename, line number, and parent function().
+prints the calling filename, line number, and parent function.
 
 ```python
 from icecream import ic
