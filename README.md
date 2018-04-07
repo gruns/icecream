@@ -131,7 +131,7 @@ Just call `ic()` and you're done. Simple.
 
 ### Ice Cream Infusion (Return Value)
 
-`ic()` returns its argument(s), so `ic()` can easily be added to, and debug,
+`ic()` returns its argument(s), so `ic()` can easily be inserted into
 pre-existing code.
 
 ```pycon
