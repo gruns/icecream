@@ -276,6 +276,7 @@ $ pip install icecream
 
 IceCream should be enjoyed with every language.
 
+- Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
 - JavaScript: [node-icecream](https://github.com/jmerle/node-icecream)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
