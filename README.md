@@ -147,8 +147,8 @@ ic| b: 3
 
 ### Other Ice Cream
 
-`ic.format(*args)` generates and returns `ic()` output as a string. It's like
-`ic()`, but the output is returned as a string instead of written to stderr.
+`ic.format(*args)` is like `ic()` but the output is returned as a string instead
+of written to stderr.
 
 ```pycon
 >>> from icecream import ic
@@ -189,7 +189,7 @@ code with `ic()` breaks.
 includeContext)` can be used to adopt a custom output prefix (the default is
 `ic| `), change the output function (default is to write to stderr), customize
 how arguments are serialized to strings, and/or include the `ic()` call's
-context (filename, line number, and parent function) in `ic()`'s output with
+context (filename, line number, and parent function) in `ic()` output with
 arguments.
 
 ```pycon
