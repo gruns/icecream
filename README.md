@@ -276,6 +276,7 @@ $ pip install icecream
 
 IceCream should be enjoyed with every language.
 
+- Dart: [icecream](https://github.com/HallerPatrick/icecream)
 - Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
 - JavaScript: [node-icecream](https://github.com/jmerle/node-icecream)
 
