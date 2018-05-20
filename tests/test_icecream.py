@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext
 
 import icecream
-from icecream import ic
+from icecream import ic, NoSourceAvailableError
 
 
 MYFILENAME = basename(__file__)
@@ -360,3 +360,7 @@ class TestIceCream(unittest.TestCase):
             'sup'); noop()
         assert s == err.getvalue().rstrip()
 
+    def testNoSourceAvailable(self):
+        with captureStandardStreams() as (out, err):
+            eval('ic()')
+        assert NoSourceAvailableError.infoMessage in err.getvalue()

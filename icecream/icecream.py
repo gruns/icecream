@@ -38,6 +38,20 @@ DEFAULT_OUTPUT_FUNCTION = errprint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
+class NoSourceAvailableError(OSError):
+    """
+    Raised when icecream fails to find or access required source code
+    to parse and analyze.. This can happen, for example, when ic() is
+    run inside an interactive shell (i.e. python -i) or the source is
+    mangled and packaged with a project freezer, like PyInstaller.
+    """
+    infoMessage = (
+        'Failed to find or access source code to parse. Was ic() executed '
+        'within an interpreter (e.g. python -i), a frozen application (e.g. '
+        'packaged with PyInstaller), or other environment where source code '
+        'is unavailable?')
+
+
 def classname(obj):
     return obj.__class__.__name__
 
@@ -126,6 +140,7 @@ def determinePossibleIcNames(callFrame):
 
 
 def getCallSourceLines(callFrame, icNames, icMethod):
+    """Raises NoSourceAvailableError."""
     code = callFrame.f_code
 
     # inspect.getblock(), which is called internally by inspect.getsource(),
@@ -140,12 +155,23 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     #
     # A workaround is to call findsource() directly on code objects of modules,
     # which bypasses getblock().
-    if code.co_name == '<module>':  # Module -> use workaround explained above.
-        parentBlockStartLine = 1
-        parentBlockSource = ''.join(inspect.findsource(code)[0])
-    else:  # Not a module -> use inspect.getsource() normally.
-        parentBlockStartLine = code.co_firstlineno
-        parentBlockSource = inspect.getsource(code)
+    #
+    # inspect.findsource() and inspect.getsource() raise IOErrors in Python 2,
+    # OSErrors in Python 3.
+    try:
+        if code.co_name == '<module>':  # Module -> use workaround explained above.
+            parentBlockStartLine = 1
+            lines = inspect.findsource(code)[0]  # Raises [IO/OS]Error.
+            parentBlockSource = ''.join(lines)
+        else:  # Not a module -> use inspect.getsource() normally.
+            parentBlockStartLine = code.co_firstlineno
+            parentBlockSource = inspect.getsource(code)  # Raises [IO/OS]Error.
+    except (IOError, OSError) as err:
+        print('lolsup', err.args)
+        if 'source code' in err.args[0]:
+            raise NoSourceAvailableError()
+        else:
+            raise
 
     lineno = inspect.getframeinfo(callFrame)[1]
     linenoRelativeToParent = lineno - parentBlockStartLine + 1
@@ -319,7 +345,11 @@ class IceCreamDebugger:
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
-            out = self._format(callFrame, *args)
+            try:
+                out = self._format(callFrame, *args)
+            except NoSourceAvailableError as err:
+                prefix = callOrValue(self.prefix)
+                out = prefix + 'Error: ' + err.infoMessage
             self.outputFunction(out)
 
         if not args:  # E.g. ic().
