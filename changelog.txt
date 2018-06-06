@@ -1,5 +1,5 @@
 ================================================================================
- v1.3.1 (to be released)
+ v1.3.1
 ================================================================================
 Removed: Support for Python 3.3, which reached EOL on 2017-09-29.
 Fixed: ic() invocations that fail to find or access source code (e.g. eval(),
