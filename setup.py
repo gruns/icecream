@@ -93,8 +93,8 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=[],
     install_requires=[],
+    tests_require=['pycodestyle'],
     cmdclass={
         'test': RunTests,
         'publish': Publish,
