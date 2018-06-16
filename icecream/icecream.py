@@ -159,7 +159,7 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     # inspect.findsource() and inspect.getsource() raise IOErrors in Python 2,
     # OSErrors in Python 3.
     try:
-        if code.co_name == '<module>':  # Module -> use workaround explained above.
+        if code.co_name == '<module>':  # Module -> use workaround above.
             parentBlockStartLine = 1
             lines = inspect.findsource(code)[0]  # Raises [IO/OS]Error.
             parentBlockSource = ''.join(lines)
