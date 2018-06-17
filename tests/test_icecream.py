@@ -89,7 +89,6 @@ def lineAfterContext(line, prefix):
     toks = line.split(' in ', 1)
     if len(toks) == 2:
         rest = toks[1].split(' ')
-        context = ' in '.join([toks[0], rest[0]])
         line = ' '.join(rest[1:])
 
     return line
