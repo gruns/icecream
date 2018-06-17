@@ -345,13 +345,23 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 2)[0][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
 
-    def testIncludeContext(self):
+    def testIncludeContextSingleLine(self):
+        i = 3
+        with configureIcecreamOutput(includeContext=True):
+            with captureStandardStreams() as (out, err):
+                ic(i)
+
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ('i', '3')
+
+    def testIncludeContextMultiLine(self):
         multilineStr = 'line1\nline2'
         with configureIcecreamOutput(includeContext=True):
             with captureStandardStreams() as (out, err):
                 ic(multilineStr)
 
-        assert lineIsContext(err.getvalue().splitlines()[0])
+        firstLine = err.getvalue().splitlines()[0]
+        assert lineIsContext(firstLine)
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
