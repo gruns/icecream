@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext
 
 import icecream
-from icecream import ic
+from icecream import ic, NoSourceAvailableError
 
 
 MYFILENAME = basename(__file__)
@@ -50,7 +50,8 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
     yield
 
     ic.configureOutput(
-        oldPrefix, oldOutputFunction, oldArgToStringFunction, oldIncludeContext)
+        oldPrefix, oldOutputFunction, oldArgToStringFunction,
+        oldIncludeContext)
 
 
 @contextmanager
@@ -69,7 +70,7 @@ def captureStandardStreams():
 
 
 def lineIsContext(line):
-    context = line.strip()[len(ic.prefix) : ]  # ic| file.py:33 in foo().
+    context = line.strip()[len(ic.prefix):]  # ic| file.py:33 in foo().
     sourceLocation, function = context.split(' in ')  # file.py:33 in foo().
     filename, lineNumber = sourceLocation.split(':')
     name, ext = splitext(filename)
@@ -83,13 +84,12 @@ def lineIsContext(line):
 
 def lineAfterContext(line, prefix):
     if line.startswith(prefix):
-        line = line[len(prefix) : ]
+        line = line[len(prefix):]
 
     toks = line.split(' in ', 1)
     if len(toks) == 2:
         rest = toks[1].split(' ')
-        context = ' in '.join([toks[0], rest[0]])
-        line = ' '.join(rest[1 : ])
+        line = ' '.join(rest[1:])
 
     return line
 
@@ -121,7 +121,7 @@ def parseOutputIntoPairs(out, err, assertNumLines,
             arg, value = linePairs[-1][-1]
             looksLikeAString = value[0] in ["'", '"']
             prefix = (arg + ': ') + (' ' if looksLikeAString else '')
-            dedented = line[len(ic.prefix) + len(prefix) : ]
+            dedented = line[len(ic.prefix) + len(prefix):]
             linePairs[-1][-1] = (arg, value + '\n' + dedented)
         else:
             pairs = [(arg.strip(), value.strip()) for arg, value in split]
@@ -143,8 +143,8 @@ class TestIceCream(unittest.TestCase):
         assert pairs[0][0] == ('1', '1') and pairs[1][0] == ('2', '2')
 
         with captureStandardStreams() as (out, err):
-            d = {1: ic(1)}
-            l = [ic(2), ic()]
+            dic = {1: ic(1)}
+            lst = [ic(2), ic()]
         pairs = parseOutputIntoPairs(out, err, 3)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1][0] == ('2', '2')
@@ -185,11 +185,13 @@ class TestIceCream(unittest.TestCase):
 
         with captureStandardStreams() as (out, err):
             ic(d['d'][1])
-        assert parseOutputIntoPairs(out, err, 1)[0][0] == ("d['d'][1]", "'one'")
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ("d['d'][1]", "'one'")
 
         with captureStandardStreams() as (out, err):
             ic(d['k'].attr)
-        assert parseOutputIntoPairs(out, err, 1)[0][0] == ("d['k'].attr", "'yep'")
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ("d['k'].attr", "'yep'")
 
     def testMultipleCallsOnSameLine(self):
         with captureStandardStreams() as (out, err):
@@ -263,9 +265,10 @@ class TestIceCream(unittest.TestCase):
         assert pair == ('2', '2')
 
     def testOutputFunction(self):
-        l = []
+        lst = []
+
         def appendTo(s):
-            l.append(s)
+            lst.append(s)
 
         with configureIcecreamOutput(ic.prefix, appendTo):
             with captureStandardStreams() as (out, err):
@@ -277,7 +280,7 @@ class TestIceCream(unittest.TestCase):
                 ic(2)
         assert not out.getvalue() and not err.getvalue()
 
-        pairs = parseOutputIntoPairs(out, '\n'.join(l), 2)
+        pairs = parseOutputIntoPairs(out, '\n'.join(lst), 2)
         assert pairs == [[('1', '1')], [('2', '2')]]
 
     def testEnableDisable(self):
@@ -297,7 +300,8 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [[('1', '1')], [('3', '3')]]
 
     def testArgToStringFunction(self):
-        hello = lambda obj: 'hello'
+        def hello(obj):
+            return 'hello'
 
         with configureIcecreamOutput(argToStringFunction=hello):
             with captureStandardStreams() as (out, err):
@@ -341,13 +345,23 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 2)[0][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
 
-    def testIncludeContext(self):
+    def testIncludeContextSingleLine(self):
+        i = 3
+        with configureIcecreamOutput(includeContext=True):
+            with captureStandardStreams() as (out, err):
+                ic(i)
+
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ('i', '3')
+
+    def testIncludeContextMultiLine(self):
         multilineStr = 'line1\nline2'
         with configureIcecreamOutput(includeContext=True):
             with captureStandardStreams() as (out, err):
                 ic(multilineStr)
 
-        assert lineIsContext(err.getvalue().splitlines()[0])
+        firstLine = err.getvalue().splitlines()[0]
+        assert lineIsContext(firstLine)
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
@@ -360,3 +374,7 @@ class TestIceCream(unittest.TestCase):
             'sup'); noop()
         assert s == err.getvalue().rstrip()
 
+    def testNoSourceAvailable(self):
+        with captureStandardStreams() as (out, err):
+            eval('ic()')
+        assert NoSourceAvailableError.infoMessage in err.getvalue()
