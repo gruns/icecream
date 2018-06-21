@@ -20,7 +20,16 @@ import sys
 import pprint
 import inspect
 import textwrap
+import tokenize
 from os.path import basename
+
+import untokenize
+# Avoid a dependency on six (https://pythonhosted.org/six/) for just
+# one import.
+try:
+    from StringIO import StringIO  # Python 2.
+except ImportError:
+    from io import StringIO  # Python 3.
 
 
 _absent = object()
@@ -66,6 +75,25 @@ def splitStringAtIndices(s, indices):
 
 def calculateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
+
+
+def stripCommentsAndNewlines(s):
+    readline = StringIO(s).readline
+    tokens = [
+        token for token in tokenize.generate_tokens(readline)
+        if token[0] not in [tokenize.NL, tokenize.COMMENT]]
+    stripped = untokenize.untokenize(tokens)
+
+    return stripped
+
+
+def isCallStrMissingClosingRightParenthesis(callStr):
+    try:
+        ast.parse(callStr)
+    except SyntaxError:  # SyntaxError: unexpected EOF while parsing.
+        return True
+    else:
+        return False
 
 
 def joinContinuedLines(lines):
@@ -156,8 +184,9 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     # A workaround is to call findsource() directly on code objects of modules,
     # which bypasses getblock().
     #
-    # inspect.findsource() and inspect.getsource() raise IOErrors in Python 2,
-    # OSErrors in Python 3.
+    # Also, the errors raised differ between Python 2 and Python 3. In Python
+    # 2, inspect.findsource() and inspect.getsource() raise IOErrors. In Python
+    # 3, inspect.findsource() and inspect.getsource() raise OSErrors.
     try:
         if code.co_name == '<module>':  # Module -> use workaround above.
             parentBlockStartLine = 1
@@ -207,7 +236,20 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     endLine = lineno - parentBlockStartLine + 1
     startLine = min(call.lineno for call in potentialCalls)
     lines = parentBlockSource.splitlines()[startLine - 1: endLine]
-    source = ' '.join(line.strip() for line in lines)
+
+    # inspect's lineno attribute doesn't point to the closing right
+    # parenthesis if the closing right parenthesis is on its own line
+    # without any arguments. E.g.
+    #
+    #  ic(1,
+    #     2  <--- lineno.
+    #     )  <--- Should be lineno.
+    #
+    # Detect this situation and add the missing right parenthesis.
+    if isCallStrMissingClosingRightParenthesis('\n'.join(lines).strip()):
+        lines.append(')')
+
+    source = stripCommentsAndNewlines('\n'.join(lines)).strip()
 
     absoluteStartLineNum = parentBlockStartLine + startLine - 1
     startLineOffset = calculateLineOffsets(code)[absoluteStartLineNum]
@@ -277,7 +319,7 @@ def extractCallStrByOffset(splitSource, callOffset):
     lines = [s.rstrip(' ;') for s in splitSource.splitlines()]
     line = lines[sourceLineIndex]
 
-    # Find the ic() call's matching right parenthesis. This is necessary
+    # Find the ic() call's closing right parenthesis. This is necessary
     # whenever there are closing tokens (e.g. ')', ']', '}', etc) after the
     # ic() call. Like
     #

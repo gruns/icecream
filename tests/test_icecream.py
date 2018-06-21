@@ -374,6 +374,21 @@ class TestIceCream(unittest.TestCase):
             'sup'); noop()
         assert s == err.getvalue().rstrip()
 
+    def testMultilineInvocationWithComments(self):
+        with captureStandardStreams() as (out, err):
+            ic(  # Comment.
+
+                1,  # Comment.
+
+                # Comment.
+
+                2,  # Comment.
+
+                ) # Comment.
+
+        pairs = parseOutputIntoPairs(out, err, 1)[0]
+        assert pairs == [('1', '1'), ('2', '2')]
+
     def testNoSourceAvailable(self):
         with captureStandardStreams() as (out, err):
             eval('ic()')

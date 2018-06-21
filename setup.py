@@ -93,8 +93,8 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    install_requires=[],
     tests_require=['pycodestyle'],
+    install_requires=['untokenize>=0.1.1'],
     cmdclass={
         'test': RunTests,
         'publish': Publish,
