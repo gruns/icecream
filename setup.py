@@ -93,7 +93,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=['pycodestyle'],
+    tests_require=['flake8'],
     install_requires=['untokenize>=0.1.1'],
     cmdclass={
         'test': RunTests,
