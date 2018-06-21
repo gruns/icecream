@@ -143,8 +143,8 @@ class TestIceCream(unittest.TestCase):
         assert pairs[0][0] == ('1', '1') and pairs[1][0] == ('2', '2')
 
         with captureStandardStreams() as (out, err):
-            dic = {1: ic(1)}
-            lst = [ic(2), ic()]
+            dic = {1: ic(1)}  # noqa
+            lst = [ic(2), ic()]  # noqa
         pairs = parseOutputIntoPairs(out, err, 3)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1][0] == ('2', '2')
@@ -195,19 +195,19 @@ class TestIceCream(unittest.TestCase):
 
     def testMultipleCallsOnSameLine(self):
         with captureStandardStreams() as (out, err):
-            ic(1); ic(2, 3)
+            ic(1); ic(2, 3)  # noqa
         pairs = parseOutputIntoPairs(out, err, 2)
         assert pairs[0][0] == ('1', '1')
         assert pairs[1] == [('2', '2'), ('3', '3')]
 
     def testCallSurroundedByExpressions(self):
         with captureStandardStreams() as (out, err):
-            noop(); ic(1); noop()
+            noop(); ic(1); noop()  # noqa
         assert parseOutputIntoPairs(out, err, 1)[0][0] == ('1', '1')
 
     def testComments(self):
         with captureStandardStreams() as (out, err):
-            """Comment."""; ic(); # Comment.
+            """Comment."""; ic(); # Comment.  # noqa
         assert lineIsContext(err.getvalue())
 
     def testMethodArguments(self):
@@ -221,9 +221,9 @@ class TestIceCream(unittest.TestCase):
 
     def testComplicated(self):
         with captureStandardStreams() as (out, err):
-            noop(); ic(); noop(); ic(1,
-                                     2, noop.__class__.__name__,
-                                         noop ()); noop()
+            noop(); ic(); noop(); ic(1,  # noqa
+                                     2, noop.__class__.__name__,  # noqa
+                                         noop ()); noop()  # noqa
         pairs = parseOutputIntoPairs(out, err, 2)
         assert lineIsContext(err.getvalue().splitlines()[0])
         assert pairs[1] == [
@@ -368,10 +368,10 @@ class TestIceCream(unittest.TestCase):
 
     def testFormat(self):
         with captureStandardStreams() as (out, err):
-            """comment"""; noop(); ic(
-                'sup'); noop()
-        """comment"""; noop(); s = ic.format(
-            'sup'); noop()
+            """comment"""; noop(); ic(  # noqa
+                'sup'); noop()  # noqa
+        """comment"""; noop(); s = ic.format(  # noqa
+            'sup'); noop()  # noqa
         assert s == err.getvalue().rstrip()
 
     def testMultilineInvocationWithComments(self):
@@ -384,7 +384,7 @@ class TestIceCream(unittest.TestCase):
 
                 2,  # Comment.
 
-                ) # Comment.
+                )  # Comment.
 
         pairs = parseOutputIntoPairs(out, err, 1)[0]
         assert pairs == [('1', '1'), ('2', '2')]

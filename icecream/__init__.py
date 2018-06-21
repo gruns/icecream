@@ -10,7 +10,7 @@
 # License: MIT
 #
 
-from .icecream import *
+from .icecream import *  # noqa
 
 __title__ = 'icecream'
 __license__ = 'MIT'
