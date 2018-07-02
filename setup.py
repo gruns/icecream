@@ -94,7 +94,10 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     tests_require=['flake8'],
-    install_requires=['untokenize>=0.1.1'],
+    install_requires=[
+        'colorama>=0.3.9',
+        'pygments>=2.2.0',
+        'untokenize>=0.1.1'],
     cmdclass={
         'test': RunTests,
         'publish': Publish,

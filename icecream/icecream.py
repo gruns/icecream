@@ -22,8 +22,13 @@ import inspect
 import textwrap
 import tokenize
 from os.path import basename
+from contextlib import contextmanager
 
+import colorama
 import untokenize
+from pygments import highlight
+from pygments.formatters import TerminalFormatter
+from pygments.lexers import PythonLexer, Python3Lexer
 # Avoid a dependency on six (https://pythonhosted.org/six/) for just
 # one import.
 try:
@@ -32,18 +37,51 @@ except ImportError:
     from io import StringIO  # Python 3.
 
 
+PYTHON_2 = (sys.version_info[0] == 2)
+
+
 _absent = object()
 
 
-def errprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+def bindStaticVariable(name, value):
+    def decorator(fn):
+        setattr(fn, name, value)
+        return fn
+    return decorator
+
+
+@bindStaticVariable('formatter', TerminalFormatter())
+@bindStaticVariable('lexer', PythonLexer() if PYTHON_2 else Python3Lexer())
+def colorize(s):
+    self = colorize
+    return highlight(s, self.lexer, self.formatter)
+
+
+@contextmanager
+def supportTerminalColorsInWindows():
+    # Filter ANSI escape sequences from text sent to stdout or stderr on
+    # Windows and replace them with equivalent Win32 API calls. Does nothing on
+    # non-Windows systems.
+    colorama.init()
+    yield
+    colorama.deinit()
+
+
+def stderrPrint(*args):
+    print(*args, file=sys.stderr)
+
+
+def colorizedStderrPrint(s):
+    colored = colorize(s)
+    with supportTerminalColorsInWindows():
+        stderrPrint(colored)
 
 
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_INDENT = ' ' * 4
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
-DEFAULT_OUTPUT_FUNCTION = errprint
+DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
