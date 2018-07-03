@@ -234,7 +234,6 @@ def getCallSourceLines(callFrame, icNames, icMethod):
             parentBlockStartLine = code.co_firstlineno
             parentBlockSource = inspect.getsource(code)  # Raises [IO/OS]Error.
     except (IOError, OSError) as err:
-        print('lolsup', err.args)
         if 'source code' in err.args[0]:
             raise NoSourceAvailableError()
         else:
