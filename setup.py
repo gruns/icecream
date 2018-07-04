@@ -20,8 +20,8 @@ from setuptools.command.test import test as TestCommand
 
 
 with open(pjoin(dirname(__file__), 'icecream', '__init__.py')) as fo:
-    VERSION = re.compile(
-        r".*__version__ = '(.*?)'", re.S).match(fo.read()).group(1)
+    regex = r".*__version__ = '(.*?)'"
+    VERSION = re.compile(regex, re.S).match(fo.read()).group(1)
 
 
 class Publish(Command):
