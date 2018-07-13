@@ -272,6 +272,21 @@ $ pip install icecream
 ```
 
 
+### Miscellaneous
+
+It's often useful to import `ic()` in a manner that fails transparently and
+gracefully if IceCream isn't installed, like in production environments
+(i.e. not development). To that end, this fallback import snippet may prove
+useful:
+
+```
+try:
+    from icecream import ic
+except ImportError:
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)
+```
+
+
 ### Other Flavors (Languages)
 
 IceCream should be enjoyed with every language.
