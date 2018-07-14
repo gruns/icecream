@@ -279,7 +279,7 @@ gracefully if IceCream isn't installed, like in production environments
 (i.e. not development). To that end, this fallback import snippet may prove
 useful:
 
-```
+```python
 try:
     from icecream import ic
 except ImportError:
