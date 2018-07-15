@@ -35,7 +35,7 @@ def hasAnsiEscapeCodes(s):
     return '\x1b[' in s
 
 
-class FakeTtyBuffer(StringIO):
+class FakeTeletypeBuffer(StringIO):
     """
     Extend StringIO to act like a TTY so ANSI control codes aren't stripped
     when wrapped with colorama's wrap_stream().
@@ -79,10 +79,10 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
 
 @contextmanager
 def captureStandardStreams():
-    newStdout = FakeTtyBuffer()
-    newStderr = FakeTtyBuffer()
     realStdout = sys.stdout
     realStderr = sys.stderr
+    newStdout = FakeTeletypeBuffer()
+    newStderr = FakeTeletypeBuffer()
     try:
         sys.stdout = newStdout
         sys.stderr = newStderr
