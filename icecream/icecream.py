@@ -27,8 +27,8 @@ from contextlib import contextmanager
 import colorama
 import untokenize
 from pygments import highlight
+from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 from pygments.formatters import TerminalFormatter
-from pygments.lexers import PythonLexer, Python3Lexer
 # Avoid a dependency on six (https://pythonhosted.org/six/) for just
 # one import.
 try:
@@ -51,7 +51,8 @@ def bindStaticVariable(name, value):
 
 
 @bindStaticVariable('formatter', TerminalFormatter())
-@bindStaticVariable('lexer', PythonLexer() if PYTHON_2 else Python3Lexer())
+@bindStaticVariable(
+    'lexer', PyLexer(ensurenl=False) if PYTHON_2 else Py3Lexer(ensurenl=False))
 def colorize(s):
     self = colorize
     return highlight(s, self.lexer, self.formatter)
