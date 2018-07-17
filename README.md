@@ -293,7 +293,7 @@ IceCream should be enjoyed with every language.
 
 - Dart: [icecream](https://github.com/HallerPatrick/icecream)
 - Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
-- JavaScript: [node-icecream](https://github.com/jmerle/node-icecream)
+- Node.js: [node-icecream](https://github.com/jmerle/node-icecream)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
