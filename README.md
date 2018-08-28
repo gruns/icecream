@@ -274,10 +274,9 @@ $ pip install icecream
 
 ### Miscellaneous
 
-It's often useful to import `ic()` in a manner that fails transparently and
-gracefully if IceCream isn't installed, like in production environments
-(i.e. not development). To that end, this fallback import snippet may prove
-useful:
+It's often useful to import `ic()` in a manner that falls back gracefully
+if IceCream isn't installed, like in production environments (i.e. not
+development). To that end, this fallback import snippet may prove useful:
 
 ```python
 try:
