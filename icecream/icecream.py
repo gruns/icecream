@@ -494,7 +494,8 @@ class IceCreamDebugger:
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
 
-        allArgsOneLine = ', '.join(argPrefix(arg) + val for arg, val in pairs)
+        allArgsOneLine = ', '.join(
+            val if arg == val else argPrefix(arg) + val for arg, val in pairs)
         multilineArgs = len(allArgsOneLine.splitlines()) > 1
 
         contextDelimiter = self.contextDelimiter if context else ''
