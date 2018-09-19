@@ -280,8 +280,8 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     # without any arguments. E.g.
     #
     #  ic(1,
-    #     2  <--- lineno.
-    #     )  <--- Should be lineno.
+    #     2  <--- <lineno>.
+    #     )  <--- Should be <lineno>.
     #
     # Detect this situation and add the missing right parenthesis.
     if isCallStrMissingClosingRightParenthesis('\n'.join(lines).strip()):
