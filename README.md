@@ -3,18 +3,10 @@
 </h1>
 
 <p align="center">
-  <a href="https://pypi.python.org/pypi/icecream">
-    <img src="https://badge.fury.io/py/icecream.svg">
-  </a>
-  <a href="https://travis-ci.org/gruns/icecream">
-    <img src="https://img.shields.io/travis/gruns/icecream.svg">
-  </a>
-  <a href="http://unlicense.org/">
-    <img src="https://img.shields.io/pypi/l/icecream.svg">
-  </a>
-  <a href="https://pypi.python.org/pypi/icecream">
-    <img src="https://img.shields.io/pypi/pyversions/icecream.svg">
-  </a>
+  <a href="https://pypi.python.org/pypi/icecream"><img src="https://badge.fury.io/py/icecream.svg"></a>
+  <a href="https://travis-ci.org/gruns/icecream"><img src="https://img.shields.io/travis/gruns/icecream.svg"></a>
+  <a href="http://unlicense.org/"><img src="https://img.shields.io/pypi/l/icecream.svg"></a>
+  <a href="https://pypi.python.org/pypi/icecream"><img src="https://img.shields.io/pypi/pyversions/icecream.svg"></a>
 </p>
 
 
