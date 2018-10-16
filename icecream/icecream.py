@@ -28,7 +28,9 @@ import colorama
 import untokenize
 from pygments import highlight
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
-from pygments.formatters import TerminalFormatter
+# See https://gist.github.com/XVilka/8346728 color support in various terminals
+# and thus whether to use Terminal256Formatter or TerminalTrueColorFormatter.
+from pygments.formatters import Terminal256Formatter
 # Avoid a dependency on six (https://pythonhosted.org/six/) for just
 # one import.
 try:
@@ -36,8 +38,10 @@ try:
 except ImportError:
     from io import StringIO  # Python 3.
 
+from .coloring import SolarizedDark
 
-PYTHON_2 = (sys.version_info[0] == 2)
+
+PYTHON2 = (sys.version_info[0] == 2)
 
 
 _absent = object()
@@ -50,9 +54,9 @@ def bindStaticVariable(name, value):
     return decorator
 
 
-@bindStaticVariable('formatter', TerminalFormatter())
+@bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable(
-    'lexer', PyLexer(ensurenl=False) if PYTHON_2 else Py3Lexer(ensurenl=False))
+    'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
 def colorize(s):
     self = colorize
     return highlight(s, self.lexer, self.formatter)
