@@ -64,9 +64,8 @@ def colorize(s):
 
 @contextmanager
 def supportTerminalColorsInWindows():
-    # Filter ANSI escape sequences from text sent to stdout or stderr on
-    # Windows and replace them with equivalent Win32 API calls. Does nothing on
-    # non-Windows systems.
+    # Filter and replace ANSI escape sequences on Windows with equivalent Win32
+    # API calls. This code does nothing on non-Windows systems.
     colorama.init()
     yield
     colorama.deinit()
@@ -93,8 +92,8 @@ DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 class NoSourceAvailableError(OSError):
     """
     Raised when icecream fails to find or access required source code
-    to parse and analyze.. This can happen, for example, when ic() is
-    run inside an interactive shell (i.e. python -i) or the source is
+    to parse and analyze. This can happen, for example, when ic() is
+    run inside an interactive shell, e.g. python -i, or the source is
     mangled and packaged with a project freezer, like PyInstaller.
     """
     infoMessage = (
