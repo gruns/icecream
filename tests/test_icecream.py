@@ -96,10 +96,26 @@ def captureStandardStreams():
         sys.stderr = realStderr
 
 
+def stripPrefix(line):
+    if line.startswith(ic.prefix):
+        line = line.strip()[len(ic.prefix):]
+    return line
+
+
+def lineIsContextAndTime(line):
+    line = stripPrefix(line)  # ic| f.py:33 in foo() at 08:08:51.389
+    context, time = line.split(' at ')
+
+    return (
+        lineIsContext(context) and
+        len(time.split(':')) == 3 and
+        len(time.split('.')) == 2)
+
+
 def lineIsContext(line):
-    context = line.strip()[len(ic.prefix):]  # ic| file.py:33 in foo().
-    sourceLocation, function = context.split(' in ')  # file.py:33 in foo().
-    filename, lineNumber = sourceLocation.split(':')
+    line = stripPrefix(line)  # ic| f.py:33 in foo()
+    sourceLocation, function = line.split(' in ')  # f.py:33 in foo()
+    filename, lineNumber = sourceLocation.split(':')  # f.py:33
     name, ext = splitext(filename)
 
     return (
@@ -165,7 +181,7 @@ class TestIceCream(unittest.TestCase):
     def testWithoutArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             ic()
-        assert lineIsContext(err.getvalue())
+        assert lineIsContextAndTime(err.getvalue())
 
     def testAsArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -180,7 +196,7 @@ class TestIceCream(unittest.TestCase):
         pairs = parseOutputIntoPairs(out, err, 3)
         assert pairs[0][0] == ('a', '1')
         assert pairs[1][0] == ('b', '2')
-        assert lineIsContext(err.getvalue().splitlines()[-1])
+        assert lineIsContextAndTime(err.getvalue().splitlines()[-1])
 
     def testSingleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -197,7 +213,7 @@ class TestIceCream(unittest.TestCase):
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(
                 )
-        assert lineIsContext(err.getvalue())
+        assert lineIsContextAndTime(err.getvalue())
 
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(a,
@@ -240,7 +256,7 @@ class TestIceCream(unittest.TestCase):
     def testComments(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             """Comment."""; ic(); # Comment.  # noqa
-        assert lineIsContext(err.getvalue())
+        assert lineIsContextAndTime(err.getvalue())
 
     def testMethodArguments(self):
         class Foo:
@@ -257,7 +273,7 @@ class TestIceCream(unittest.TestCase):
                                      b, noop.__class__.__name__,  # noqa
                                          noop ()); noop()  # noqa
         pairs = parseOutputIntoPairs(out, err, 2)
-        assert lineIsContext(err.getvalue().splitlines()[0])
+        assert lineIsContextAndTime(err.getvalue().splitlines()[0])
         assert pairs[1] == [
             ('a', '1'), ('b', '2'), ('noop.__class__.__name__', "'function'"),
             ('noop ()', 'None')]
@@ -272,7 +288,7 @@ class TestIceCream(unittest.TestCase):
         from icecream import ic as foo
         with disableColoring(), captureStandardStreams() as (out, err):
             foo()
-        assert lineIsContext(err.getvalue())
+        assert lineIsContextAndTime(err.getvalue())
 
         newname = foo
         with disableColoring(), captureStandardStreams() as (out, err):

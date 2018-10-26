@@ -22,14 +22,16 @@ import inspect
 import textwrap
 import tokenize
 from os.path import basename
+from datetime import datetime
 from contextlib import contextmanager
 
 import colorama
 import untokenize
 from pygments import highlight
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
-# See https://gist.github.com/XVilka/8346728 color support in various terminals
-# and thus whether to use Terminal256Formatter or TerminalTrueColorFormatter.
+# See https://gist.github.com/XVilka/8346728 for color support in various
+# terminals and thus whether to use Terminal256Formatter or
+# TerminalTrueColorFormatter.
 from pygments.formatters import Terminal256Formatter
 # Avoid a dependency on six (https://pythonhosted.org/six/) for just
 # one import.
@@ -458,7 +460,8 @@ class IceCreamDebugger:
         prefix = callOrValue(self.prefix)
         context = self._formatContext(callFrame, icNames, icMethod)
         if not args:
-            out = prefix + context
+            time = self._formatTime()
+            out = prefix + context + time
         else:
             if not self.includeContext:
                 context = ''
@@ -554,6 +557,11 @@ class IceCreamDebugger:
 
         context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
         return context
+
+    def _formatTime(self):
+        now = datetime.utcnow()
+        formatted = now.strftime('%H:%M:%S.%f')[:-3]
+        return ' at %s' % formatted
 
     def _getContext(self, callFrame, icNames, icMethod):
         # For multiline invocations, like
