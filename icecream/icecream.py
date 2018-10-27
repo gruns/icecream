@@ -189,7 +189,7 @@ def determinePossibleIcNames(callFrame):
     # invoked like
     #
     #   class Foo:
-    #     blah = ic
+    #       blah = ic
     #   Foo.blah()
     #
     # This function, as it exists now, fails to detect the above. Instead, it
@@ -201,7 +201,10 @@ def determinePossibleIcNames(callFrame):
     #
     # and
     #
-    #   from icecream import ic newname = ic newname('blah')
+    #   from icecream import ic
+    #   newname = ic
+    #   newname('blah')
+    #
     localItems = list(callFrame.f_locals.items())
     globalItems = list(callFrame.f_globals.items())
     allItems = localItems + globalItems
@@ -228,9 +231,9 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     # A workaround is to call findsource() directly on code objects of modules,
     # which bypasses getblock().
     #
-    # Also, the errors raised differ between Python 2 and Python 3. In Python
-    # 2, inspect.findsource() and inspect.getsource() raise IOErrors. In Python
-    # 3, inspect.findsource() and inspect.getsource() raise OSErrors.
+    # Also, the errors raised differ between Python2 and Python3 . In Python2,
+    # inspect.findsource() and inspect.getsource() raise IOErrors. In Python3,
+    # inspect.findsource() and inspect.getsource() raise OSErrors.
     try:
         if code.co_name == '<module>':  # Module -> use workaround above.
             parentBlockStartLine = 1
@@ -266,7 +269,7 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     # and
     #
     #   class Foo:
-    #     blah = ic
+    #       blah = ic
     #   Foo.blah()
     #
     parentBlockSource = textwrap.dedent(parentBlockSource)
@@ -280,13 +283,13 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     startLine = min(call.lineno for call in potentialCalls)
     lines = parentBlockSource.splitlines()[startLine - 1: endLine]
 
-    # inspect's lineno attribute doesn't point to the closing right
-    # parenthesis if the closing right parenthesis is on its own line
-    # without any arguments. E.g.
+    # inspect's lineno attribute doesn't point to the closing right parenthesis
+    # if the closing right parenthesis is on its own line without any
+    # arguments. E.g.
     #
     #  ic(1,
-    #     2  <--- <lineno>.
-    #     )  <--- Should be <lineno>.
+    #     2  <--- inspect's reported lineno.
+    #     )  <--- Should be the reported lineno.
     #
     # Detect this situation and add the missing right parenthesis.
     if isCallStrMissingClosingRightParenthesis('\n'.join(lines).strip()):
