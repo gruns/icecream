@@ -187,7 +187,6 @@ class TestIceCream(unittest.TestCase):
         with disableColoring(), captureStandardStreams() as (out, err):
             noop(ic(a), ic(b))
         pairs = parseOutputIntoPairs(out, err, 2)
-        print('pairs', pairs)
         assert pairs[0][0] == ('a', '1') and pairs[1][0] == ('b', '2')
 
         with disableColoring(), captureStandardStreams() as (out, err):
