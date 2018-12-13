@@ -10,11 +10,12 @@
 # License: MIT
 #
 
+from os.path import dirname, join as pjoin
+
 from .icecream import *  # noqa
 
-__title__ = 'icecream'
-__license__ = 'MIT'
-__version__ = '1.3.1'
-__author__ = 'Ansgar Grunseid'
-__contact__ = 'grunseid@gmail.com'
-__url__ = 'https://github.com/gruns/icecream'
+# Import all variables in __version__.py without explicit imports.
+meta = {}
+with open(pjoin(dirname(__file__), '__version__.py')) as f:
+    exec(f.read(), meta)
+globals().update(dict((k, v) for k, v in meta.items() if k not in globals()))
