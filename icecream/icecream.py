@@ -503,12 +503,12 @@ class IceCreamDebugger:
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
 
-        allArgsOneLine = ', '.join(
+        allArgsOnOneLine = ', '.join(
             val if arg == val else argPrefix(arg) + val for arg, val in pairs)
-        multilineArgs = len(allArgsOneLine.splitlines()) > 1
+        multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
 
         contextDelimiter = self.contextDelimiter if context else ''
-        allPairs = prefix + context + contextDelimiter + allArgsOneLine
+        allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
         firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
 
         if multilineArgs or firstLineTooLong:
@@ -535,11 +535,11 @@ class IceCreamDebugger:
         # ic| foo.py:11 in foo()- a: 1, b: 2
         elif context:
             remaining = []
-            start = prefix + context + contextDelimiter + allArgsOneLine
+            start = prefix + context + contextDelimiter + allArgsOnOneLine
         # ic| a: 1, b: 2, c: 3
         else:
             remaining = []
-            start = prefix + allArgsOneLine
+            start = prefix + allArgsOnOneLine
 
         if remaining:
             start += newline
