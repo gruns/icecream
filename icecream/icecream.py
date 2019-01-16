@@ -94,15 +94,21 @@ DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 class NoSourceAvailableError(OSError):
     """
     Raised when icecream fails to find or access required source code
-    to parse and analyze. This can happen, for example, when ic() is
-    run inside an interactive shell, e.g. python -i, or the source is
-    mangled and packaged with a project freezer, like PyInstaller.
+    to parse and analyze. This can happen, for example, when
+
+      - ic() is invoked inside an interactive shell, e.g. python -i
+
+      - The source code is mangled and/or packaged, like with a project
+        freezer like PyInstaller.
+
+      - The underlying source code changed during execution. See
+        https://stackoverflow.com/a/33175832.
     """
     infoMessage = (
-        'Failed to find or access source code to parse. Was ic() executed '
-        'within an interpreter (e.g. python -i), a frozen application (e.g. '
-        'packaged with PyInstaller), or other environment where source code '
-        'is unavailable?')
+        'Failed to access the underlying source code for analysis. Was ic() '
+        'invoked in an interpreter (e.g. python -i), a frozen application '
+        '(e.g. packaged with PyInstaller), or did the underlying source code '
+        'change during execution?')
 
 
 def classname(obj):
@@ -278,6 +284,12 @@ def getCallSourceLines(callFrame, icNames, icMethod):
         if isAstNodeIceCreamCall(node, icNames, icMethod) and (
             node.lineno == linenoRelativeToParent or
             any(arg.lineno == linenoRelativeToParent for arg in node.args))]
+
+    if not potentialCalls:
+        # TODO(grun): Add note that to NoSourceAvailableError that this
+        # situation can occur when the underlying source changed during
+        # execution.
+        raise NoSourceAvailableError()
 
     endLine = lineno - parentBlockStartLine + 1
     startLine = min(call.lineno for call in potentialCalls)
