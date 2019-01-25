@@ -416,7 +416,26 @@ def extractArgumentsFromCallStr(callStr):
     value = ast.parse(params).body[0].value
     eles = value.elts if classname(value) == 'Tuple' else [value]
 
-    indices = [ele.col_offset for ele in eles]
+    # The ast module parses 'a, b' and '(a, b)' identically. Thus, ast.parse()
+    # alone can't tell the difference between
+    #
+    #   ic(a, b)
+    #
+    # and
+    #
+    #   ic((a, b))
+    #
+    # Detect this situation and preserve whole tuples, e.g. '(a, b)', passed to
+    # ic() by creating a new, temporary tuple around the original tuple and
+    # parsing that.
+    if params[0] == '(' and params[-1] == ')' and len(eles) > 1:
+        newTupleStr = '(' + params + ", 'ignored')"
+        argStrs = extractArgumentsFromCallStr(newTupleStr)[:-1]
+        return argStrs
+
+    indices = [
+        max(0, e.col_offset - 1) if classname(e) == 'Tuple' else e.col_offset
+        for e in eles]
     argStrs = [s.strip(' ,') for s in splitStringAtIndices(params, indices)]
 
     return argStrs
