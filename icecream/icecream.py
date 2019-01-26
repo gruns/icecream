@@ -448,6 +448,7 @@ def argumentToString(obj):
 
 
 class IceCreamDebugger:
+    _pairDelimiter = ', '  # Used by the tests in tests/.
     indent = DEFAULT_INDENT
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
@@ -534,7 +535,7 @@ class IceCreamDebugger:
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
 
-        allArgsOnOneLine = ', '.join(
+        allArgsOnOneLine = self._pairDelimiter.join(
             val if arg == val else argPrefix(arg) + val for arg, val in pairs)
         multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
 

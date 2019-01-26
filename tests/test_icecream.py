@@ -23,7 +23,9 @@ import icecream
 from icecream import ic, stderrPrint, NoSourceAvailableError
 
 
+TEST_PAIR_DELIMITER = '| '
 MYFILENAME = basename(__file__)
+
 
 a = 1
 b = 2
@@ -158,7 +160,7 @@ def parseOutputIntoPairs(out, err, assertNumLines,
             linePairs.append([])
             continue
 
-        pairStrs = line.split(', ')
+        pairStrs = line.split(TEST_PAIR_DELIMITER)
         pairs = [tuple(s.split(':', 1)) for s in pairStrs]
         # Indented line of a multiline value.
         if len(pairs[0]) == 1 and line.startswith(' '):
@@ -178,6 +180,9 @@ def parseOutputIntoPairs(out, err, assertNumLines,
 
 
 class TestIceCream(unittest.TestCase):
+    def setUp(self):
+        ic._pairDelimiter = TEST_PAIR_DELIMITER
+
     def testWithoutArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             ic()
