@@ -463,6 +463,16 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 1)[0][0]
         assert pair == ('(a, b)', '(1, 2)')
 
+    def testMultipleTupleArguments(self):
+        a = 1
+        b = 2
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic((a, b), (b, a), a, b)
+
+        pair = parseOutputIntoPairs(out, err, 1)[0]
+        assert pair == [
+            ('(a, b)', '(1, 2)'), ('(b, a)', '(2, 1)'), ('a', '1'), ('b', '2')]
+
     def testColoring(self):
         with captureStandardStreams() as (out, err):
             ic({1: 'str'})  # Output should be colored with ANSI control codes.
