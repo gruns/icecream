@@ -416,8 +416,8 @@ def extractArgumentsFromCallStr(callStr):
 
     paramsStr = callStr.split('(', 1)[-1].rsplit(')', 1)[0].strip()
 
-    value = ast.parse(paramsStr).body[0].value
-    eles = value.elts if isTuple(value) else [value]
+    root = ast.parse(paramsStr).body[0].value
+    eles = root.elts if isTuple(root) else [root]
 
     # The ast module parses 'a, b' and '(a, b)' identically. Thus, ast.parse()
     # alone can't tell the difference between
