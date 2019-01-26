@@ -414,9 +414,9 @@ def extractArgumentsFromCallStr(callStr):
     def isTuple(ele):
         return classname(ele) == 'Tuple'
 
-    params = callStr.split('(', 1)[-1].rsplit(')', 1)[0].strip()
+    paramsStr = callStr.split('(', 1)[-1].rsplit(')', 1)[0].strip()
 
-    value = ast.parse(params).body[0].value
+    value = ast.parse(paramsStr).body[0].value
     eles = value.elts if isTuple(value) else [value]
 
     # The ast module parses 'a, b' and '(a, b)' identically. Thus, ast.parse()
@@ -431,14 +431,14 @@ def extractArgumentsFromCallStr(callStr):
     # Detect this situation and preserve whole tuples, e.g. '(a, b)', passed to
     # ic() by creating a new, temporary tuple around the original tuple and
     # parsing that.
-    if params[0] == '(' and params[-1] == ')' and len(eles) > 1:
-        newTupleStr = '(' + params + ", 'ignored')"
+    if paramsStr[0] == '(' and paramsStr[-1] == ')' and len(eles) > 1:
+        newTupleStr = '(' + paramsStr + ", 'ignored')"
         argStrs = extractArgumentsFromCallStr(newTupleStr)[:-1]
         return argStrs
 
     indices = [
         max(0, e.col_offset - 1) if isTuple(e) else e.col_offset for e in eles]
-    argStrs = [s.strip(' ,') for s in splitStringAtIndices(params, indices)]
+    argStrs = [s.strip(' ,') for s in splitStringAtIndices(paramsStr, indices)]
 
     return argStrs
 
