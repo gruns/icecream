@@ -454,6 +454,15 @@ class TestIceCream(unittest.TestCase):
             eval('ic()')
         assert NoSourceAvailableError.infoMessage in err.getvalue()
 
+    def testSingleTupleArgument(self):
+        a = 1
+        b = 2
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic((a, b))
+
+        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        assert pair == ('(a, b)', '(1, 2)')
+
     def testColoring(self):
         with captureStandardStreams() as (out, err):
             ic({1: 'str'})  # Output should be colored with ANSI control codes.
