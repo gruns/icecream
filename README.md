@@ -19,7 +19,7 @@ IceCream is well tested, [permissively licensed](LICENSE.txt), and supports
 Python 2, Python 3, PyPy2, and PyPy3.
 
 
-### Ice Cream with Toppings (Arguments)
+### Inspect Variables
 
 Have you ever printed variables or expressions to debug your program? If you've
 ever typed something like
@@ -74,7 +74,7 @@ ic| klass.attr: 'yep'
 Just give `ic()` a variable or expression and you're done. Easy.
 
 
-### Plain Ice Cream (without Arguments)
+### Inspect Execution
 
 Have you ever used `print()` to determine which parts of your program are
 executed, and in which order they're executed? For example, if you've ever added
@@ -121,7 +121,7 @@ ic| example.py:11 in foo()
 Just call `ic()` and you're done. Simple.
 
 
-### Ice Cream Infusion (Return Value)
+### Return Value
 
 `ic()` returns its argument(s), so `ic()` can easily be inserted into
 pre-existing code.
@@ -137,7 +137,7 @@ ic| b: 3
 ```
 
 
-### Other Ice Cream
+### Miscellaneous
 
 `ic.format(*args)` is like `ic()` but the output is returned as a string instead
 of written to stderr.
@@ -175,7 +175,7 @@ ic| 3: 3
 code with `ic()` breaks.
 
 
-### Custom Ice Cream
+### Configuration
 
 `ic.configureOutput(prefix, outputFunction, argToStringFunction,
 includeContext)` can be used to adopt a custom output prefix (the default is
@@ -264,7 +264,7 @@ $ pip install icecream
 ```
 
 
-### Miscellaneous
+### Import
 
 It's often useful to import `ic()` in a manner that falls back gracefully
 if IceCream isn't installed, like in production environments (i.e. not
@@ -278,7 +278,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 ```
 
 
-### Other Flavors (Languages)
+### IceCream in Other Languages
 
 IceCream should be enjoyed with every language.
 
