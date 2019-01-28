@@ -3,7 +3,7 @@
 ================================================================================
 Added: Colorize output with pygments.
 Added: Test Python style with pycodestyle.
-Fixed: Print tuple arguments correctly, e.g. ic((a, b)).
+Fixed: Parse and print tuple arguments correctly, e.g. ic((a, b)).
 Fixed: Fail gracefully when the underlying source code changes during execution.
 Changed: Print values (e.g. 1, 'foo', etc) by themselves, nonredundantly. For
   example, ic(3) now prints 'ic| 3' instead of 'ic| 3: 3'.
