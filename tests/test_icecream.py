@@ -455,8 +455,6 @@ class TestIceCream(unittest.TestCase):
         assert NoSourceAvailableError.infoMessage in err.getvalue()
 
     def testSingleTupleArgument(self):
-        a = 1
-        b = 2
         with disableColoring(), captureStandardStreams() as (out, err):
             ic((a, b))
 
@@ -464,8 +462,6 @@ class TestIceCream(unittest.TestCase):
         assert pair == ('(a, b)', '(1, 2)')
 
     def testMultipleTupleArguments(self):
-        a = 1
-        b = 2
         with disableColoring(), captureStandardStreams() as (out, err):
             ic((a, b), (b, a), a, b)
 
