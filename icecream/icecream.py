@@ -127,6 +127,41 @@ def calculateLineOffsets(code):
     return dict((line, offset) for offset, line in dis.findlinestarts(code))
 
 
+def collapseWhitespaceBetweenTokens(s, removeNewlines=True):
+    parsed = [
+        t for t in tokenize.generate_tokens(StringIO(s).readline)
+        if not removeNewlines or t[0] != tokenize.NL]
+
+    tokens = [parsed[0]]
+    for (_type, string, start, end, line) in parsed[1:]:
+        startLine, startCol = start
+        prevType, prevString, _, (prevEndLine, prevEndCol), _ = tokens[-1]
+
+        if startLine != prevEndLine:  # Different line -> pass through as-is.
+            token = (_type, string, start, end, line)
+        else:  # Collapse whitespace.
+            lineno = start[0]
+            # Collapse all whitespace if <token> is a closing token or if the
+            # previous token is an opening token. E.g. '2  ]' -> '2]' or '(  2'
+            # -> '(2'.
+            if (_type == tokenize.OP and string in ',)]}' or
+                    prevType == tokenize.OP and prevString in '([{'):
+                startCol = prevEndCol
+            # Collapse to one space on a non-closing token. E.g. '3 +   2'
+            # -> '3 + 2'.
+            else:
+                startCol = min(prevEndCol + 1, startCol)
+            endCol = startCol + len(string)
+
+            token = (_type, string, (lineno, startCol), (lineno, endCol), line)
+
+        tokens.append(token)
+
+    collapsed = tokenize.untokenize(tokens)
+
+    return collapsed
+
+
 def stripCommentsAndNewlines(s):
     readline = StringIO(s).readline
     tokens = [
@@ -168,6 +203,23 @@ def isAstNodeIceCreamCall(node, icNames, methodName):
         node.func.attr == methodName)
 
     return callMatch or methodMatch
+
+
+def getAllLineNumbersOfAstNode(node):
+    lineNumbers = []
+
+    if hasattr(node, 'lineno'):  # Name, etc.
+        lineNumbers.append(node.lineno)
+
+    children = (
+        getattr(node, 'args', []) +  # Call.
+        getattr(node, 'elts', []) +  # List, Tuple, and Set.
+        getattr(node, 'keys', []) + getattr(node, 'values', []))  # Dict.
+
+    for node in children:
+        lineNumbers.extend(getAllLineNumbersOfAstNode(node))
+
+    return list(set(lineNumbers))
 
 
 def prefixLinesAfterFirst(prefix, s):
@@ -281,9 +333,8 @@ def getCallSourceLines(callFrame, icNames, icMethod):
     parentBlockSource = textwrap.dedent(parentBlockSource)
     potentialCalls = [
         node for node in ast.walk(ast.parse(parentBlockSource))
-        if isAstNodeIceCreamCall(node, icNames, icMethod) and (
-            node.lineno == linenoRelativeToParent or
-            any(arg.lineno == linenoRelativeToParent for arg in node.args))]
+        if isAstNodeIceCreamCall(node, icNames, icMethod) and
+        linenoRelativeToParent in getAllLineNumbersOfAstNode(node)]
 
     if not potentialCalls:
         # TODO(grun): Add note that to NoSourceAvailableError that this
@@ -522,9 +573,11 @@ class IceCreamDebugger:
             icNames, icMethod, oneExpressionPerLine)
 
         callStr = extractCallStrByOffset(splitSource, relativeCallOffset)
-        argStrs = extractArgumentsFromCallStr(callStr)
+        sanitizedArgStrs = [
+            collapseWhitespaceBetweenTokens(arg)
+            for arg in extractArgumentsFromCallStr(callStr)]
 
-        pairs = list(zip(argStrs, args))
+        pairs = list(zip(sanitizedArgStrs, args))
 
         out = self._constructArgumentOutput(prefix, context, pairs)
         return out

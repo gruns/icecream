@@ -461,6 +461,26 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 1)[0][0]
         assert pair == ('(a, b)', '(1, 2)')
 
+    def testMultilineContainerArgs(self):
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic((a,
+                b))
+            ic([a,
+                b])
+
+        pairs = parseOutputIntoPairs(out, err, 2)
+        assert pairs[0][0] == ('(a, b)', '(1, 2)')
+        assert pairs[1][0] == ('[a, b]', '[1, 2]')
+
+    def testWhitespaceCollapsing(self):
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(  a,     noop(   a  , b   ),   [   a,  # noqa
+                                                      b  ])  # noqa
+
+        pairs = parseOutputIntoPairs(out, err, 1)[0]
+        assert pairs == [
+            ('a', '1'), ('noop(a, b)', 'None'), ('[a, b]', '[1, 2]')]
+
     def testMultipleTupleArguments(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             ic((a, b), (b, a), a, b)
