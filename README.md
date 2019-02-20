@@ -144,9 +144,10 @@ of written to stderr.
 
 ```pycon
 >>> from icecream import ic
->>> s = ic.format('sup')
->>> print(s)
-ic| 'sup': 'sup'
+>>> s = 'sup'
+>>> out = ic.format(s)
+>>> print(out)
+ic| s: 'sup'
 ```
 
 Additionally, `ic()`'s output can be entirely disabled, and later re-enabled, with
