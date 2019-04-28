@@ -287,6 +287,7 @@ IceCream should be enjoyed with every language.
 - Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
 - Node.js: [node-icecream](https://github.com/jmerle/node-icecream)
 - C++: [IceCream-Cpp](https://github.com/renatoGarcia/icecream-cpp)
+- PHP: [icecream-php](https://github.com/ntzm/icecream-php)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
