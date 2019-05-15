@@ -4,6 +4,7 @@
 Fixed: Support multiline container arguments. e.g.
   ic([a,
         b])
+Fixed: Include LICENSE.txt in source distributions.
 Changed: Collapse argument whitespace, e.g. ic([ a,  b ]) -> ic| [a, b].
 
 
