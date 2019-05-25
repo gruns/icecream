@@ -459,7 +459,7 @@ class TestIceCream(unittest.TestCase):
             ic((a, b))
 
         pair = parseOutputIntoPairs(out, err, 1)[0][0]
-        assert pair == ('(a, b)', '(1, 2)')
+        self.assertEqual(pair, ('(a, b)', '(1, 2)'))
 
     def testMultilineContainerArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -467,6 +467,7 @@ class TestIceCream(unittest.TestCase):
                 b))
             ic([a,
                 b])
+        print(err.getvalue())
 
         pairs = parseOutputIntoPairs(out, err, 2)
         assert pairs[0][0] == ('(a, b)', '(1, 2)')
@@ -477,6 +478,7 @@ class TestIceCream(unittest.TestCase):
             ic(  a,     noop(   a  , b   ),   [   a,  # noqa
                                                       b  ])  # noqa
 
+        print(err.getvalue())
         pairs = parseOutputIntoPairs(out, err, 1)[0]
         assert pairs == [
             ('a', '1'), ('noop(a, b)', 'None'), ('[a, b]', '[1, 2]')]
@@ -486,8 +488,9 @@ class TestIceCream(unittest.TestCase):
             ic((a, b), (b, a), a, b)
 
         pair = parseOutputIntoPairs(out, err, 1)[0]
-        assert pair == [
-            ('(a, b)', '(1, 2)'), ('(b, a)', '(2, 1)'), ('a', '1'), ('b', '2')]
+        # fail because of https://github.com/gristlabs/asttokens/issues/11
+        self.assertEqual(pair, [
+            ('(a, b)', '(1, 2)'), ('(b, a)', '(2, 1)'), ('a', '1'), ('b', '2')])
 
     def testColoring(self):
         with captureStandardStreams() as (out, err):
