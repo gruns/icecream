@@ -20,12 +20,10 @@ import sys
 import tokenize
 from contextlib import contextmanager
 from datetime import datetime
-from functools import lru_cache
 from os.path import basename
 
 import colorama
-from asttokens import ASTTokens
-from executing_node import executing_node, FileInfo
+from executing_node import Source
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
@@ -175,20 +173,6 @@ def argumentToString(obj):
     return s
 
 
-@lru_cache()
-def getASTTokens(file_info):
-    """
-    Returns an ASTTokens object for getting the source of specific AST nodes.
-
-    See http://asttokens.readthedocs.io/en/latest/api-index.html
-    """
-    return ASTTokens(
-        file_info.source,
-        tree=file_info.tree,
-        filename=file_info.path,
-    )
-
-
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     indent = DEFAULT_INDENT
@@ -232,7 +216,7 @@ class IceCreamDebugger:
         prefix = callOrValue(self.prefix)
 
         try:
-            callNode = executing_node(callFrame)
+            callNode = Source.executing_node(callFrame)
         except Exception:
             raise NoSourceAvailableError()
 
@@ -249,7 +233,7 @@ class IceCreamDebugger:
         return out
 
     def _formatArgs(self, callFrame, callNode, prefix, context, args):
-        ast_tokens = getASTTokens(FileInfo.for_frame(callFrame))
+        ast_tokens = Source.for_frame(callFrame).asttokens()
         sanitizedArgStrs = [
             collapseWhitespaceBetweenTokens(ast_tokens.get_text(arg))
             for arg in callNode.args]
