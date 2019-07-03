@@ -23,7 +23,7 @@ from datetime import datetime
 from os.path import basename
 
 import colorama
-from executing_node import Source
+from executing import Source
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
@@ -215,9 +215,8 @@ class IceCreamDebugger:
     def _format(self, callFrame, *args):
         prefix = callOrValue(self.prefix)
 
-        try:
-            callNode = Source.executing_node(callFrame)
-        except Exception:
+        callNode = Source.executing(callFrame).node
+        if callNode is None:
             raise NoSourceAvailableError()
 
         context = self._formatContext(callFrame, callNode)

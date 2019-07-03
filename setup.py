@@ -103,6 +103,8 @@ setup(
         'colorama>=0.3.9',
         'pygments>=2.2.0',
         'untokenize>=0.1.1',
+        'executing',
+        'asttokens',
     ],
     cmdclass={
         'test': RunTests,
