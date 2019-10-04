@@ -13,6 +13,7 @@
 
 from __future__ import print_function
 
+import ast
 import inspect
 import pprint
 import sys
@@ -117,8 +118,9 @@ class Source(executing.Source):
         if '\n' in result:
             result = ' ' * node.first_token.start[1] + result
             result = dedent(result)
-        else:
-            result = result.strip()
+        result = result.strip()
+        if isinstance(node, ast.Tuple) and result[0] + result[-1] != '()':
+            result = '(' + prefixLinesAfterFirst(' ', result) + ')'
         return result
 
 

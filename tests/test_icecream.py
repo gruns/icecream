@@ -473,12 +473,12 @@ class TestIceCream(unittest.TestCase):
                 list(range(15))])
 
         self.assertEqual(err.getvalue().strip(), """
-ic| a,
-    b: (1, 2)
+ic| (a,
+     b): (1, 2)
 ic| [a,
      b]: [1, 2]
-ic| a,
-    b: (1, 2)
+ic| (a,
+     b): (1, 2)
     [list(range(15)),
      list(range(15))]: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
@@ -497,8 +497,8 @@ ic| a,
             r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
         )
         self.assertEqual('\n'.join(lines[1:]), """\
-    a,
-    b: (1, 2)
+    (a,
+     b): (1, 2)
     [list(range(15)),
      list(range(15))]: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]""")
