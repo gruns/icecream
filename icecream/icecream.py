@@ -14,16 +14,15 @@
 from __future__ import print_function
 
 import inspect
-import os
 import pprint
 import sys
-import tokenize
 from contextlib import contextmanager
 from datetime import datetime
 from os.path import basename
+from textwrap import dedent
 
 import colorama
-from executing import Source
+import executing
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
@@ -82,7 +81,6 @@ def colorizedStderrPrint(s):
 
 
 DEFAULT_PREFIX = 'ic| '
-DEFAULT_INDENT = ' ' * 4
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
@@ -113,39 +111,15 @@ def callOrValue(obj):
     return obj() if callable(obj) else obj
 
 
-def collapseWhitespaceBetweenTokens(s, removeNewlines=True):
-    parsed = [
-        t for t in tokenize.generate_tokens(StringIO(s).readline)
-        if not removeNewlines or t[0] != tokenize.NL]
-
-    tokens = [parsed[0]]
-    for (_type, string, start, end, line) in parsed[1:]:
-        startLine, startCol = start
-        prevType, prevString, _, (prevEndLine, prevEndCol), _ = tokens[-1]
-
-        if startLine != prevEndLine:  # Different line -> pass through as-is.
-            token = (_type, string, start, end, line)
-        else:  # Collapse whitespace.
-            lineno = start[0]
-            # Collapse all whitespace if <token> is a closing token or if the
-            # previous token is an opening token. E.g. '2  ]' -> '2]' or '(  2'
-            # -> '(2'.
-            if (_type == tokenize.OP and string in ',)]}' or
-                    prevType == tokenize.OP and prevString in '([{'):
-                startCol = prevEndCol
-            # Collapse to one space on a non-closing token. E.g. '3 +   2'
-            # -> '3 + 2'.
-            else:
-                startCol = min(prevEndCol + 1, startCol)
-            endCol = startCol + len(string)
-
-            token = (_type, string, (lineno, startCol), (lineno, endCol), line)
-
-        tokens.append(token)
-
-    collapsed = tokenize.untokenize(tokens)
-
-    return collapsed
+class Source(executing.Source):
+    def get_text_with_indentation(self, node):
+        result = self.asttokens().get_text(node)
+        if '\n' in result:
+            result = ' ' * node.first_token.start[1] + result
+            result = dedent(result)
+        else:
+            result = result.strip()
+        return result
 
 
 def prefixLinesAfterFirst(prefix, s):
@@ -157,14 +131,25 @@ def prefixLinesAfterFirst(prefix, s):
     return ''.join(lines)
 
 
-def prefixIndent(prefix, s):
-    indent = ' ' * len(prefix)
+def indented_lines(prefix, string):
+    lines = string.splitlines()
+    return [prefix + lines[0]] + [
+        ' ' * len(prefix) + line
+        for line in lines[1:]
+    ]
 
-    looksLikeAString = s[0] + s[-1] in ["''", '""']
+
+def format_pair(prefix, arg, value):
+    arg_lines = indented_lines(prefix, arg)
+    value_prefix = arg_lines[-1] + ': '
+
+    looksLikeAString = value[0] + value[-1] in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
-        s = prefixLinesAfterFirst(' ', s)
+        value = prefixLinesAfterFirst(' ', value)
 
-    return prefixLinesAfterFirst(indent, prefix + s)
+    value_lines = indented_lines(value_prefix, value)
+    lines = arg_lines[:-1] + value_lines
+    return '\n'.join(lines)
 
 
 def argumentToString(obj):
@@ -175,7 +160,6 @@ def argumentToString(obj):
 
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
-    indent = DEFAULT_INDENT
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
@@ -232,9 +216,9 @@ class IceCreamDebugger:
         return out
 
     def _formatArgs(self, callFrame, callNode, prefix, context, args):
-        ast_tokens = Source.for_frame(callFrame).asttokens()
+        source = Source.for_frame(callFrame)
         sanitizedArgStrs = [
-            collapseWhitespaceBetweenTokens(ast_tokens.get_text(arg))
+            source.get_text_with_indentation(arg)
             for arg in callNode.args]
 
         pairs = list(zip(sanitizedArgStrs, args))
@@ -243,8 +227,6 @@ class IceCreamDebugger:
         return out
 
     def _constructArgumentOutput(self, prefix, context, pairs):
-        newline = os.linesep
-
         def argPrefix(arg):
             return '%s: ' % arg
 
@@ -267,36 +249,27 @@ class IceCreamDebugger:
             #     a: 11111111111111111111
             #     b: 22222222222222222222
             if context:
-                remaining = pairs
-                start = prefix + context
+                lines = [prefix + context] + [
+                    format_pair(len(prefix) * ' ', arg, value)
+                    for arg, value in pairs
+                ]
             # ic| multilineStr: 'line1
             #                    line2'
             #
             # ic| a: 11111111111111111111
             #     b: 22222222222222222222
             else:
-                remaining = pairs[1:]
-                firstArg, firstVal = pairs[0]
-                start = prefixIndent(
-                    prefix + context + argPrefix(firstArg), firstVal)
+                arg_lines = [
+                    format_pair('', arg, value)
+                    for arg, value in pairs
+                ]
+                lines = indented_lines(prefix, '\n'.join(arg_lines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
-        elif context:
-            remaining = []
-            start = prefix + context + contextDelimiter + allArgsOnOneLine
         # ic| a: 1, b: 2, c: 3
         else:
-            remaining = []
-            start = prefix + allArgsOnOneLine
+            lines = [prefix + context + contextDelimiter + allArgsOnOneLine]
 
-        if remaining:
-            start += newline
-
-        formatted = [
-            prefixIndent(self.indent + argPrefix(arg), val)
-            for arg, val in remaining]
-
-        out = start + newline.join(formatted)
-        return out
+        return '\n'.join(lines)
 
     def _formatContext(self, callFrame, callNode):
         filename, lineNumber, parentFunction = self._getContext(

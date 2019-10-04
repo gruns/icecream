@@ -467,21 +467,41 @@ class TestIceCream(unittest.TestCase):
                 b))
             ic([a,
                 b])
-        print(err.getvalue())
+            ic((a,
+                b),
+               [list(range(15)),
+                list(range(15))])
 
-        pairs = parseOutputIntoPairs(out, err, 2)
-        assert pairs[0][0] == ('(a, b)', '(1, 2)')
-        assert pairs[1][0] == ('[a, b]', '[1, 2]')
+        self.assertEqual(err.getvalue().strip(), """
+ic| a,
+    b: (1, 2)
+ic| [a,
+     b]: [1, 2]
+ic| a,
+    b: (1, 2)
+    [list(range(15)),
+     list(range(15))]: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
+        """.strip())
 
-    def testWhitespaceCollapsing(self):
         with disableColoring(), captureStandardStreams() as (out, err):
-            ic(  a,     noop(   a  , b   ),   [   a,  # noqa
-                                                      b  ])  # noqa
+            with configureIcecreamOutput(includeContext=True):
+                ic((a,
+                    b),
+                   [list(range(15)),
+                    list(range(15))])
 
-        print(err.getvalue())
-        pairs = parseOutputIntoPairs(out, err, 1)[0]
-        assert pairs == [
-            ('a', '1'), ('noop(a, b)', 'None'), ('[a, b]', '[1, 2]')]
+        lines = err.getvalue().strip().splitlines()
+        self.assertRegexpMatches(
+            lines[0],
+            r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
+        )
+        self.assertEqual('\n'.join(lines[1:]), """\
+    a,
+    b: (1, 2)
+    [list(range(15)),
+     list(range(15))]: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]""")
 
     def testMultipleTupleArguments(self):
         with disableColoring(), captureStandardStreams() as (out, err):
