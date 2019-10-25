@@ -89,10 +89,10 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
@@ -102,7 +102,8 @@ setup(
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',
-        'untokenize>=0.1.1',
+        'executing>=0.3.1',
+        'asttokens>=2.0.1',
     ],
     cmdclass={
         'test': RunTests,
