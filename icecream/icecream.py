@@ -31,13 +31,6 @@ from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
-# Avoid a dependency on six (https://pythonhosted.org/six/) for just
-# one import.
-try:
-    from StringIO import StringIO  # Python 2.
-except ImportError:
-    from io import StringIO  # Python 3.
-
 from .coloring import SolarizedDark
 
 
