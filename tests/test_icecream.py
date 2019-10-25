@@ -508,7 +508,6 @@ ic| (a,
             ic((a, b), (b, a), a, b)
 
         pair = parseOutputIntoPairs(out, err, 1)[0]
-        # fail because of https://github.com/gristlabs/asttokens/issues/11
         self.assertEqual(pair, [
             ('(a, b)', '(1, 2)'), ('(b, a)', '(2, 1)'), ('a', '1'), ('b', '2')])
 

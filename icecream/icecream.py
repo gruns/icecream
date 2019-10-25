@@ -112,8 +112,6 @@ class Source(executing.Source):
             result = ' ' * node.first_token.start[1] + result
             result = dedent(result)
         result = result.strip()
-        if isinstance(node, ast.Tuple) and result[0] + result[-1] != '()':
-            result = '(' + prefixLinesAfterFirst(' ', result) + ')'
         return result
 
 
