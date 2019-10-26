@@ -1,4 +1,15 @@
 ================================================================================
+ v2.0.0
+================================================================================
+Added: Support for Python 3.8.
+Removed: Support for Python 3.4.
+Changed: Core AST engine to Alex Hall's executing. Huge thank you to Alex
+  Hall.
+Changed: Whitespace in arguments is no longer collapsed. Indentation in
+  multiline arguments is now preserved.
+
+
+================================================================================
  v1.5.0
 ================================================================================
 Fixed: Support multiline container arguments. e.g.
