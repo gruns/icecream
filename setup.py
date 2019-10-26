@@ -12,16 +12,15 @@
 #
 
 import os
-import re
 import sys
 from os.path import dirname, join as pjoin
 from setuptools import setup, find_packages, Command
 from setuptools.command.test import test as TestCommand
 
 
-with open(pjoin(dirname(__file__), 'icecream', '__init__.py')) as fo:
-    VERSION = re.compile(
-        r".*__version__ = '(.*?)'", re.S).match(fo.read()).group(1)
+meta = {}
+with open(pjoin('icecream', '__version__.py')) as f:
+    exec(f.read(), meta)
 
 
 class Publish(Command):
@@ -35,8 +34,12 @@ class Publish(Command):
         pass
 
     def run(self):
-        os.system('python setup.py sdist')
-        rc = os.system('twine upload dist/icecream-%s.tar.gz' % VERSION)
+        os.system('python setup.py sdist bdist_wheel')
+
+        sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
+        wheel = 'dist/icecream-%s-py2.py3-none-any.whl' % meta['__version__']
+        rc = os.system('twine upload "%s" "%s"' % (sdist, wheel))
+
         sys.exit(rc)
 
 
@@ -63,15 +66,13 @@ class RunTests(TestCommand):
 
 
 setup(
-    name='icecream',
-    license='MIT',
-    version=VERSION,
-    author='Ansgar Grunseid',
-    author_email='grunseid@gmail.com',
-    url='https://github.com/gruns/icecream',
-    description=(
-        'Inspect variables, expressions, and code execution with a '
-        'single, simple function call.'),
+    name=meta['__title__'],
+    license=meta['__license__'],
+    version=meta['__version__'],
+    author=meta['__author__'],
+    author_email=meta['__contact__'],
+    url=meta['__url__'],
+    description=meta['__description__'],
     long_description=(
         'Information and documentation can be found at '
         'https://github.com/gruns/icecream.'),
@@ -85,17 +86,23 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     tests_require=[],
-    install_requires=[],
+    install_requires=[
+        'colorama>=0.3.9',
+        'pygments>=2.2.0',
+        'executing>=0.3.1',
+        'asttokens>=2.0.1',
+    ],
     cmdclass={
         'test': RunTests,
         'publish': Publish,

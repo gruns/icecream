@@ -1,0 +1,47 @@
+================================================================================
+ v2.0.0
+================================================================================
+Added: Support for Python 3.8.
+Removed: Support for Python 3.4.
+Changed: Switched core AST parsing engine to Alex Hall's executing
+  (https://github.com/alexmojaki/executing). Huge thank you to Alex Hall.
+Changed: Whitespace in arguments is no longer collapsed. Indentation in
+  multiline arguments is now preserved.
+
+
+================================================================================
+ v1.5.0
+================================================================================
+Fixed: Support multiline container arguments. e.g.
+  ic([a,
+        b])
+Fixed: Include LICENSE.txt in source distributions.
+Changed: Collapse argument whitespace, e.g. ic([ a,  b ]) -> ic| [a, b].
+
+
+================================================================================
+ v1.4.0
+================================================================================
+Added: Colorize output with pygments.
+Added: Test Python style with pycodestyle.
+Fixed: Parse and print tuple arguments correctly, e.g. ic((a, b)).
+Fixed: Fail gracefully when the underlying source code changes during execution.
+Changed: Print values (e.g. 1, 'foo', etc) by themselves, nonredundantly. For
+  example, ic(3) now prints 'ic| 3' instead of 'ic| 3: 3'.
+
+
+================================================================================
+ v1.3.1
+================================================================================
+Removed: Support for Python 3.3, which reached EOL on 2017-09-29.
+Fixed: ic() invocations that fail to find or access source code (e.g. eval(),
+  exec(), python -i, etc) now print an error message instead of throwing an
+  IOError (Python 2) or OSError (Python 3).
+
+
+================================================================================
+ v1.3
+================================================================================
+First release.
+
+This changelog wasn't maintained prior to v1.3.

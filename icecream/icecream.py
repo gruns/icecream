@@ -14,325 +14,298 @@
 from __future__ import print_function
 
 import ast
-import dis
-import sys
 import inspect
-import textwrap
+import pprint
+import sys
+from contextlib import contextmanager
+from datetime import datetime
 from os.path import basename
+from textwrap import dedent
+
+import colorama
+import executing
+from pygments import highlight
+# See https://gist.github.com/XVilka/8346728 for color support in various
+# terminals and thus whether to use Terminal256Formatter or
+# TerminalTrueColorFormatter.
+from pygments.formatters import Terminal256Formatter
+from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
+
+from .coloring import SolarizedDark
+
+
+PYTHON2 = (sys.version_info[0] == 2)
 
 
 _absent = object()
 
 
-def errprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+def bindStaticVariable(name, value):
+    def decorator(fn):
+        setattr(fn, name, value)
+        return fn
+    return decorator
 
 
-MYNAME = 'ic'
-DEFAULT_PREFIX = '%s| ' % MYNAME
-DEFAULT_OUTPUT_FUNCTION = errprint
+@bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
+@bindStaticVariable(
+    'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
+def colorize(s):
+    self = colorize
+    return highlight(s, self.lexer, self.formatter)
 
 
-def classname(obj):
-    return obj.__class__.__name__
+@contextmanager
+def supportTerminalColorsInWindows():
+    # Filter and replace ANSI escape sequences on Windows with equivalent Win32
+    # API calls. This code does nothing on non-Windows systems.
+    colorama.init()
+    yield
+    colorama.deinit()
 
 
-def splitStringAtIndices(s, indices):
-    return [s[i:j] for i, j in zip([0] + indices, indices + [None]) if s[i:j]]
+def stderrPrint(*args):
+    print(*args, file=sys.stderr)
 
 
-def calculateLineOffsets(code):
-    return dict((line, offset) for offset, line in dis.findlinestarts(code))
+def colorizedStderrPrint(s):
+    colored = colorize(s)
+    with supportTerminalColorsInWindows():
+        stderrPrint(colored)
 
 
-def joinContinuedLines(lines):
-    for i, line in enumerate(lines):
-        if i < len(lines) - 1 and not line.endswith('\\'):
-            lines[i] += ' \\'
-    joined = '\n'.join(lines)
-    return joined
+DEFAULT_PREFIX = 'ic| '
+DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
+DEFAULT_CONTEXT_DELIMITER = '- '
+DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
+DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
-def isAstNodeIceCreamCall(node, icNames):
-    return (
-        classname(node) == 'Call' and
-        classname(node.func) == 'Name' and
-        node.func.id in icNames)
-
-
-def determinePossibleIcNames(callFrame):
-    # TODO(grun): Determine possible function names dynamically from the source
-    # to account for name indirection. For example, ic() could be invoked like
-    #
-    #   class Foo:
-    #     blah = ic
-    #   Foo.blah()
-    #
-    # This function, as it exists now, fails to detect the above and only
-    # checks for variables in globals() and locals() that are equal to
-    # ic(). Like
-    #
-    #   from icecream import ic as foo
-    #   foo()
-    #
-    # and
-    #
-    #   from icecream import ic newname = ic newname('blah')
-    localNames = [name for name, v in callFrame.f_locals.items() if v == ic]
-    globalNames = [name for name, v in callFrame.f_globals.items() if v == ic]
-
-    return list(set(localNames + globalNames))
-
-
-def getCallSourceLines(icNames, callFrame):
-    code = callFrame.f_code
-
-    # inspect.getblock(), which is called internally by inspect.getsource(),
-    # only returns the first line of <code> when <code> represents a top-level
-    # module, not the entire module's source, as needed here. The
-    #
-    #   if ismodule(object): return lines, 0
-    #
-    # check in inspect.py doesn't account for code objects that represent
-    # modules, only module objects themselves.
-    # 
-    # A workaround is to call findsource() directly on top-level modules, which
-    # bypasses getblock().
-    if code.co_name == '<module>':  # Module -> use workaround explained above.
-        parentBlockStartLine = 1
-        parentBlockSource = ''.join(inspect.findsource(code)[0])
-    else:  # Not a module -> use inspect.getsource() normally.
-        parentBlockStartLine = code.co_firstlineno
-        parentBlockSource = inspect.getsource(code)
-
-    lineno = inspect.getframeinfo(callFrame)[1]
-    linenoRelativeToParent = lineno - parentBlockStartLine + 1
-
-    # There could be multiple ic() calls on the same line(s), like
-    #
-    #   ic(1); ic(2); ic(3,
-    #       4,
-    #       5); ic(6)
-    #
-    # so include all of them. Which invocation is the appropriate one will be
-    # determined later via bytecode offset calculations.
-    #
-    # TODO(grun): Support invocations of ic() where ic() is an attribute chain
-    # in the AST. For example, support
-    #
-    #   import icecream
-    #   icecream.ic()
-    #
-    # and
-    #
-    #   class Foo:
-    #     blah = ic
-    #   Foo.blah()
-    #
-    parentBlockSource = textwrap.dedent(parentBlockSource)
-    potentialCalls = [
-        node for node in ast.walk(ast.parse(parentBlockSource))
-        if isAstNodeIceCreamCall(node, icNames) and (
-            node.lineno == linenoRelativeToParent or
-            any(arg.lineno == linenoRelativeToParent for arg in node.args))]
-
-    endLine = lineno - parentBlockStartLine + 1
-    startLine = min(call.lineno for call in potentialCalls)
-    lines = parentBlockSource.splitlines()[startLine - 1 : endLine]
-    source = ' '.join(line.strip() for line in lines)
-
-    callOffset = callFrame.f_lasti
-    absoluteStartLineNum = parentBlockStartLine + startLine - 1
-    startLineOffset = calculateLineOffsets(code)[absoluteStartLineNum]
-
-    return source, absoluteStartLineNum, startLineOffset
-
-
-def splitExpressionsOntoSeparateLines(source):
+class NoSourceAvailableError(OSError):
     """
-    Split every expression onto its own line so any preceding and/or trailing
-    expressions, like 'foo(1); ' and '; foo(2)' of
+    Raised when icecream fails to find or access required source code
+    to parse and analyze. This can happen, for example, when
 
-      foo(1); ic(1); foo(2)
+      - ic() is invoked inside an interactive shell, e.g. python -i
 
-    are properly separated from ic(1) for dis.findlinestarts(). Otherwise, any
-    preceding and/or trailing expressions break ic(1)'s bytecode offset
-    calculation with dis.findlinestarts().
+      - The source code is mangled and/or packaged, like with a project
+        freezer like PyInstaller.
+
+      - The underlying source code changed during execution. See
+        https://stackoverflow.com/a/33175832.
     """
-    indices = [expr.col_offset for expr in ast.parse(source).body]
-    lines = [s.strip() for s in splitStringAtIndices(source, indices)]
-    oneExpressionPerLine = joinContinuedLines(lines)
-
-    return oneExpressionPerLine
-
-
-def splitCallsOntoSeparateLines(icNames, source):
-    """
-    To determine the bytecode offsets of ic() calls with dis.findlinestarts(),
-    every ic() invocation needs to start its own line. That is, this
-    
-      foo(ic(1), ic(2))
-    
-    needs to be turned into
-    
-      foo(
-      ic(1),
-      ic(2))
-    
-    Then the bytecode offsets of ic(1) and ic(2) can be determined with
-    dis.findlinestarts().
-
-    This split is necessary for ic() calls inside other expressions,
-    like foo(ic(1)), to be extracted correctly.
-    """
-    callIndices = [
-        node.func.col_offset for node in ast.walk(ast.parse(source))
-        if isAstNodeIceCreamCall(node, icNames)]
-    lines = splitStringAtIndices(source, callIndices)
-    sourceWithNewlinesBeforeInvocations = joinContinuedLines(lines)
-
-    return sourceWithNewlinesBeforeInvocations
+    infoMessage = (
+        'Failed to access the underlying source code for analysis. Was ic() '
+        'invoked in an interpreter (e.g. python -i), a frozen application '
+        '(e.g. packaged with PyInstaller), or did the underlying source code '
+        'change during execution?')
 
 
-def extractCallStrByOffset(splitSource, callOffset):
-    code = compile(splitSource, '<string>', 'exec')
-    lineOffsets = sorted(calculateLineOffsets(code).items())
-
-    # For lines with multiple invocations, like 'ic(1); ic(2)', determine which
-    # invocation was called.
-    for lineno, offset in lineOffsets:
-        if callOffset >= offset:
-            sourceLineIndex = lineno - 1
-        else:
-            break
-
-    lines = [s.rstrip(' ;') for s in splitSource.splitlines()]
-    line = lines[sourceLineIndex]
-
-    # Find the ic() call's matching right parenthesis. This is necessary
-    # whenever there are closing tokens (e.g. ')', ']', '}', etc) after the
-    # ic() call. Like
-    #
-    #   foo(
-    #     foo(
-    #       {
-    #         ic(
-    #           bar()) == 3}))
-    #
-    # where the <line> 'ic(bar()) == 3}))' needs to be trimmed to just
-    # 'ic(foo())'. Unfortunately, afaik there's no way to determine the
-    # character width of a function call, or its last argument, from the AST,
-    # so a workaround is to loop and test each successive right paren in
-    # <line>, from left to right, until ic()'s matching right paren is
-    # found. Bit of a hack, but ¯\_(ツ)_/¯.
-    tmp = line[:line.find(')') + 1]
-    while True:
-        try:
-            ast.parse(tmp)
-            break
-        except SyntaxError:
-            tmp = line[:line.find(')', len(tmp)) + 1]
-
-    callStr = tmp
-    return callStr
+def callOrValue(obj):
+    return obj() if callable(obj) else obj
 
 
-def extractArgumentsFromCallStr(callStr):
-    """
-    Parse the argument string via an AST instead of the overly simple
-    callStr.split(','). The latter incorrectly splits any string parameters
-    that contain commas therein, like ic(1, 'a,b', 2).
-    """
-    params = callStr.split('(', 1)[-1].rsplit(')', 1)[0].strip()
-
-    body = ast.parse(params).body[0]
-    eles = body.value.elts if classname(body.value) == 'Tuple' else [body.value]
-
-    indices = [ele.col_offset for ele in eles]
-    argStrs = [s.strip(' ,') for s in splitStringAtIndices(params, indices)]
-
-    return argStrs
+class Source(executing.Source):
+    def get_text_with_indentation(self, node):
+        result = self.asttokens().get_text(node)
+        if '\n' in result:
+            result = ' ' * node.first_token.start[1] + result
+            result = dedent(result)
+        result = result.strip()
+        return result
 
 
-def icWithoutArgs(callFrame, icNames, outputFunction):
-    # For multiline invocations, like
-    #
-    #   ic(
-    #      )
-    #
-    # report the call start line, not the call end line. That is, report the
-    # line number of 'ic(' in the example above, not ')'. Unfortunately the
-    # readily available <frameInfo.lineno> is the end line, not the start line,
-    # so it can't be used.
-    _, startLine, _ = getCallSourceLines(icNames, callFrame)
+def prefixLinesAfterFirst(prefix, s):
+    lines = s.splitlines(True)
 
-    frameInfo = inspect.getframeinfo(callFrame)
-    filename = basename(frameInfo.filename)
+    for i in range(1, len(lines)):
+        lines[i] = prefix + lines[i]
 
-    out = '%s:%s' % (filename, startLine)
-    outputFunction(out)
+    return ''.join(lines)
 
 
-def icWithArgs(callFrame, icNames, args, outputFunction):
-    callSource, _, callSourceOffset = getCallSourceLines(icNames, callFrame)
+def indented_lines(prefix, string):
+    lines = string.splitlines()
+    return [prefix + lines[0]] + [
+        ' ' * len(prefix) + line
+        for line in lines[1:]
+    ]
 
-    callOffset = callFrame.f_lasti
-    relativeCallOffset = callOffset - callSourceOffset
 
-    # Insert newlines before every expression and every ic() call so a mapping
-    # between `col_offset`s (in characters) and `f_lasti`s (in bytecode) can be
-    # established with dis.findlinestarts().
-    oneExpressionPerLine = splitExpressionsOntoSeparateLines(callSource)
-    splitSource = splitCallsOntoSeparateLines(icNames, oneExpressionPerLine)
+def format_pair(prefix, arg, value):
+    arg_lines = indented_lines(prefix, arg)
+    value_prefix = arg_lines[-1] + ': '
 
-    callStr = extractCallStrByOffset(splitSource, relativeCallOffset)
-    argStrs = extractArgumentsFromCallStr(callStr)
+    looksLikeAString = value[0] + value[-1] in ["''", '""']
+    if looksLikeAString:  # Align the start of multiline strings.
+        value = prefixLinesAfterFirst(' ', value)
 
-    pairs = list(zip(argStrs, args))
+    value_lines = indented_lines(value_prefix, value)
+    lines = arg_lines[:-1] + value_lines
+    return '\n'.join(lines)
 
-    output = ', '.join('%s: %r' % (arg, value) for arg, value in pairs)
-    outputFunction(output)
+
+def argumentToString(obj):
+    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
+    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
+    return s
 
 
 class IceCreamDebugger:
+    _pairDelimiter = ', '  # Used by the tests in tests/.
+    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
+    contextDelimiter = DEFAULT_CONTEXT_DELIMITER
+
     def __init__(self, prefix=DEFAULT_PREFIX,
-                 outputFunction=DEFAULT_OUTPUT_FUNCTION):
+                 outputFunction=DEFAULT_OUTPUT_FUNCTION,
+                 argToStringFunction=argumentToString, includeContext=False):
+        self.enabled = True
         self.prefix = prefix
+        self.includeContext = includeContext
         self.outputFunction = outputFunction
+        self.argToStringFunction = argToStringFunction
 
     def __call__(self, *args):
-        callFrame = inspect.currentframe().f_back
-        icNames = determinePossibleIcNames(callFrame)
-        
-        if not args:
-            icWithoutArgs(callFrame, icNames, self._printOut)
-        else:
-            icWithArgs(callFrame, icNames, args, self._printOut)
+        if self.enabled:
+            callFrame = inspect.currentframe().f_back
+            try:
+                out = self._format(callFrame, *args)
+            except NoSourceAvailableError as err:
+                prefix = callOrValue(self.prefix)
+                out = prefix + 'Error: ' + err.infoMessage
+            self.outputFunction(out)
 
         if not args:  # E.g. ic().
-            ret = None
+            passthrough = None
         elif len(args) == 1:  # E.g. ic(1).
-            ret = args[0]
+            passthrough = args[0]
         else:  # E.g. ic(1, 2, 3).
-            ret = args
-        
-        return ret
+            passthrough = args
 
-    def _printOut(self, s):
-        if callable(self.prefix):
-            prefix = self.prefix()
+        return passthrough
+
+    def format(self, *args):
+        callFrame = inspect.currentframe().f_back
+        out = self._format(callFrame, *args)
+        return out
+
+    def _format(self, callFrame, *args):
+        prefix = callOrValue(self.prefix)
+
+        callNode = Source.executing(callFrame).node
+        if callNode is None:
+            raise NoSourceAvailableError()
+
+        context = self._formatContext(callFrame, callNode)
+        if not args:
+            time = self._formatTime()
+            out = prefix + context + time
         else:
-            prefix = self.prefix
+            if not self.includeContext:
+                context = ''
+            out = self._formatArgs(
+                callFrame, callNode, prefix, context, args)
 
-        out = ''.join([prefix, s])
-        self.outputFunction(out)
+        return out
 
-    def configureOutput(self, prefix=_absent, outputFunction=_absent):
+    def _formatArgs(self, callFrame, callNode, prefix, context, args):
+        source = Source.for_frame(callFrame)
+        sanitizedArgStrs = [
+            source.get_text_with_indentation(arg)
+            for arg in callNode.args]
+
+        pairs = list(zip(sanitizedArgStrs, args))
+
+        out = self._constructArgumentOutput(prefix, context, pairs)
+        return out
+
+    def _constructArgumentOutput(self, prefix, context, pairs):
+        def argPrefix(arg):
+            return '%s: ' % arg
+
+        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+
+        allArgsOnOneLine = self._pairDelimiter.join(
+            val if arg == val else argPrefix(arg) + val for arg, val in pairs)
+        multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
+
+        contextDelimiter = self.contextDelimiter if context else ''
+        allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
+        firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
+
+        if multilineArgs or firstLineTooLong:
+            # ic| foo.py:11 in foo()
+            #     multilineStr: 'line1
+            #                    line2'
+            #
+            # ic| foo.py:11 in foo()
+            #     a: 11111111111111111111
+            #     b: 22222222222222222222
+            if context:
+                lines = [prefix + context] + [
+                    format_pair(len(prefix) * ' ', arg, value)
+                    for arg, value in pairs
+                ]
+            # ic| multilineStr: 'line1
+            #                    line2'
+            #
+            # ic| a: 11111111111111111111
+            #     b: 22222222222222222222
+            else:
+                arg_lines = [
+                    format_pair('', arg, value)
+                    for arg, value in pairs
+                ]
+                lines = indented_lines(prefix, '\n'.join(arg_lines))
+        # ic| foo.py:11 in foo()- a: 1, b: 2
+        # ic| a: 1, b: 2, c: 3
+        else:
+            lines = [prefix + context + contextDelimiter + allArgsOnOneLine]
+
+        return '\n'.join(lines)
+
+    def _formatContext(self, callFrame, callNode):
+        filename, lineNumber, parentFunction = self._getContext(
+            callFrame, callNode)
+
+        if parentFunction != '<module>':
+            parentFunction = '%s()' % parentFunction
+
+        context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
+        return context
+
+    def _formatTime(self):
+        now = datetime.utcnow()
+        formatted = now.strftime('%H:%M:%S.%f')[:-3]
+        return ' at %s' % formatted
+
+    def _getContext(self, callFrame, callNode):
+        lineNumber = callNode.lineno
+        frameInfo = inspect.getframeinfo(callFrame)
+        parentFunction = frameInfo.function
+        filename = basename(frameInfo.filename)
+
+        return filename, lineNumber, parentFunction
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
+
+    def configureOutput(self, prefix=_absent, outputFunction=_absent,
+                        argToStringFunction=_absent, includeContext=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
         if outputFunction is not _absent:
             self.outputFunction = outputFunction
+
+        if argToStringFunction is not _absent:
+            self.argToStringFunction = argToStringFunction
+
+        if includeContext is not _absent:
+            self.includeContext = includeContext
 
 
 ic = IceCreamDebugger()
