@@ -96,9 +96,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=[
-        'flake8',
-    ],
+    tests_require=[],
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',
