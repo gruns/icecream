@@ -13,6 +13,7 @@
 from os.path import dirname, join as pjoin
 
 from .icecream import *  # noqa
+from .builtins import install, uninstall
 
 # Import all variables in __version__.py without explicit imports.
 meta = {}
