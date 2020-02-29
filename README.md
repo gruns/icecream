@@ -176,6 +176,35 @@ ic| 3: 3
 code with `ic()` breaks.
 
 
+### Import Tricks
+
+To make `ic()` available in every file without needing to be imported in
+every file, you can `install()` it.
+
+```python
+from icecream import install
+
+install()
+```
+
+This adds `ic()` to the
+[builtins](https://docs.python.org/3.8/library/builtins.html) module,
+which is shared amongst all files imported by the
+interpreter. Similarly, `ic()` can later be `uninstall()`ed, too.
+
+`ic()` can also be imported in a manner that fails gracefully if
+IceCream isn't installed, like in production environments (i.e. not
+development). To that end, this fallback import snippet may prove
+useful:
+
+```python
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
+```
+
+
 ### Configuration
 
 `ic.configureOutput(prefix, outputFunction, argToStringFunction,
@@ -262,20 +291,6 @@ Installing IceCream with pip is easy.
 
 ```
 $ pip install icecream
-```
-
-
-### Import
-
-It's often useful to import `ic()` in a manner that falls back gracefully
-if IceCream isn't installed, like in production environments (i.e. not
-development). To that end, this fallback import snippet may prove useful:
-
-```python
-try:
-    from icecream import ic
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 ```
 
 
