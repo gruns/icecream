@@ -83,8 +83,8 @@ DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 class NoSourceAvailableError(OSError):
     """
-    Raised when icecream fails to find or access required source code
-    to parse and analyze. This can happen, for example, when
+    Raised when icecream fails to find or access source code that's
+    required to parse and analyze. This can happen, for example, when
 
       - ic() is invoked inside an interactive shell, e.g. python -i
 
