@@ -179,18 +179,33 @@ code with `ic()` breaks.
 ### Import Tricks
 
 To make `ic()` available in every file without needing to be imported in
-every file, you can `install()` it.
+every file, you can `install()` it. For example, in a root `A.py`:
 
 ```python
-from icecream import install
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+from icecream import install
 install()
+
+from B import foo
+foo()
 ```
 
-This adds `ic()` to the
+and then in `B.py`, which is imported by `A.py`, just call `ic()`:
+
+```
+# -*- coding: utf-8 -*-
+
+def foo():
+    x = 3
+    ic(x)
+```
+
+`install()` adds `ic()` to the
 [builtins](https://docs.python.org/3.8/library/builtins.html) module,
-which is shared amongst all files imported by the
-interpreter. Similarly, `ic()` can later be `uninstall()`ed, too.
+which is shared amongst all files imported by the interpreter.
+Similarly, `ic()` can later be `uninstall()`ed, too.
 
 `ic()` can also be imported in a manner that fails gracefully if
 IceCream isn't installed, like in production environments (i.e. not
