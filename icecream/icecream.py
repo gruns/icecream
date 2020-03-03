@@ -88,7 +88,7 @@ class NoSourceAvailableError(OSError):
 
       - ic() is invoked inside an interactive shell, e.g. python -i.
 
-      - The source code is mangled and/or packaged, like with a project
+      - The source code is mangled and/or packaged, e.g. with a project
         freezer like PyInstaller.
 
       - The underlying source code changed during execution. See
