@@ -86,7 +86,7 @@ class NoSourceAvailableError(OSError):
     Raised when icecream fails to find or access source code that's
     required to parse and analyze. This can happen, for example, when
 
-      - ic() is invoked inside an interactive shell, e.g. python -i
+      - ic() is invoked inside an interactive shell, e.g. python -i.
 
       - The source code is mangled and/or packaged, like with a project
         freezer like PyInstaller.
