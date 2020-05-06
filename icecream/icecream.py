@@ -13,16 +13,13 @@
 
 from __future__ import print_function
 
-import ast
 import inspect
 import pprint
 import sys
-from contextlib import contextmanager
 from datetime import datetime
 from os.path import basename
 from textwrap import dedent
 
-import colorama
 import executing
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
@@ -33,6 +30,10 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
+if sys.platform.startswith('win'):
+    # We will import colorama only on a specific subset of OS's thus removing colorama from required dependencies
+    import colorama
+    colorama.init()
 
 PYTHON2 = (sys.version_info[0] == 2)
 
@@ -55,23 +56,13 @@ def colorize(s):
     return highlight(s, self.lexer, self.formatter)
 
 
-@contextmanager
-def supportTerminalColorsInWindows():
-    # Filter and replace ANSI escape sequences on Windows with equivalent Win32
-    # API calls. This code does nothing on non-Windows systems.
-    colorama.init()
-    yield
-    colorama.deinit()
-
-
 def stderrPrint(*args):
     print(*args, file=sys.stderr)
 
 
 def colorizedStderrPrint(s):
     colored = colorize(s)
-    with supportTerminalColorsInWindows():
-        stderrPrint(colored)
+    stderrPrint(colored)
 
 
 DEFAULT_PREFIX = 'ic| '
