@@ -233,7 +233,7 @@ arguments.
 >>> from icecream import ic
 >>> ic.configureOutput(prefix='hello -> ')
 >>> ic('world')
-hello -> 'world': 'world'
+hello -> 'world'
 ```
 
 `prefix` can optionally be a function, too.
