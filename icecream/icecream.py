@@ -25,7 +25,7 @@ from textwrap import dedent
 try:
     import colorama
 except ImportError:
-    coloram = None
+    colorama = None
 import executing
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
@@ -62,10 +62,10 @@ def colorize(s):
 def supportTerminalColorsInWindows():
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
-    if coloram:
+    if colorama:
         colorama.init()
     yield
-    if coloram:
+    if colorama:
         colorama.deinit()
 
 
