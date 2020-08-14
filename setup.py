@@ -98,11 +98,13 @@ setup(
     ],
     tests_require=[],
     install_requires=[
-        'colorama>=0.3.9',
         'pygments>=2.2.0',
         'executing>=0.3.1',
         'asttokens>=2.0.1',
     ],
+    extras_require={
+        'Win32':  ['colorama>=0.3.9'],
+    }
     cmdclass={
         'test': RunTests,
         'publish': Publish,
