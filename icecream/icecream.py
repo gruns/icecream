@@ -22,7 +22,10 @@ from datetime import datetime
 from os.path import basename
 from textwrap import dedent
 
-import colorama
+try:
+    import colorama
+except ImportError:
+    coloram = None
 import executing
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
@@ -59,9 +62,11 @@ def colorize(s):
 def supportTerminalColorsInWindows():
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
-    colorama.init()
+    if coloram:
+        colorama.init()
     yield
-    colorama.deinit()
+    if coloram:
+        colorama.deinit()
 
 
 def stderrPrint(*args):
@@ -83,12 +88,12 @@ DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 class NoSourceAvailableError(OSError):
     """
-    Raised when icecream fails to find or access source code that's
-    required to parse and analyze. This can happen, for example, when
+    Raised when icecream fails to find or access required source code
+    to parse and analyze. This can happen, for example, when
 
-      - ic() is invoked inside an interactive shell, e.g. python -i.
+      - ic() is invoked inside an interactive shell, e.g. python -i
 
-      - The source code is mangled and/or packaged, e.g. with a project
+      - The source code is mangled and/or packaged, like with a project
         freezer like PyInstaller.
 
       - The underlying source code changed during execution. See
