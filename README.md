@@ -10,7 +10,7 @@
 </p>
 
 
-### IceCream is a little library for sweet and creamy debugging.
+### IceCream -- Never use print() to debug again
 
 Do you ever use `print()` or `log()` to debug your code? Of course you
 do. IceCream, or `ic` for short, makes print debugging a little sweeter.
@@ -29,7 +29,6 @@ print(foo('123'))
 ```
 
 or the more thorough
-
 
 ```python
 print("foo('123')", foo('123'))
