@@ -7,6 +7,7 @@ Changed: Switch to ast.literal_eval() to determine if an argument and
   value are the same, and thus only the value should be output. Huge
   thank you to Ed Cardinal and Alex Hall.
 
+
 ================================================================================
  v2.0.0
 ================================================================================
