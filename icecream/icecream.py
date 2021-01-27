@@ -68,6 +68,14 @@ def stderrPrint(*args):
     print(*args, file=sys.stderr)
 
 
+def isLiteral(s):
+    try:
+        ast.literal_eval(s)
+    except Exception:
+        return False
+    return True
+
+
 def colorizedStderrPrint(s):
     colored = colorize(s)
     with supportTerminalColorsInWindows():
@@ -224,9 +232,22 @@ class IceCreamDebugger:
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+        # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
+        # etc, only output the value, not the argument and the value, as the
+        # argument and the value will be identical or nigh identical. Ex: with
+        # ic("hello"), just output
+        #
+        #   ic| 'hello',
+        #
+        # instead of
+        #
+        #   ic| "hello": 'hello'.
+        #
+        pairStrs = [
+            val if isLiteral(arg) else (argPrefix(arg) + val)
+            for arg, val in pairs]
 
-        allArgsOnOneLine = self._pairDelimiter.join(
-            val if arg == val else argPrefix(arg) + val for arg, val in pairs)
+        allArgsOnOneLine = self._pairDelimiter.join(pairStrs)
         multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
 
         contextDelimiter = self.contextDelimiter if context else ''

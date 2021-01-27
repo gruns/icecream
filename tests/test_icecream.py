@@ -409,10 +409,12 @@ class TestIceCream(unittest.TestCase):
 
     def testValues(self):
         with disableColoring(), captureStandardStreams() as (out, err):
-            ic(3, 'asdf')
+            # Test both 'asdf' and "asdf"; see
+            # https://github.com/gruns/icecream/issues/53.
+            ic(3, 'asdf', "asdf")
 
         pairs = parseOutputIntoPairs(out, err, 1)
-        assert pairs == [[('3', None), ("'asdf'", None)]]
+        assert pairs == [[('3', None), ("'asdf'", None), ("'asdf'", None)]]
 
     def testIncludeContextMultiLine(self):
         multilineStr = 'line1\nline2'
