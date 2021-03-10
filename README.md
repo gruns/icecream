@@ -10,7 +10,7 @@
 </p>
 
 
-### IceCream -- Never use print() to debug again
+### IceCream — Never use print() to debug again
 
 Do you ever use `print()` or `log()` to debug your code? Of course you
 do. IceCream, or `ic` for short, makes print debugging a little sweeter.
