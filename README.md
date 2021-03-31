@@ -15,8 +15,17 @@
 Do you ever use `print()` or `log()` to debug your code? Of course you
 do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
-IceCream is well tested, [permissively licensed](LICENSE.txt), and supports
-Python 2, Python 3, PyPy2, and PyPy3.
+`ic()` is like `print()`, but better, because it:
+
+  1. Prints both expressions/variable names and their values.
+  2. Is 40% faster to type.
+  3. Pretty prints data structures.
+  4. Syntax highlights output.
+  5. Optionally includes context: filename, line number, and parent
+     function.
+
+IceCream is well tested, [permissively licensed](LICENSE.txt), and
+supports Python 2, Python 3, PyPy2, and PyPy3.
 
 
 ### Inspect Variables
