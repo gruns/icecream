@@ -17,8 +17,8 @@ import ast
 import inspect
 import pprint
 import sys
-from contextlib import contextmanager
 from datetime import datetime
+from contextlib import contextmanager
 from os.path import basename
 from textwrap import dedent
 
@@ -296,7 +296,7 @@ class IceCreamDebugger:
         return context
 
     def _formatTime(self):
-        now = datetime.utcnow()
+        now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
         return ' at %s' % formatted
 
