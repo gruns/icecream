@@ -21,8 +21,8 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
   2. Is 40% faster to type.
   3. Pretty prints data structures.
   4. Syntax highlights output.
-  5. Optionally includes context: filename, line number, and parent
-     function.
+  5. Optionally includes program context: filename, line number, and
+     parent function.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and
 supports Python 2, Python 3, PyPy2, and PyPy3.
