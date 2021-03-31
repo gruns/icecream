@@ -321,7 +321,7 @@ $ pip install icecream
 
 `ic()` uses [**`executing`**](https://github.com/alexmojaki/executing)
 by [**@alexmojaki**](https://github.com/alexmojaki) to reliably locate
-`ic()` call locations in Python source. It's magic.
+`ic()` calls in Python source. It's magic.
 
 
 ### IceCream in Other Languages
