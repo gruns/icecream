@@ -316,23 +316,17 @@ Installing IceCream with pip is easy.
 $ pip install icecream
 ```
 
+
 ### Related Python libraries
 
-`ic()` uses [**`executing`**](https://github.com/alexmojaki/executing) by [**@alexmojaki**](https://github.com/alexmojaki) to locate exactly where it's called from. You can use it to make similar magical functions of your own!
+`ic()` uses [**`executing`**](https://github.com/alexmojaki/executing)
+by [**@alexmojaki**](https://github.com/alexmojaki) to reliably locate
+`ic()` call locations in Python source. It's magic.
 
-Other libraries with debugging functions similar to `ic()`:
-
-- Also powered by `executing`:
-  - [**`ycecream`**](https://github.com/salabim/ycecream), a fork of icecream with some enhancements.
-  - [**`snoop`**](https://github.com/alexmojaki/snoop#pp---awesome-print-debugging)
-  - [**`varname`**](https://github.com/pwwang/python-varname#debugging-with-debug)
-  - [**`sorcery`**](https://github.com/alexmojaki/sorcery#print_args)
-- [**`q`**](https://github.com/zestyping/q)
-- [**`devtools`**](https://github.com/samuelcolvin/python-devtools)
 
 ### IceCream in Other Languages
 
-IceCream should be enjoyed with every language.
+Delicious IceCream should be enjoyed in every language.
 
 - Dart: [icecream](https://github.com/HallerPatrick/icecream)
 - Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
