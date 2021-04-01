@@ -110,7 +110,7 @@ from icecream import ic
 def foo():
     ic()
     first()
-    
+
     if expression:
         ic()
         second()
@@ -281,12 +281,12 @@ custom fashion.
 
 ```pycon
 >>> from icecream import ic
->>> 
+>>>
 >>> def toString(obj):
 >>>    if isinstance(obj, str):
 >>>        return '[!string %r with length %i!]' % (obj, len(obj))
 >>>    return repr(obj)
->>> 
+>>>
 >>> ic.configureOutput(argToStringFunction=toString)
 >>> ic(7, 'hello')
 ic| 7: 7, 'hello': [!string 'hello' with length 5!]
@@ -298,7 +298,7 @@ number, and parent function to `ic()`'s output.
 ```pycon
 >>> from icecream import ic
 >>> ic.configureOutput(includeContext=True)
->>> 
+>>>
 >>> def foo():
 >>>   ic('str')
 >>> foo()
@@ -336,6 +336,7 @@ Delicious IceCream should be enjoyed in every language.
 - Go: [icecream-go](https://github.com/WAY29/icecream-go)
 - Ruby: [Ricecream](https://github.com/nodai2hITC/ricecream)
 - Java: [icecream-java](https://github.com/Akshay-Thakare/icecream-java)
+- R: [icecream](https://github.com/DominikRafacz/icecream)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
