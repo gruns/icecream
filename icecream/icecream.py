@@ -176,11 +176,14 @@ class IceCreamDebugger:
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
-            try:
-                out = self._format(callFrame, *args)
-            except NoSourceAvailableError as err:
+
+            callNode = Source.executing(callFrame).node
+            if callNode is None:
                 prefix = callOrValue(self.prefix)
-                out = prefix + 'Error: ' + err.infoMessage
+                out = prefix + 'Error: ' + NoSourceAvailableError.infoMessage
+            else:
+                out = self._format(callFrame, callNode, *args)
+
             self.outputFunction(out)
 
         if not args:  # E.g. ic().
@@ -194,15 +197,16 @@ class IceCreamDebugger:
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
-        out = self._format(callFrame, *args)
-        return out
-
-    def _format(self, callFrame, *args):
-        prefix = callOrValue(self.prefix)
 
         callNode = Source.executing(callFrame).node
         if callNode is None:
             raise NoSourceAvailableError()
+
+        out = self._format(callFrame, callNode, *args)
+        return out
+
+    def _format(self, callFrame, callNode, *args):
+        prefix = callOrValue(self.prefix)
 
         context = self._formatContext(callFrame, callNode)
         if not args:
