@@ -9,3 +9,5 @@ build/
 *.pyo
 *.egg
 *.egg-info
+single_file/single_file_icecream.py
+single_file/icecream_pypy.py
