@@ -19,6 +19,7 @@ import pprint
 import sys
 from datetime import datetime
 from contextlib import contextmanager
+from functools import wraps
 from os.path import basename
 from textwrap import dedent
 
@@ -177,10 +178,13 @@ class IceCreamDebugger:
         if self.enabled:
             callFrame = inspect.currentframe().f_back
 
-            callNode = Source.executing(callFrame).node
+            ex = Source.executing(callFrame)
+            callNode = ex.node
             if callNode is None:
                 prefix = callOrValue(self.prefix)
                 out = prefix + 'Error: ' + NoSourceAvailableError.infoMessage
+            elif getattr(ex, 'decorator', None):
+                return self.decorate(args[0])
             else:
                 out = self._format(callFrame, callNode, *args)
 
@@ -194,6 +198,24 @@ class IceCreamDebugger:
             passthrough = args
 
         return passthrough
+
+    def decorate(self, func):
+        name = func.__name__
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            args_kwargs = (
+                    [repr(arg) for arg in args]
+                    + ['%s=%r' % pair for pair in kwargs.items()]
+            )
+            self.outputFunction(
+                '%scalled %s(%s)' % (self.prefix, name, ', '.join(args_kwargs))
+            )
+            result = func(*args, **kwargs)
+            self.outputFunction('%s%s returned %r' % (self.prefix, name, result))
+            return result
+
+        return wrapper
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
