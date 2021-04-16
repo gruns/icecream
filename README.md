@@ -99,6 +99,7 @@ def foo():
     else:
         print(2)
         third()
+foo()
 ```
 
 then `ic()` helps here, too. Without arguments, `ic()` inspects itself and
@@ -117,6 +118,7 @@ def foo():
     else:
         ic()
         third()
+foo()
 ```
 
 Prints
