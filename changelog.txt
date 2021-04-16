@@ -62,4 +62,5 @@ Fixed: ic() invocations that fail to find or access source code (e.g. eval(),
 ================================================================================
 First release.
 
+
 This changelog wasn't maintained prior to v1.3.
