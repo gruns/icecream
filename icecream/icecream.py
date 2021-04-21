@@ -94,7 +94,8 @@ class NoSourceAvailableError(OSError):
     Raised when icecream fails to find or access source code that's
     required to parse and analyze. This can happen, for example, when
 
-      - ic() is invoked inside an interactive shell, e.g. python -i.
+      - ic() is invoked inside a REPL or interactive shell, e.g. from the
+        command line (CLI) or with python -i.
 
       - The source code is mangled and/or packaged, e.g. with a project
         freezer like PyInstaller.
@@ -104,7 +105,7 @@ class NoSourceAvailableError(OSError):
     """
     infoMessage = (
         'Failed to access the underlying source code for analysis. Was ic() '
-        'invoked in an interpreter (e.g. python -i), a frozen application '
+        'invoked in a REPL (e.g. from the command line), a frozen application '
         '(e.g. packaged with PyInstaller), or did the underlying source code '
         'change during execution?')
 
