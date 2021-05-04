@@ -202,7 +202,7 @@ foo()
 
 and then in `B.py`, which is imported by `A.py`, just call `ic()`:
 
-```
+```python
 # -*- coding: utf-8 -*-
 
 def foo():
