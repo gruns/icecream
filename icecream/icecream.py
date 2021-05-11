@@ -18,11 +18,9 @@ import inspect
 import pprint
 import sys
 from datetime import datetime
-from contextlib import contextmanager
 from os.path import basename
 from textwrap import dedent
 
-import colorama
 import executing
 from pygments import highlight
 # See https://gist.github.com/XVilka/8346728 for color support in various
@@ -32,7 +30,7 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
-
+from .output import should_color, current_stream, write_to_out
 
 PYTHON2 = (sys.version_info[0] == 2)
 
@@ -55,19 +53,6 @@ def colorize(s):
     return highlight(s, self.lexer, self.formatter)
 
 
-@contextmanager
-def supportTerminalColorsInWindows():
-    # Filter and replace ANSI escape sequences on Windows with equivalent Win32
-    # API calls. This code does nothing on non-Windows systems.
-    colorama.init()
-    yield
-    colorama.deinit()
-
-
-def stderrPrint(*args):
-    print(*args, file=sys.stderr)
-
-
 def isLiteral(s):
     try:
         ast.literal_eval(s)
@@ -76,16 +61,11 @@ def isLiteral(s):
     return True
 
 
-def colorizedStderrPrint(s):
-    colored = colorize(s)
-    with supportTerminalColorsInWindows():
-        stderrPrint(colored)
-
-
-DEFAULT_PREFIX = 'ic| '
+DEFAULT_PREFIX = "ic| "
+DEFAULT_OUT = "stderr"
+DEFAULT_COLOR = None
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
-DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
@@ -165,24 +145,30 @@ class IceCreamDebugger:
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
-    def __init__(self, prefix=DEFAULT_PREFIX,
-                 outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+    def __init__(
+        self,
+        prefix=DEFAULT_PREFIX,
+        out=DEFAULT_OUT,
+        color=DEFAULT_COLOR,
+        argToStringFunction=argumentToString,
+        includeContext=False,
+    ):
         self.enabled = True
         self.prefix = prefix
+        self.color = color
         self.includeContext = includeContext
-        self.outputFunction = outputFunction
+        self.out = out
         self.argToStringFunction = argToStringFunction
 
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
             try:
-                out = self._format(callFrame, *args)
+                string = self._format(callFrame, *args)
             except NoSourceAvailableError as err:
                 prefix = callOrValue(self.prefix)
-                out = prefix + 'Error: ' + err.infoMessage
-            self.outputFunction(out)
+                string = prefix + 'Error: ' + err.infoMessage + '\n'
+            write_to_out(self.out, string, self.color)
 
         if not args:  # E.g. ic().
             passthrough = None
@@ -215,7 +201,10 @@ class IceCreamDebugger:
             out = self._formatArgs(
                 callFrame, callNode, prefix, context, args)
 
-        return out
+        if should_color(self.color, current_stream(self.out)):
+            out = colorize(out)
+
+        return out + '\n'
 
     def _formatArgs(self, callFrame, callNode, prefix, context, args):
         source = Source.for_frame(callFrame)
@@ -315,13 +304,32 @@ class IceCreamDebugger:
     def disable(self):
         self.enabled = False
 
-    def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent):
+    def configureOutput(
+        self,
+        prefix=_absent,
+        out=_absent,
+        color=_absent,
+        argToStringFunction=_absent,
+        includeContext=_absent,
+        outputFunction=_absent,
+    ):
         if prefix is not _absent:
             self.prefix = prefix
 
+        if color is not _absent:
+            self.color = color
+
         if outputFunction is not _absent:
-            self.outputFunction = outputFunction
+            if out is not _absent:
+                raise ValueError(
+                    "Cannot specify both `outputFunction` and `out`. "
+                    "Just pass a function to `out`. "
+                    "`outputFunction` is deprecated."
+                )
+            out = outputFunction
+
+        if out is not _absent:
+            self.out = out
 
         if argToStringFunction is not _absent:
             self.argToStringFunction = argToStringFunction

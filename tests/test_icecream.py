@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext
 
 import icecream
-from icecream import ic, stderrPrint, NoSourceAvailableError
+from icecream import ic, NoSourceAvailableError
 
 
 TEST_PAIR_DELIMITER = '| '
@@ -50,37 +50,44 @@ class FakeTeletypeBuffer(StringIO):
         return True
 
 
-@contextmanager
 def disableColoring():
-    originalOutputFunction = ic.outputFunction
-
-    ic.configureOutput(outputFunction=stderrPrint)
-    yield
-    ic.configureOutput(outputFunction=originalOutputFunction)
+    return configureIcecreamOutput(color=False)
 
 
 @contextmanager
-def configureIcecreamOutput(prefix=None, outputFunction=None,
-                            argToStringFunction=None, includeContext=None):
+def configureIcecreamOutput(
+    prefix=None,
+    out=None,
+    color="absent",
+    argToStringFunction=None,
+    includeContext=None,
+):
     oldPrefix = ic.prefix
-    oldOutputFunction = ic.outputFunction
+    oldOut = ic.out
     oldArgToStringFunction = ic.argToStringFunction
     oldIncludeContext = ic.includeContext
+    oldColor = ic.color
 
     if prefix:
         ic.configureOutput(prefix=prefix)
-    if outputFunction:
-        ic.configureOutput(outputFunction=outputFunction)
+    if out:
+        ic.configureOutput(out=out)
     if argToStringFunction:
         ic.configureOutput(argToStringFunction=argToStringFunction)
     if includeContext:
         ic.configureOutput(includeContext=includeContext)
+    if color != "absent":
+        ic.configureOutput(color=color)
 
     yield
 
     ic.configureOutput(
-        oldPrefix, oldOutputFunction, oldArgToStringFunction,
-        oldIncludeContext)
+        prefix=oldPrefix,
+        out=oldOut,
+        argToStringFunction=oldArgToStringFunction,
+        includeContext=oldIncludeContext,
+        color=oldColor,
+    )
 
 
 @contextmanager
@@ -302,7 +309,7 @@ class TestIceCream(unittest.TestCase):
 
     def testPrefixConfiguration(self):
         prefix = 'lolsup '
-        with configureIcecreamOutput(prefix, stderrPrint):
+        with configureIcecreamOutput(prefix):
             with disableColoring(), captureStandardStreams() as (out, err):
                 ic(a)
         pair = parseOutputIntoPairs(out, err, 1, prefix=prefix)[0][0]
@@ -327,12 +334,12 @@ class TestIceCream(unittest.TestCase):
                 ic(a)
         assert not out.getvalue() and not err.getvalue()
 
-        with configureIcecreamOutput(outputFunction=appendTo):
+        with configureIcecreamOutput(out=appendTo):
             with captureStandardStreams() as (out, err):
                 ic(b)
         assert not out.getvalue() and not err.getvalue()
 
-        pairs = parseOutputIntoPairs(out, '\n'.join(lst), 2)
+        pairs = parseOutputIntoPairs(out, ''.join(lst), 2)
         assert pairs == [[('a', '1')], [('b', '2')]]
 
     def testEnableDisable(self):
@@ -434,7 +441,7 @@ class TestIceCream(unittest.TestCase):
                 'sup'); noop()  # noqa
         """comment"""; noop(); s = ic.format(  # noqa
             'sup'); noop()  # noqa
-        assert s == err.getvalue().rstrip()
+        assert s == err.getvalue()
 
     def testMultilineInvocationWithComments(self):
         with disableColoring(), captureStandardStreams() as (out, err):
