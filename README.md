@@ -336,7 +336,7 @@ Delicious IceCream should be enjoyed in every language.
 - Go: [icecream-go](https://github.com/WAY29/icecream-go)
 - Ruby: [Ricecream](https://github.com/nodai2hITC/ricecream)
 - Java: [icecream-java](https://github.com/Akshay-Thakare/icecream-java)
-- R: [icecream](https://github.com/DominikRafacz/icecream)
+- R: [icecream](https://github.com/lewinfox/icecream)
 - Lua: [icecream-lua](https://github.com/wlingze/icecream-lua)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
