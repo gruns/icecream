@@ -231,11 +231,11 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 ### Configuration
 
 `ic.configureOutput(prefix, outputFunction, argToStringFunction,
-includeContext)` can be used to adopt a custom output prefix (the default is
-`ic| `), change the output function (default is to write to stderr), customize
-how arguments are serialized to strings, and/or include the `ic()` call's
-context (filename, line number, and parent function) in `ic()` output with
-arguments.
+includeContext, includeFStringExpressions)` can be used to adopt a custom 
+output prefix (the default is `ic| `), change the output function (default is 
+to write to stderr), customize how arguments are serialized to strings, 
+and/or include the `ic()` call's context (filename, line number, 
+and parent function) in `ic()` output with arguments.
 
 ```pycon
 >>> from icecream import ic
@@ -307,6 +307,25 @@ ic| example.py:12 in foo()- 'str': 'str'
 
 `includeContext` is False by default.
 
+`includeFStringExpressions`, if provided and False, disable output f-string 
+expressions. F-string will behave as normal string.
+
+```pycon
+>>> from icecream import ic
+>>> ic.configureOutput(includeFStringExpressions=False)
+>>>
+>>> ss = "Hello World!"
+>>> ic(f"{ss}")
+ic| 'Hello World!'
+
+>>> ic.configureOutput(includeFStringExpressions=True)
+>>>
+>>> ss = "Hello World!"
+>>> ic(f"{ss}")
+ic| f"{ss}": 'Hello World!'
+```
+
+`includeContext` is True by default, for compatibility consideration.
 
 ### Installation
 

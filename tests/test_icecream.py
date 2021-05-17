@@ -61,11 +61,13 @@ def disableColoring():
 
 @contextmanager
 def configureIcecreamOutput(prefix=None, outputFunction=None,
-                            argToStringFunction=None, includeContext=None):
+                            argToStringFunction=None, includeContext=None,
+                            includeFStringExpressions=None):
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
     oldArgToStringFunction = ic.argToStringFunction
     oldIncludeContext = ic.includeContext
+    oldIncludeFStringExpressions = ic.includeFStringExpressions
 
     if prefix:
         ic.configureOutput(prefix=prefix)
@@ -75,6 +77,8 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
         ic.configureOutput(argToStringFunction=argToStringFunction)
     if includeContext:
         ic.configureOutput(includeContext=includeContext)
+    if includeFStringExpressions:
+        ic.configureOutput(includeFStringExpressions=includeFStringExpressions)
 
     yield
 

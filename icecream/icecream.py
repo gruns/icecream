@@ -33,9 +33,7 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
-
 PYTHON2 = (sys.version_info[0] == 2)
-
 
 _absent = object()
 
@@ -44,6 +42,7 @@ def bindStaticVariable(name, value):
     def decorator(fn):
         setattr(fn, name, value)
         return fn
+
     return decorator
 
 
@@ -66,6 +65,24 @@ def supportTerminalColorsInWindows():
 
 def stderrPrint(*args):
     print(*args, file=sys.stderr)
+
+
+def isFString(s):
+    # Check whether s is a f-string
+    # f-string is defined in PEP-498: https://www.python.org/dev/peps/pep-0498/
+    # Minimal Python Version is 3.6, but It is safe here,
+    # because ic(f"{xxx}") will not pass syntax check for python under 3.6
+    try:
+        # The code is based on function literal_eval() in ast.py
+        if isinstance(s, str):
+            s = ast.parse(s, mode='eval')
+        if isinstance(s, ast.Expression):
+            s = s.body
+        if s and isinstance(s, ast.JoinedStr):
+            return True
+    except Exception:
+        return False
+    return False
 
 
 def isLiteral(s):
@@ -167,12 +184,14 @@ class IceCreamDebugger:
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=argumentToString, includeContext=False,
+                 includeFStringExpressions=True):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
+        self.includeFStringExpressions = includeFStringExpressions
 
     def __call__(self, *args):
         if self.enabled:
@@ -233,7 +252,7 @@ class IceCreamDebugger:
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
-        # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
+        # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes', f'test: {test}',
         # etc, only output the value, not the argument and the value, as the
         # argument and the value will be identical or nigh identical. Ex: with
         # ic("hello"), just output
@@ -244,9 +263,16 @@ class IceCreamDebugger:
         #
         #   ic| "hello": 'hello'.
         #
-        pairStrs = [
-            val if isLiteral(arg) else (argPrefix(arg) + val)
-            for arg, val in pairs]
+        pairStrs = []
+        for arg, val in pairs:
+            tmp = None
+            if isLiteral(arg):
+                tmp = val
+            elif not self.includeFStringExpressions and isFString(arg):
+                tmp = val
+            else:
+                tmp = (argPrefix(arg) + val)
+            pairStrs.append(tmp)
 
         allArgsOnOneLine = self._pairDelimiter.join(pairStrs)
         multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
@@ -316,7 +342,8 @@ class IceCreamDebugger:
         self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent):
+                        argToStringFunction=_absent, includeContext=_absent,
+                        includeFStringExpressions=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
@@ -328,6 +355,9 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
+
+        if includeFStringExpressions is not _absent:
+            self.includeFStringExpressions = includeFStringExpressions
 
 
 ic = IceCreamDebugger()
