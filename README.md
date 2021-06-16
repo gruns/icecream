@@ -332,6 +332,7 @@ Delicious IceCream should be enjoyed in every language.
 - Rust: [icecream-rs](https://github.com/ericchang00/icecream-rs)
 - Node.js: [node-icecream](https://github.com/jmerle/node-icecream)
 - C++: [IceCream-Cpp](https://github.com/renatoGarcia/icecream-cpp)
+- C99: [icecream-c](https://github.com/chunqian/icecream-c)
 - PHP: [icecream-php](https://github.com/ntzm/icecream-php)
 - Go: [icecream-go](https://github.com/WAY29/icecream-go)
 - Ruby: [Ricecream](https://github.com/nodai2hITC/ricecream)
