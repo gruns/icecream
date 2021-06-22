@@ -1,5 +1,5 @@
 ================================================================================
- v2.1.1 (unreleased)
+ v2.1.1
 ================================================================================
 Added: Support for Python 3.9.
 Changed: Use timestamps in the local timezone instead of less helpful
