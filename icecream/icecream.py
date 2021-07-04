@@ -154,10 +154,6 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-def argumentToString(obj,lineWrapWidth):
-    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj,width=lineWrapWidth)
-    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
-    return s
 
 
 class IceCreamDebugger:
@@ -167,12 +163,21 @@ class IceCreamDebugger:
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=None, includeContext=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
+
+        if argToStringFunction is None:
+            argToStringFunction = self.argumentToString
+
         self.argToStringFunction = argToStringFunction
+
+    def argumentToString(self, obj):
+        s = DEFAULT_ARG_TO_STRING_FUNCTION(obj,width=self.lineWrapWidth)
+        s = s.replace('\\n', '\n')  # Preserve string newlines in output.
+        return s
 
     def __call__(self, *args):
         if self.enabled:
@@ -232,7 +237,7 @@ class IceCreamDebugger:
         def argPrefix(arg):
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(val, self.lineWrapWidth)) for arg, val in pairs]
+        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
         # etc, only output the value, not the argument and the value, as the
         # argument and the value will be identical or nigh identical. Ex: with
