@@ -168,11 +168,8 @@ class IceCreamDebugger:
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
-
-        if argToStringFunction is None:
-            argToStringFunction = self.argumentToString
-
-        self.argToStringFunction = argToStringFunction
+        self.argToStringFunction = self.argumentToString if argToStringFunction is None \
+                                                         else argToStringFunction
 
     def argumentToString(self, obj):
         s = DEFAULT_ARG_TO_STRING_FUNCTION(obj,width=self.lineWrapWidth)
