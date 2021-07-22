@@ -339,6 +339,7 @@ Delicious IceCream should be enjoyed in every language.
 - Java: [icecream-java](https://github.com/Akshay-Thakare/icecream-java)
 - R: [icecream](https://github.com/lewinfox/icecream)
 - Lua: [icecream-lua](https://github.com/wlingze/icecream-lua)
+- Clojure(Script): [icecream-cljc](https://github.com/Eigenbahn/icecream-cljc)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
