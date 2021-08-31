@@ -340,6 +340,7 @@ Delicious IceCream should be enjoyed in every language.
 - R: [icecream](https://github.com/lewinfox/icecream)
 - Lua: [icecream-lua](https://github.com/wlingze/icecream-lua)
 - Clojure(Script): [icecream-cljc](https://github.com/Eigenbahn/icecream-cljc)
+- Bash: [IceCream-Bash](https://github.com/jtplaarj/IceCream-Bash)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
