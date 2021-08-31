@@ -154,10 +154,6 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-def argumentToString(obj):
-    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
-    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
-    return s
 
 
 class IceCreamDebugger:
@@ -167,12 +163,18 @@ class IceCreamDebugger:
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=None, includeContext=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
-        self.argToStringFunction = argToStringFunction
+        self.argToStringFunction = self.argumentToString if argToStringFunction is None \
+                                                         else argToStringFunction
+
+    def argumentToString(self, obj):
+        s = DEFAULT_ARG_TO_STRING_FUNCTION(obj,width=self.lineWrapWidth)
+        s = s.replace('\\n', '\n')  # Preserve string newlines in output.
+        return s
 
     def __call__(self, *args):
         if self.enabled:
