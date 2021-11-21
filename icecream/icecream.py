@@ -16,6 +16,7 @@ from __future__ import print_function
 import ast
 import inspect
 import pprint
+import os
 import sys
 from datetime import datetime
 from contextlib import contextmanager
@@ -87,6 +88,7 @@ DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
+COLUMN_OVERFLOW = 4  # Line length appears to overflow by 4 characters.
 
 
 class NoSourceAvailableError(OSError):
@@ -154,15 +156,40 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-def argumentToString(obj):
-    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
+# def argumentToString(obj, width):
+def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
+    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj, width=width)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
 
+def columns():
+    """ Returns the number of columns that this terminal can handle. """
+    width = DEFAULT_LINE_WRAP_WIDTH
+    try:
+        # TODO come up with a more elegant solution than subtracting
+        #  a seemingly random number of characters.
+        width = os.get_terminal_size().columns - COLUMN_OVERFLOW
+    except OSError:  # Not in TTY
+        pass
+    except AttributeError:  # Python 2.x
+        width = os.environ.get('COLUMNS', DEFAULT_LINE_WRAP_WIDTH)
+    return width
+
+
+def has_width_param(fn):
+    """ Returns True if a function has a 'width' parameter. """
+    try:
+        from inspect import signature
+        return "width" in signature(fn).parameters
+    except ImportError:  # Python 2.x
+        from inspect import getargspec
+        return "width" in getargspec(fn).args
+
+
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
-    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
+    lineWrapWidth = columns()
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
     def __init__(self, prefix=DEFAULT_PREFIX,
@@ -232,7 +259,10 @@ class IceCreamDebugger:
         def argPrefix(arg):
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+        kwargs = {}
+        if has_width_param(self.argToStringFunction):
+            kwargs["width"] = self.lineWrapWidth
+        pairs = [(arg, self.argToStringFunction(val, **kwargs)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
         # etc, only output the value, not the argument and the value, as the
         # argument and the value will be identical or nigh identical. Ex: with

@@ -464,6 +464,7 @@ class TestIceCream(unittest.TestCase):
         self.assertEqual(pair, ('(a, b)', '(1, 2)'))
 
     def testMultilineContainerArgs(self):
+        ic.lineWrapWidth = icecream.DEFAULT_LINE_WRAP_WIDTH
         with disableColoring(), captureStandardStreams() as (out, err):
             ic((a,
                 b))
