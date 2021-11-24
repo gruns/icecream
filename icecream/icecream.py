@@ -177,14 +177,14 @@ def columns():
     return width
 
 
-def has_width_param(fn):
-    """ Returns True if a function has a 'width' parameter. """
+def supports_param(fn, param="width"):
+    """ Returns True if the function supports that parameter. """
     try:
         from inspect import signature
-        return "width" in signature(fn).parameters
+        return param in signature(fn).parameters
     except ImportError:  # Python 2.x
         from inspect import getargspec
-        return "width" in getargspec(fn).args
+        return param in getargspec(fn).args
 
 
 class IceCreamDebugger:
@@ -200,6 +200,7 @@ class IceCreamDebugger:
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
+        self.passWidthParam = supports_param(self.argToStringFunction)
 
     def __call__(self, *args):
         if self.enabled:
@@ -259,9 +260,7 @@ class IceCreamDebugger:
         def argPrefix(arg):
             return '%s: ' % arg
 
-        kwargs = {}
-        if has_width_param(self.argToStringFunction):
-            kwargs["width"] = self.lineWrapWidth
+        kwargs = {"width": self.lineWrapWidth} if self.passWidthParam else {}
         pairs = [(arg, self.argToStringFunction(val, **kwargs)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
         # etc, only output the value, not the argument and the value, as the
@@ -355,6 +354,7 @@ class IceCreamDebugger:
 
         if argToStringFunction is not _absent:
             self.argToStringFunction = argToStringFunction
+            self.passWidthParam = supports_param(self.argToStringFunction)
 
         if includeContext is not _absent:
             self.includeContext = includeContext
