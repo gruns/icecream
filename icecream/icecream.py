@@ -156,7 +156,6 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-# def argumentToString(obj, width):
 def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj, width=width)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
