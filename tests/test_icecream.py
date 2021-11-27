@@ -534,13 +534,13 @@ ic| (a,
             ic(s)
         actual = err.getvalue().strip()
         if isPython2():
-            self.assertEqual(actual, "ic| s: '123456789 1234567890'")
+            expected = "ic| s: '123456789 1234567890'"
         else:
             expected = textwrap.dedent("""
             ic| s: ('123456789 '
                     '1234567890')
             """).strip()
-            self.assertEqual(actual, expected)
+        self.assertEqual(actual, expected)
 
     def testListWithLineLengthOfTen(self):
         """ Test a list with a short line wrap width. """
