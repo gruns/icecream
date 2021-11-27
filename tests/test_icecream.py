@@ -34,7 +34,7 @@ c = 3
 
 
 def isPython2():
-    return int(sys.version[0]) == 2
+    return sys.version_info[0] == 2
 
 
 def noop(*args, **kwargs):
