@@ -15,8 +15,8 @@ from __future__ import print_function
 
 import ast
 import inspect
+import os
 import pprint
-import shutil
 import sys
 from datetime import datetime
 from contextlib import contextmanager
@@ -33,6 +33,15 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
+
+try:
+    from shutil import get_terminal_size
+except ImportError:
+    try:
+        from backports.shutil_get_terminal_size import get_terminal_size
+    except ImportError:
+        def get_terminal_size():
+            return os.environ['COLUMNS']
 
 
 PYTHON2 = (sys.version_info[0] == 2)
@@ -165,13 +174,13 @@ def detect_terminal_width(prefix, default=DEFAULT_LINE_WRAP_WIDTH):
     """ Returns the number of columns that this terminal can handle. """
     width = default
     try:
-        if hasattr(shutil, "get_terminal_size"):
-            width = shutil.get_terminal_size().columns
-        else:  # Python 2.x doesn't support get_terminal_size
-            from backports.shutil_get_terminal_size import get_terminal_size
-            width = get_terminal_size().columns
-    except OSError:  # Not in TTY
+        # We need to pass a terminal height in the tuple so we pass the default
+        # of 25 lines but it's not used for anything.
+        width = get_terminal_size((default, 25)).columns
+    except Exception:  # Not in TTY or something else went wrong
         pass
+    # TODO account for argPrefix()
+    # TODO make sure we support configureOutput()
     return width - len(prefix)
 
 

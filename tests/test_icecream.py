@@ -33,10 +33,6 @@ b = 2
 c = 3
 
 
-def isPython2():
-    return sys.version_info[0] == 2
-
-
 def noop(*args, **kwargs):
     return
 
@@ -470,7 +466,6 @@ class TestIceCream(unittest.TestCase):
         self.assertEqual(pair, ('(a, b)', '(1, 2)'))
 
     def testMultilineContainerArgs(self):
-        ic.lineWrapWidth = icecream.DEFAULT_LINE_WRAP_WIDTH
         with disableColoring(), captureStandardStreams() as (out, err):
             ic((a,
                 b))
@@ -526,32 +521,30 @@ ic| (a,
 
         assert hasAnsiEscapeCodes(err.getvalue())
 
-    def testStringWithLineLengthOfTen(self):
+    def testStringWithShortLineWrapWidth(self):
         """ Test a string with a short line wrap width. """
         ic.lineWrapWidth = 10
         s = "123456789 1234567890"
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(s)
-        actual = err.getvalue().strip()
-        if isPython2():
+        if icecream.PYTHON2:
             expected = "ic| s: '123456789 1234567890'"
         else:
             expected = textwrap.dedent("""
             ic| s: ('123456789 '
                     '1234567890')
             """).strip()
-        self.assertEqual(actual, expected)
+        self.assertEqual(err.getvalue().strip(), expected)
 
-    def testListWithLineLengthOfTen(self):
+    def testListWithShortLineWrapWidth(self):
         """ Test a list with a short line wrap width. """
         ic.lineWrapWidth = 10
         lst = ["1", "2", "3", "4"]
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(lst)
-        actual = err.getvalue().strip()
         expected = textwrap.dedent("""
         ic| lst: ['1',
                   '2',
                   '3',
                   '4']""").strip()
-        self.assertEqual(actual, expected)
+        self.assertEqual(err.getvalue().strip(), expected)

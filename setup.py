@@ -103,7 +103,7 @@ setup(
         'pygments>=2.2.0',
         'executing>=0.3.1',
         'asttokens>=2.0.1',
-        'backports.shutil-get-terminal-size==1.0.0',
+        'backports.shutil-get-terminal-size==1.0.0; python_version < "3.3.0"',
     ],
     cmdclass={
         'test': RunTests,
