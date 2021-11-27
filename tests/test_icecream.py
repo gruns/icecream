@@ -9,6 +9,7 @@
 #
 # License: MIT
 #
+import textwrap
 
 import sys
 import unittest
@@ -30,6 +31,10 @@ MYFILENAME = basename(__file__)
 a = 1
 b = 2
 c = 3
+
+
+def isPython2():
+    return int(sys.version[0]) == 2
 
 
 def noop(*args, **kwargs):
@@ -182,6 +187,7 @@ def parseOutputIntoPairs(out, err, assertNumLines,
 class TestIceCream(unittest.TestCase):
     def setUp(self):
         ic._pairDelimiter = TEST_PAIR_DELIMITER
+        ic.lineWrapWidth = icecream.DEFAULT_LINE_WRAP_WIDTH
 
     def testWithoutArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -520,12 +526,32 @@ ic| (a,
 
         assert hasAnsiEscapeCodes(err.getvalue())
 
-    @unittest.skipIf(int(sys.version[0]) == 2, "pprint doesn't wrap long strings in Python 2.7")
-    def testLineLengthTen(self):
-        """ Test a specific line wrap width. """
+    def testStringWithLineLengthOfTen(self):
+        """ Test a string with a short line wrap width. """
         ic.lineWrapWidth = 10
         s = "123456789 1234567890"
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(s)
-        pair = parseOutputIntoPairs(out, err, 2)[0]
-        self.assertEqual(pair, [('s', "('123456789 '\n '1234567890')")])
+        actual = err.getvalue().strip()
+        if isPython2():
+            self.assertEqual(actual, "ic| s: '123456789 1234567890'")
+        else:
+            expected = textwrap.dedent("""
+            ic| s: ('123456789 '
+                    '1234567890')
+            """).strip()
+            self.assertEqual(actual, expected)
+
+    def testListWithLineLengthOfTen(self):
+        """ Test a list with a short line wrap width. """
+        ic.lineWrapWidth = 10
+        lst = ["1", "2", "3", "4"]
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(lst)
+        actual = err.getvalue().strip()
+        expected = textwrap.dedent("""
+        ic| lst: ['1',
+                  '2',
+                  '3',
+                  '4']""").strip()
+        self.assertEqual(actual, expected)

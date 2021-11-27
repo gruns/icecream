@@ -16,7 +16,7 @@ from __future__ import print_function
 import ast
 import inspect
 import pprint
-import os
+import shutil
 import sys
 from datetime import datetime
 from contextlib import contextmanager
@@ -88,7 +88,6 @@ DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
-COLUMN_OVERFLOW = 4  # Line length appears to overflow by 4 characters.
 
 
 class NoSourceAvailableError(OSError):
@@ -162,18 +161,18 @@ def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
     return s
 
 
-def columns():
+def detect_terminal_width(prefix, default=DEFAULT_LINE_WRAP_WIDTH):
     """ Returns the number of columns that this terminal can handle. """
-    width = DEFAULT_LINE_WRAP_WIDTH
+    width = default
     try:
-        # TODO come up with a more elegant solution than subtracting
-        #  a seemingly random number of characters.
-        width = os.get_terminal_size().columns - COLUMN_OVERFLOW
+        if hasattr(shutil, "get_terminal_size"):
+            width = shutil.get_terminal_size().columns
+        else:  # Python 2.x doesn't support get_terminal_size
+            from backports.shutil_get_terminal_size import get_terminal_size
+            width = get_terminal_size().columns
     except OSError:  # Not in TTY
         pass
-    except AttributeError:  # Python 2.x
-        width = os.environ.get('COLUMNS', DEFAULT_LINE_WRAP_WIDTH)
-    return width
+    return width - len(prefix)
 
 
 def supports_param(fn, param="width"):
@@ -188,7 +187,6 @@ def supports_param(fn, param="width"):
 
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
-    lineWrapWidth = columns()
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
     def __init__(self, prefix=DEFAULT_PREFIX,
@@ -200,6 +198,7 @@ class IceCreamDebugger:
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.passWidthParam = supports_param(self.argToStringFunction)
+        self.lineWrapWidth = detect_terminal_width(self.prefix, DEFAULT_LINE_WRAP_WIDTH)
 
     def __call__(self, *args):
         if self.enabled:
