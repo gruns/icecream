@@ -172,13 +172,12 @@ def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
 
 def detect_terminal_width(prefix, default=DEFAULT_LINE_WRAP_WIDTH):
     """ Returns the number of columns that this terminal can handle. """
-    width = default
     try:
         # We need to pass a terminal height in the tuple so we pass the default
         # of 25 lines but it's not used for anything.
         width = get_terminal_size((default, 25)).columns
     except Exception:  # Not in TTY or something else went wrong
-        pass
+        width = default
     # TODO account for argPrefix()
     # TODO make sure we support configureOutput()
     return width - len(prefix)
