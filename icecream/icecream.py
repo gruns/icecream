@@ -201,14 +201,15 @@ class IceCreamDebugger:
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=argumentToString, includeContext=False,
+                 detectTerminalWidth=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.passWidthParam = supports_param(self.argToStringFunction)
-        self._setLineWrapWidth()
+        self._setLineWrapWidth(detectTerminalWidth=detectTerminalWidth)
 
     def __call__(self, *args):
         if self.enabled:
@@ -229,9 +230,14 @@ class IceCreamDebugger:
 
         return passthrough
 
-    def _setLineWrapWidth(self, terminal_width=None):
+    def _setLineWrapWidth(self, detectTerminalWidth=False, terminalWidth=None):
         prefix_length = len(self.prefix()) if callable(self.prefix) else len(self.prefix)
-        width = terminal_width if terminal_width else detect_terminal_width(DEFAULT_LINE_WRAP_WIDTH)
+        if terminalWidth:
+            width = terminalWidth
+        elif detectTerminalWidth is True:
+            width = detect_terminal_width(DEFAULT_LINE_WRAP_WIDTH)
+        else:
+            width = DEFAULT_TERMINAL_WIDTH
         self.terminalWidth = width
         self.lineWrapWidth = width - prefix_length
 

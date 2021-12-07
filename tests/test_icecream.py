@@ -9,6 +9,7 @@
 #
 # License: MIT
 #
+import os
 import textwrap
 
 import sys
@@ -84,6 +85,18 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
     ic.configureOutput(
         oldPrefix, oldOutputFunction, oldArgToStringFunction,
         oldIncludeContext, oldTerminalWidth)
+
+
+@contextmanager
+def detectTerminalWidth(terminal_width=icecream.DEFAULT_TERMINAL_WIDTH):
+    width = str(terminal_width)
+    old_terminal_width = os.getenv('COLUMNS', width)
+    try:
+        os.environ['COLUMNS'] = width
+        yield ic._setLineWrapWidth(detectTerminalWidth=True)
+    finally:
+        os.environ['COLUMNS'] = old_terminal_width
+        ic._setLineWrapWidth(detectTerminalWidth=False, terminalWidth=int(old_terminal_width))
 
 
 @contextmanager
@@ -526,7 +539,7 @@ ic| (a,
 
     def testStringWithShortLineWrapWidth(self):
         """ Test a string with a short line wrap width. """
-        ic.lineWrapWidth = 10
+        ic._setLineWrapWidth(terminalWidth=10)
         s = "123456789 1234567890"
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(s)
@@ -541,7 +554,7 @@ ic| (a,
 
     def testListWithShortLineWrapWidth(self):
         """ Test a list with a short line wrap width. """
-        ic._setLineWrapWidth(10)
+        ic._setLineWrapWidth(terminalWidth=10)
         lst = ["1 2 3 4 5", "2", "3", "4"]
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(lst)
@@ -563,11 +576,11 @@ ic| (a,
                           '4']""").strip()
         self.assertEqual(err.getvalue().strip(), expected)
 
-    def testLiteralWithShortLineWrapWidth(self):
+    def testLiteralWithShortTerminalWidth(self):
         """ Test a literal with a short line wrap width. """
-        ic.lineWrapWidth = 10
-        with disableColoring(), captureStandardStreams() as (out, err):
-            ic("banana banana")
+        with detectTerminalWidth(10):
+            with disableColoring(), captureStandardStreams() as (out, err):
+                ic("banana banana")
         if icecream.PYTHON2:
             expected = 'ic| "banana banana": \'banana banana\''
         else:
