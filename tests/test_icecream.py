@@ -23,10 +23,8 @@ from os.path import basename, splitext
 import icecream
 from icecream import ic, stderrPrint, NoSourceAvailableError
 
-
 TEST_PAIR_DELIMITER = '| '
 MYFILENAME = basename(__file__)
-
 
 a = 1
 b = 2
@@ -62,11 +60,13 @@ def disableColoring():
 
 @contextmanager
 def configureIcecreamOutput(prefix=None, outputFunction=None,
-                            argToStringFunction=None, includeContext=None):
+                            argToStringFunction=None, includeContext=None, terminalWidth=None):
+
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
     oldArgToStringFunction = ic.argToStringFunction
     oldIncludeContext = ic.includeContext
+    oldTerminalWidth = ic.terminalWidth
 
     if prefix:
         ic.configureOutput(prefix=prefix)
@@ -76,12 +76,14 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
         ic.configureOutput(argToStringFunction=argToStringFunction)
     if includeContext:
         ic.configureOutput(includeContext=includeContext)
+    if terminalWidth:
+        ic.configureOutput(terminalWidth=terminalWidth)
 
     yield
 
     ic.configureOutput(
         oldPrefix, oldOutputFunction, oldArgToStringFunction,
-        oldIncludeContext)
+        oldIncludeContext, oldTerminalWidth)
 
 
 @contextmanager
@@ -183,7 +185,8 @@ def parseOutputIntoPairs(out, err, assertNumLines,
 class TestIceCream(unittest.TestCase):
     def setUp(self):
         ic._pairDelimiter = TEST_PAIR_DELIMITER
-        ic.lineWrapWidth = icecream.DEFAULT_LINE_WRAP_WIDTH
+        ic.configureOutput(prefix=icecream.DEFAULT_PREFIX,
+                           terminalWidth=icecream.DEFAULT_TERMINAL_WIDTH)
 
     def testWithoutArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -538,13 +541,60 @@ ic| (a,
 
     def testListWithShortLineWrapWidth(self):
         """ Test a list with a short line wrap width. """
-        ic.lineWrapWidth = 10
-        lst = ["1", "2", "3", "4"]
+        ic._setLineWrapWidth(10)
+        lst = ["1 2 3 4 5", "2", "3", "4"]
         with disableColoring(), captureStandardStreams() as (out, err):
             ic(lst)
-        expected = textwrap.dedent("""
-        ic| lst: ['1',
-                  '2',
-                  '3',
-                  '4']""").strip()
+        if icecream.PYTHON2:
+            expected = textwrap.dedent("""
+                ic| lst: ['1 2 3 4 5',
+                          '2',
+                          '3',
+                          '4']""").strip()
+        else:
+            expected = textwrap.dedent("""
+                ic| lst: ['1 '
+                          '2 '
+                          '3 '
+                          '4 '
+                          '5',
+                          '2',
+                          '3',
+                          '4']""").strip()
         self.assertEqual(err.getvalue().strip(), expected)
+
+    def testLiteralWithShortLineWrapWidth(self):
+        """ Test a literal with a short line wrap width. """
+        ic.lineWrapWidth = 10
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic("banana banana")
+        if icecream.PYTHON2:
+            expected = 'ic| "banana banana": \'banana banana\''
+        else:
+            expected = textwrap.dedent("""
+        ic| "banana banana": ('banana '
+                              'banana')""").strip()
+        actual = err.getvalue().strip()
+        self.assertEqual(expected, actual)
+
+    def testConfigureOutput(self):
+        """ Test that line width is adjusted after running configureOutput()
+            with a new prefix. ic.lineWrapWidth will start at 70 then adjust
+            to 60, so a string that didn't wrap before should wrap now.
+        """
+        s = "a 70 character string a 70 character string a 70 character string a 70"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        self.assertEqual("ic| s: '%s'" % s, err.getvalue().strip())
+        with configureIcecreamOutput(prefix="10prefix| ",
+                                     outputFunction=stderrPrint,
+                                     terminalWidth=icecream.DEFAULT_TERMINAL_WIDTH):
+            with disableColoring(), captureStandardStreams() as (out, err):
+                ic(s)
+        if icecream.PYTHON2:
+            expected = "10prefix| s: '%s'" % s
+        else:
+            expected = textwrap.dedent("""
+            10prefix| s: ('a 70 character string a 70 character string a 70 character string '
+                          'a 70')""").strip()
+        self.assertEqual(expected, err.getvalue().strip())

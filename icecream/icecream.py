@@ -93,6 +93,7 @@ def colorizedStderrPrint(s):
 
 
 DEFAULT_PREFIX = 'ic| '
+DEFAULT_TERMINAL_WIDTH = 80
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
@@ -170,7 +171,7 @@ def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
     return s
 
 
-def detect_terminal_width(prefix, default=DEFAULT_LINE_WRAP_WIDTH):
+def detect_terminal_width(default=DEFAULT_TERMINAL_WIDTH):
     """ Returns the number of columns that this terminal can handle. """
     try:
         # We need to pass a terminal height in the tuple so we pass the default
@@ -179,8 +180,7 @@ def detect_terminal_width(prefix, default=DEFAULT_LINE_WRAP_WIDTH):
     except Exception:  # Not in TTY or something else went wrong
         width = default
     # TODO account for argPrefix()
-    # TODO make sure we support configureOutput()
-    return width - len(prefix)
+    return width
 
 
 def supports_param(fn, param="width"):
@@ -196,6 +196,8 @@ def supports_param(fn, param="width"):
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
+    terminalWidth = DEFAULT_TERMINAL_WIDTH
+    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
@@ -206,7 +208,7 @@ class IceCreamDebugger:
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.passWidthParam = supports_param(self.argToStringFunction)
-        self.lineWrapWidth = detect_terminal_width(self.prefix, DEFAULT_LINE_WRAP_WIDTH)
+        self._setLineWrapWidth()
 
     def __call__(self, *args):
         if self.enabled:
@@ -226,6 +228,12 @@ class IceCreamDebugger:
             passthrough = args
 
         return passthrough
+
+    def _setLineWrapWidth(self, terminal_width=None):
+        prefix_length = len(self.prefix()) if callable(self.prefix) else len(self.prefix)
+        width = terminal_width if terminal_width else detect_terminal_width(DEFAULT_LINE_WRAP_WIDTH)
+        self.terminalWidth = width
+        self.lineWrapWidth = width - prefix_length
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
@@ -351,9 +359,14 @@ class IceCreamDebugger:
         self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent):
+                        argToStringFunction=_absent, includeContext=_absent,
+                        terminalWidth=_absent):
         if prefix is not _absent:
             self.prefix = prefix
+
+        if prefix is not _absent or terminalWidth is not _absent:
+            new_terminal_width = terminalWidth if terminalWidth is not _absent else None
+            self._setLineWrapWidth(new_terminal_width)
 
         if outputFunction is not _absent:
             self.outputFunction = outputFunction
