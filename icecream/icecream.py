@@ -15,6 +15,7 @@ from __future__ import print_function
 
 import ast
 import inspect
+import os
 import pprint
 import sys
 from datetime import datetime
@@ -32,6 +33,15 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
+
+try:
+    from shutil import get_terminal_size
+except ImportError:
+    try:
+        from backports.shutil_get_terminal_size import get_terminal_size
+    except ImportError:
+        def get_terminal_size():
+            return os.environ['COLUMNS']
 
 
 PYTHON2 = (sys.version_info[0] == 2)
@@ -83,6 +93,7 @@ def colorizedStderrPrint(s):
 
 
 DEFAULT_PREFIX = 'ic| '
+DEFAULT_TERMINAL_WIDTH = 80
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
@@ -154,25 +165,51 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-def argumentToString(obj):
-    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
+def argumentToString(obj, width=DEFAULT_LINE_WRAP_WIDTH):
+    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj, width=width)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
 
+def detect_terminal_width(default=DEFAULT_TERMINAL_WIDTH):
+    """ Returns the number of columns that this terminal can handle. """
+    try:
+        # We need to pass a terminal height in the tuple so we pass the default
+        # of 25 lines but it's not used for anything.
+        width = get_terminal_size((default, 25)).columns
+    except Exception:  # Not in TTY or something else went wrong
+        width = default
+    # TODO account for argPrefix()
+    return width
+
+
+def supports_param(fn, param="width"):
+    """ Returns True if the function supports that parameter. """
+    try:
+        from inspect import signature
+        return param in signature(fn).parameters
+    except ImportError:  # Python 2.x
+        from inspect import getargspec
+        return param in getargspec(fn).args
+
+
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
-    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
+    terminalWidth = DEFAULT_TERMINAL_WIDTH
+    lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=argumentToString, includeContext=False,
+                 detectTerminalWidth=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
+        self.passWidthParam = supports_param(self.argToStringFunction)
+        self._setLineWrapWidth(detectTerminalWidth=detectTerminalWidth)
 
     def __call__(self, *args):
         if self.enabled:
@@ -192,6 +229,17 @@ class IceCreamDebugger:
             passthrough = args
 
         return passthrough
+
+    def _setLineWrapWidth(self, detectTerminalWidth=False, terminalWidth=None):
+        prefix_length = len(self.prefix()) if callable(self.prefix) else len(self.prefix)
+        if terminalWidth:
+            width = terminalWidth
+        elif detectTerminalWidth is True:
+            width = detect_terminal_width(DEFAULT_TERMINAL_WIDTH)
+        else:
+            width = DEFAULT_TERMINAL_WIDTH
+        self.terminalWidth = width
+        self.lineWrapWidth = width - prefix_length
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
@@ -232,7 +280,8 @@ class IceCreamDebugger:
         def argPrefix(arg):
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+        kwargs = {"width": self.lineWrapWidth} if self.passWidthParam else {}
+        pairs = [(arg, self.argToStringFunction(val, **kwargs)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
         # etc, only output the value, not the argument and the value, as the
         # argument and the value will be identical or nigh identical. Ex: with
@@ -316,15 +365,21 @@ class IceCreamDebugger:
         self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent):
+                        argToStringFunction=_absent, includeContext=_absent,
+                        terminalWidth=_absent):
         if prefix is not _absent:
             self.prefix = prefix
+
+        if prefix is not _absent or terminalWidth is not _absent:
+            new_terminal_width = terminalWidth if terminalWidth is not _absent else None
+            self._setLineWrapWidth(new_terminal_width)
 
         if outputFunction is not _absent:
             self.outputFunction = outputFunction
 
         if argToStringFunction is not _absent:
             self.argToStringFunction = argToStringFunction
+            self.passWidthParam = supports_param(self.argToStringFunction)
 
         if includeContext is not _absent:
             self.includeContext = includeContext
