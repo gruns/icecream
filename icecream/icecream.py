@@ -235,7 +235,7 @@ class IceCreamDebugger:
         if terminalWidth:
             width = terminalWidth
         elif detectTerminalWidth is True:
-            width = detect_terminal_width(DEFAULT_LINE_WRAP_WIDTH)
+            width = detect_terminal_width(DEFAULT_TERMINAL_WIDTH)
         else:
             width = DEFAULT_TERMINAL_WIDTH
         self.terminalWidth = width
