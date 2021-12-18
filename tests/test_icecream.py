@@ -19,9 +19,12 @@ except ImportError:  # Python 3.x.
 from contextlib import contextmanager
 from os.path import basename, splitext
 
+import os
 import icecream
-from icecream import ic, stderrPrint, NoSourceAvailableError
+from icecream import ic, ICFilePrint, NoSourceAvailableError
 
+# Ensure our tests don't fail because of a misconfigured environment
+os.environ['PYTHON_ICECREAM_USE_STDOUT'] = 'False'
 
 TEST_PAIR_DELIMITER = '| '
 MYFILENAME = basename(__file__)
@@ -54,7 +57,7 @@ class FakeTeletypeBuffer(StringIO):
 def disableColoring():
     originalOutputFunction = ic.outputFunction
 
-    ic.configureOutput(outputFunction=stderrPrint)
+    ic.configureOutput(outputFunction=ICFilePrint)
     yield
     ic.configureOutput(outputFunction=originalOutputFunction)
 
@@ -92,8 +95,10 @@ def captureStandardStreams():
     try:
         sys.stdout = newStdout
         sys.stderr = newStderr
+        icecream.reload()
         yield newStdout, newStderr
     finally:
+        icecream.reload()
         sys.stdout = realStdout
         sys.stderr = realStderr
 
@@ -302,7 +307,7 @@ class TestIceCream(unittest.TestCase):
 
     def testPrefixConfiguration(self):
         prefix = 'lolsup '
-        with configureIcecreamOutput(prefix, stderrPrint):
+        with configureIcecreamOutput(prefix, ICFilePrint):
             with disableColoring(), captureStandardStreams() as (out, err):
                 ic(a)
         pair = parseOutputIntoPairs(out, err, 1, prefix=prefix)[0][0]

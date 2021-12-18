@@ -11,8 +11,10 @@
 # License: MIT
 #
 
+
 from __future__ import print_function
 
+import os
 import ast
 import inspect
 import pprint
@@ -63,9 +65,8 @@ def supportTerminalColorsInWindows():
     yield
     colorama.deinit()
 
-
-def stderrPrint(*args):
-    print(*args, file=sys.stderr)
+def ICFilePrint(*args):
+    print(*args, file=DEFAULT_OUTPUT_FILE)
 
 
 def isLiteral(s):
@@ -76,18 +77,27 @@ def isLiteral(s):
     return True
 
 
-def colorizedStderrPrint(s):
+def colorizedICFilePrint(s):
     colored = colorize(s)
     with supportTerminalColorsInWindows():
-        stderrPrint(colored)
+        ICFilePrint(colored)
 
 
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
-DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
+DEFAULT_OUTPUT_FUNCTION = colorizedICFilePrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
+def str2bool(v):
+    return str(v).lower() in ["yes", "true", "t", "1", "y"]
+
+def is_in_jupyter():
+    try:
+        from IPython import get_ipython
+        return get_ipython() is not None
+    except ModuleNotFoundError:
+        return False
 
 class NoSourceAvailableError(OSError):
     """
@@ -329,5 +339,14 @@ class IceCreamDebugger:
         if includeContext is not _absent:
             self.includeContext = includeContext
 
+def reload():
+    global ic, DEFAULT_OUTPUT_FILE
 
-ic = IceCreamDebugger()
+    if is_in_jupyter() or str2bool(os.environ.get('PYTHON_ICECREAM_USE_STDOUT')):
+        DEFAULT_OUTPUT_FILE = sys.stdout
+    else:
+        DEFAULT_OUTPUT_FILE = sys.stderr
+
+    ic = IceCreamDebugger()
+
+reload()
