@@ -93,7 +93,11 @@ def str2bool(v):
     return str(v).lower() in ["yes", "true", "t", "1", "y"]
 
 def is_in_jupyter():
-    hasattr(__builtins__,'__IPYTHON__')
+    try:
+        from IPython import get_ipython
+        return get_ipython() is not None
+    except ModuleNotFoundError:
+        return False
 
 class NoSourceAvailableError(OSError):
     """
