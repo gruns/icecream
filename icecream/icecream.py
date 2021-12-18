@@ -65,25 +65,8 @@ def supportTerminalColorsInWindows():
     yield
     colorama.deinit()
 
-def getOutputFile():
-    global DEFAULT_OUTPUT_FILE
-    if hasattr(DEFAULT_OUTPUT_FILE, 'write'):
-        return DEFAULT_OUTPUT_FILE    
-    if DEFAULT_OUTPUT_FILE == 'stderr':
-        return sys.stderr
-    if DEFAULT_OUTPUT_FILE == 'stdout':
-        return sys.stdout
-    if type(DEFAULT_OUTPUT_FILE):
-        is_new = os.path.isfile(DEFAULT_OUTPUT_FILE)
-        DEFAULT_OUTPUT_FILE = open(DEFAULT_OUTPUT_FILE, mode='a')
-        # If the file already exists, add a \n so it becomes easier to read
-        if not is_new:
-            print('', file=DEFAULT_OUTPUT_FILE)
-        return DEFAULT_OUTPUT_FILE
-    raise ValueError(f"Cannot understand DEFAULT_OUTPUT_FILE = {DEFAULT_OUTPUT_FILE!r} means")
-
 def ICFilePrint(*args):
-    print(*args, file=getOutputFile())
+    print(*args, file=DEFAULT_OUTPUT_FILE)
 
 
 def isLiteral(s):
@@ -103,7 +86,6 @@ def colorizedICFilePrint(s):
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
-DEFAULT_OUTPUT_FILE = 'stderr'
 DEFAULT_OUTPUT_FUNCTION = colorizedICFilePrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
@@ -353,16 +335,14 @@ class IceCreamDebugger:
         if includeContext is not _absent:
             self.includeContext = includeContext
 
-
-def init():
-    global ic
+def reload():
+    global ic, DEFAULT_OUTPUT_FILE
 
     if is_in_jupyter() or str2bool(os.environ.get('PYTHON_ICECREAM_USE_STDOUT')):
         DEFAULT_OUTPUT_FILE = sys.stdout
-
-    # Will create the file if it does not exist
-    getOutputFile()
+    else:
+        DEFAULT_OUTPUT_FILE = sys.stderr
 
     ic = IceCreamDebugger()
 
-init()
+reload()

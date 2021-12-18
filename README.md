@@ -230,6 +230,8 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 ### Configuration
 
+By default, icecream will output to stderr unless the environment variable `PYTHON_ICECREAM_USE_STDOUT ` is true (i.e. if it case insensitively matches `1`, `y`, `yes`, `t` or `true`). It will also switch to the stdout if running inside Jupyter.
+
 `ic.configureOutput(prefix, outputFunction, argToStringFunction,
 includeContext)` can be used to adopt a custom output prefix (the default is
 `ic| `), change the output function (default is to write to stderr), customize

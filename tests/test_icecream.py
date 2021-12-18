@@ -19,11 +19,12 @@ except ImportError:  # Python 3.x.
 from contextlib import contextmanager
 from os.path import basename, splitext
 
+import os
 import icecream
 from icecream import ic, ICFilePrint, NoSourceAvailableError
 
-# Ensure our tests don't fail because of a misocnfigured environment
-icecream.DEFAULT_OUTPUT_FILE = sys.stderr
+# Ensure our tests don't fail because of a misconfigured environment
+os.environ['PYTHON_ICECREAM_USE_STDOUT'] = 'False'
 
 TEST_PAIR_DELIMITER = '| '
 MYFILENAME = basename(__file__)
@@ -94,8 +95,10 @@ def captureStandardStreams():
     try:
         sys.stdout = newStdout
         sys.stderr = newStderr
+        icecream.reload()
         yield newStdout, newStderr
     finally:
+        icecream.reload()
         sys.stdout = realStdout
         sys.stderr = realStderr
 
