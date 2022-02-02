@@ -18,6 +18,7 @@ import inspect
 import pprint
 import sys
 from datetime import datetime
+from functools import singledispatch
 from contextlib import contextmanager
 from os.path import basename
 from textwrap import dedent
@@ -154,6 +155,7 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
+@singledispatch
 def argumentToString(obj):
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
