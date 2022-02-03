@@ -370,14 +370,10 @@ class TestIceCream(unittest.TestCase):
         # Unsupport Python2
         if "singledispatch" not in dir(functools):
             for attr in ("register", "unregister"):
-                try:
+                with self.assertRaises(NotImplementedError):
                     getattr(argumentToString, attr)(
                         tuple, argumentToString_tuple
                     )
-                except NotImplementedError as e:
-                    assert True
-                else:
-                    assert False
             return
 
         # Prepare input and output
