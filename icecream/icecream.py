@@ -18,7 +18,7 @@ import inspect
 import pprint
 import sys
 from datetime import datetime
-from functools import singledispatch
+import functools
 from contextlib import contextmanager
 from os.path import basename
 from textwrap import dedent
@@ -153,6 +153,30 @@ def format_pair(prefix, arg, value):
     value_lines = indented_lines(value_prefix, value)
     lines = arg_lines[:-1] + value_lines
     return '\n'.join(lines)
+
+
+def singledispatch(func):
+    # build a dictionary mapping names to closure cells
+    if "singledispatch" not in functools.__dir__():
+        def unsupport_py2(*args, **kwargs):
+            raise NotImplementedError(
+                "functools.singledispatch is missing in " + sys.version
+            )
+        func.register = func.unregister = unsupport_py2
+        return func
+
+    func = functools.singledispatch(func)
+
+    # add unregister based on https://stackoverflow.com/a/25951784
+    closure = dict(zip(func.register.__code__.co_freevars, 
+                    func.register.__closure__))
+    registry = closure['registry'].cell_contents
+    dispatch_cache = closure['dispatch_cache'].cell_contents
+    def unregister(cls):
+        del registry[cls]
+        dispatch_cache.clear()
+    func.unregister = unregister
+    return func
 
 
 @singledispatch
