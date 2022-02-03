@@ -169,7 +169,7 @@ def singledispatch(func):
 
     # add unregister based on https://stackoverflow.com/a/25951784
     closure = dict(zip(func.register.__code__.co_freevars, 
-                    func.register.__closure__))
+                       func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
     def unregister(cls):
