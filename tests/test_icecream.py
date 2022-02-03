@@ -367,7 +367,7 @@ class TestIceCream(unittest.TestCase):
 
     def testSingledispatchArgumentToString(self):
         # Unsupport Python2
-        if "singledispatch" not in functools.__dir__():
+        if "singledispatch" not in dir(functools):
             assert isinstance(
                 argumentToString.register(tuple, argumentToString_tuple),
                 NotImplementedError

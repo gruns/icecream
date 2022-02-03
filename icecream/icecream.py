@@ -157,7 +157,7 @@ def format_pair(prefix, arg, value):
 
 def singledispatch(func):
     # build a dictionary mapping names to closure cells
-    if "singledispatch" not in functools.__dir__():
+    if "singledispatch" not in dir(functools):
         def unsupport_py2(*args, **kwargs):
             raise NotImplementedError(
                 "functools.singledispatch is missing in " + sys.version
