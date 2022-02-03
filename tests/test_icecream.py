@@ -13,8 +13,6 @@
 import functools
 import sys
 import unittest
-
-from numpy import kaiser
 try:  # Python 2.x.
     from StringIO import StringIO
 except ImportError:  # Python 3.x.
@@ -366,16 +364,20 @@ class TestIceCream(unittest.TestCase):
         assert pair == ('eins', 'zwei')
 
     def testSingledispatchArgumentToString(self):
+        def argumentToString_tuple(obj):
+            return "Dispatching tuple!"
+
         # Unsupport Python2
         if "singledispatch" not in dir(functools):
-            assert isinstance(
-                argumentToString.register(tuple, argumentToString_tuple),
-                NotImplementedError
-            )
-            assert isinstance(
-                argumentToString.unregister(tuple),
-                NotImplementedError
-            )
+            for attr in ("register", "unregister"):
+                try:
+                    getattr(argumentToString, attr)(
+                        tuple, argumentToString_tuple
+                    )
+                except NotImplementedError as e:
+                    assert True
+                else:
+                    assert False
             return
 
         # Prepare input and output
@@ -383,10 +385,7 @@ class TestIceCream(unittest.TestCase):
         default_output = ic.format(x)
 
         # Register
-        @argumentToString.register(tuple)
-        def argumentToString_tuple(obj):
-            return "Dispatching tuple!"
-
+        argumentToString.register(tuple, argumentToString_tuple)
         assert tuple in argumentToString.registry
         assert str.endswith(ic.format(x), argumentToString_tuple(x))
 
