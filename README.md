@@ -292,7 +292,7 @@ custom fashion.
 ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
-The default `argToStringFunction` is `icecream.argumentToString`, and has methods to `register` and `unregister` functions to be dispatched for specific classes (i.e., `singledispatch`). It also has a `registry` property to view registered functions.
+The default `argToStringFunction` is `icecream.argumentToString`, and has methods to `register` and `unregister` functions to be dispatched for specific classes using `functools.singledispatch`. It also has a `registry` property to view registered functions.
 
 ```pycon
 >>> from icecream import ic, argumentToString
