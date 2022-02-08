@@ -292,6 +292,32 @@ custom fashion.
 ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
+The default `argToStringFunction` is `icecream.argumentToString`, and has methods to `register` and `unregister` functions to be dispatched for specific classes using `functools.singledispatch`. It also has a `registry` property to view registered functions.
+
+```pycon
+>>> from icecream import ic, argumentToString
+>>> import numpy as np
+>>>
+>>> # Register a function to summarize numpy array
+>>> @argumentToString.register(np.ndarray)
+>>> def _(obj):
+>>>     return f"ndarray, shape={obj.shape}, dtype={obj.dtype}"
+>>>
+>>> x = np.zeros((1, 2))
+>>> ic(x)
+ic| x: ndarray, shape=(1, 2), dtype=float64
+>>>
+>>> # View registered functions
+>>> argumentToString.registry
+mappingproxy({object: <function icecream.icecream.argumentToString(obj)>,
+              numpy.ndarray: <function __main__._(obj)>})
+>>>
+>>> # Unregister a function and fallback to the default behavior
+>>> argumentToString.unregister(np.ndarray)
+>>> ic(x)
+ic| x: array([[0., 0.]])
+```
+
 `includeContext`, if provided and True, adds the `ic()` call's filename, line
 number, and parent function to `ic()`'s output.
 

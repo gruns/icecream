@@ -18,6 +18,7 @@ import inspect
 import pprint
 import sys
 from datetime import datetime
+import functools
 from contextlib import contextmanager
 from os.path import basename
 from textwrap import dedent
@@ -154,6 +155,30 @@ def format_pair(prefix, arg, value):
     return '\n'.join(lines)
 
 
+def singledispatch(func):
+    if "singledispatch" not in dir(functools):
+        def unsupport_py2(*args, **kwargs):
+            raise NotImplementedError(
+                "functools.singledispatch is missing in " + sys.version
+            )
+        func.register = func.unregister = unsupport_py2
+        return func
+
+    func = functools.singledispatch(func)
+
+    # add unregister based on https://stackoverflow.com/a/25951784
+    closure = dict(zip(func.register.__code__.co_freevars, 
+                       func.register.__closure__))
+    registry = closure['registry'].cell_contents
+    dispatch_cache = closure['dispatch_cache'].cell_contents
+    def unregister(cls):
+        del registry[cls]
+        dispatch_cache.clear()
+    func.unregister = unregister
+    return func
+
+
+@singledispatch
 def argumentToString(obj):
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.

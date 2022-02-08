@@ -10,6 +10,7 @@
 # License: MIT
 #
 
+import functools
 import sys
 import unittest
 try:  # Python 2.x.
@@ -20,7 +21,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext
 
 import icecream
-from icecream import ic, stderrPrint, NoSourceAvailableError
+from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
 
 
 TEST_PAIR_DELIMITER = '| '
@@ -361,6 +362,33 @@ class TestIceCream(unittest.TestCase):
                 ic(eins)
         pair = parseOutputIntoPairs(out, err, 1)[0][0]
         assert pair == ('eins', 'zwei')
+
+    def testSingledispatchArgumentToString(self):
+        def argumentToString_tuple(obj):
+            return "Dispatching tuple!"
+
+        # Unsupport Python2
+        if "singledispatch" not in dir(functools):
+            for attr in ("register", "unregister"):
+                with self.assertRaises(NotImplementedError):
+                    getattr(argumentToString, attr)(
+                        tuple, argumentToString_tuple
+                    )
+            return
+
+        # Prepare input and output
+        x = (1, 2)
+        default_output = ic.format(x)
+
+        # Register
+        argumentToString.register(tuple, argumentToString_tuple)
+        assert tuple in argumentToString.registry
+        assert str.endswith(ic.format(x), argumentToString_tuple(x))
+
+        # Unregister
+        argumentToString.unregister(tuple)
+        assert tuple not in argumentToString.registry
+        assert ic.format(x) == default_output
 
     def testSingleArgumentLongLineNotWrapped(self):
         # A single long line with one argument is not line wrapped.
