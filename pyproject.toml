@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.2.0", "wheel", "setuptools_scm[toml]>=3.4.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icecream"
+authors = [{name = "Ansgar Grunseid", email = "grunseid@gmail.com"}]
+license = {text = "MIT"}
+description = "Never use print() to debug again" # inspect variables, expressions, and program execution with a single, simple function call.
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+urls = {Homepage = "https://github.com/gruns/icecream"}
+dependencies = [
+    "colorama>=0.3.9",
+    "pygments>=2.2.0",
+    "executing>=0.3.1",
+    "asttokens>=2.0.1",
+]
+dynamic = ["version"]
+
+[tool.setuptools]
+include-package-data = true
+platforms = ["any"]
+license-files = ["LICENSE.txt"]
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.distutils.bdist_wheel]
+universal = 1
+
+[tool.setuptools_scm]
+write_to = "icecream/__version__.py"
+write_to_template = "__version__ = '{version}'\n"
