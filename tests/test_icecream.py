@@ -184,6 +184,17 @@ class TestIceCream(unittest.TestCase):
     def setUp(self):
         ic._pairDelimiter = TEST_PAIR_DELIMITER
 
+    def testMetadata(self):
+        def is_non_empty_string(s):
+            return isinstance(s, str) and s
+        assert is_non_empty_string(icecream.__title__)
+        assert is_non_empty_string(icecream.__version__)
+        assert is_non_empty_string(icecream.__license__)
+        assert is_non_empty_string(icecream.__author__)
+        assert is_non_empty_string(icecream.__contact__)
+        assert is_non_empty_string(icecream.__description__)
+        assert is_non_empty_string(icecream.__url__)
+
     def testWithoutArgs(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             ic()
