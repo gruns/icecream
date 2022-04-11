@@ -329,7 +329,7 @@ class IceCreamDebugger:
     def _getContext(self, callFrame, callNode):
         lineNumber = callNode.lineno
         frameInfo = inspect.getframeinfo(callFrame)
-        parentFunction = frameInfo.function
+        parentFunction = executing.Source.executing(callFrame).code_qualname()
         filename = basename(frameInfo.filename)
 
         return filename, lineNumber, parentFunction
