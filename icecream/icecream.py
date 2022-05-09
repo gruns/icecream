@@ -32,7 +32,7 @@ from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
-from coloring import SolarizedDark
+from .coloring import SolarizedDark
 
 
 PYTHON2 = (sys.version_info[0] == 2)
