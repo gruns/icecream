@@ -20,7 +20,7 @@ import sys
 from datetime import datetime
 import functools
 from contextlib import contextmanager
-from os.path import basename
+from os.path import basename, realpath
 from textwrap import dedent
 
 import colorama
@@ -32,7 +32,7 @@ from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
-from .coloring import SolarizedDark
+from coloring import SolarizedDark
 
 
 PYTHON2 = (sys.version_info[0] == 2)
@@ -192,12 +192,14 @@ class IceCreamDebugger:
 
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False):
+                 argToStringFunction=argumentToString, includeContext=False,
+                 absPath=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
+        self.absPath = absPath
 
     def __call__(self, *args):
         if self.enabled:
@@ -330,9 +332,13 @@ class IceCreamDebugger:
         lineNumber = callNode.lineno
         frameInfo = inspect.getframeinfo(callFrame)
         parentFunction = frameInfo.function
-        filename = basename(frameInfo.filename)
 
-        return filename, lineNumber, parentFunction
+        if self.absPath:
+            filepath = realpath(frameInfo.filename)
+            return filepath, lineNumber, parentFunction
+        else:
+            filename = basename(frameInfo.filename)
+            return filename, lineNumber, parentFunction
 
     def enable(self):
         self.enabled = True
@@ -341,7 +347,8 @@ class IceCreamDebugger:
         self.enabled = False
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent):
+                        argToStringFunction=_absent, includeContext=_absent,
+                        absPath=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
@@ -353,6 +360,9 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
+        
+        if absPath is not _absent:
+            self.absPath = absPath
 
 
 ic = IceCreamDebugger()

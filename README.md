@@ -333,6 +333,25 @@ ic| example.py:12 in foo()- 'str': 'str'
 
 `includeContext` is False by default.
 
+`absPath`, False by default, can be used to control whether `ic()`'s output includes the absolute path of the file where `ic()` is called, provided `includeContext == True`. This is useful when `ic()` is called from multiple files in a project, with files having same names but different paths. Moreover, for most editors such as VSCode, a clickable link to the line where `ic()` is called is provided:
+
+```pycon
+>>> from icecream import ic
+>>> ic.configureOutput(includeContext=True, absPath=True)
+>>>
+>>> def foo():
+>>>   ic('str')
+>>> foo()
+ic| /absolute/path/to/example.py:12 in foo()- 'str': 'str'
+>>> ic.configureOutput(includeContext=True, absPath=False)
+>>>
+>>> def foo():
+>>>   ic('str')
+>>> foo()
+ic| example.py:12 in foo()- 'str': 'str'
+```
+
+Here, a click on `/absolute/path/to/example.py:12` brings you to the line of the debugging call. It is really handy when you have debugging outputs from multiple files and want to easily jump to the line where the debugging call is made.
 
 ### Installation
 
