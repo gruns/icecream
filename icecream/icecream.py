@@ -333,12 +333,8 @@ class IceCreamDebugger:
         frameInfo = inspect.getframeinfo(callFrame)
         parentFunction = frameInfo.function
 
-        if self.absPath:
-            filepath = realpath(frameInfo.filename)
-            return filepath, lineNumber, parentFunction
-        else:
-            filename = basename(frameInfo.filename)
-            return filename, lineNumber, parentFunction
+        filepath = (realpath if self.absPath else basename)(frameInfo.filename)
+        return filepath, lineNumber, parentFunction
 
     def enable(self):
         self.enabled = True
