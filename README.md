@@ -333,17 +333,17 @@ ic| example.py:12 in foo()- 'str': 'str'
 
 `includeContext` is False by default.
 
-`absPath`, False by default, can be used to control whether `ic()`'s output includes the absolute path of the file where `ic()` is called, provided `includeContext == True`. This is useful when `ic()` is called from multiple files in a project, with files having same names but different paths. Moreover, for most editors such as VSCode, a clickable link to the line where `ic()` is called is provided:
+`contextAbsPath`, False by default, can be used to control whether `ic()`'s output includes the absolute path of the file where `ic()` is called, provided `includeContext == True`. This is useful when `ic()` is called from multiple files in a project, with files having same names but different paths. Moreover, for most editors such as VSCode, a clickable link to the line where `ic()` is called is provided:
 
 ```pycon
 >>> from icecream import ic
->>> ic.configureOutput(includeContext=True, absPath=True)
+>>> ic.configureOutput(includeContext=True, contextAbsPath=True)
 >>>
 >>> def foo():
 >>>   ic('str')
 >>> foo()
 ic| /absolute/path/to/example.py:12 in foo()- 'str': 'str'
->>> ic.configureOutput(includeContext=True, absPath=False)
+>>> ic.configureOutput(includeContext=True, contextAbsPath=False)
 >>>
 >>> def foo():
 >>>   ic('str')

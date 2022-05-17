@@ -193,13 +193,13 @@ class IceCreamDebugger:
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction=argumentToString, includeContext=False,
-                 absPath=False):
+                 contextAbsPath=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
-        self.absPath = absPath
+        self.contextAbsPath = contextAbsPath
 
     def __call__(self, *args):
         if self.enabled:
@@ -333,7 +333,7 @@ class IceCreamDebugger:
         frameInfo = inspect.getframeinfo(callFrame)
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.absPath else basename)(frameInfo.filename)
+        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
         return filepath, lineNumber, parentFunction
 
     def enable(self):
@@ -344,7 +344,7 @@ class IceCreamDebugger:
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
-                        absPath=_absent):
+                        contextAbsPath=_absent):
         if prefix is not _absent:
             self.prefix = prefix
 
@@ -357,8 +357,8 @@ class IceCreamDebugger:
         if includeContext is not _absent:
             self.includeContext = includeContext
         
-        if absPath is not _absent:
-            self.absPath = absPath
+        if contextAbsPath is not _absent:
+            self.contextAbsPath = contextAbsPath
 
 
 ic = IceCreamDebugger()
