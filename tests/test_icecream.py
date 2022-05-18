@@ -25,7 +25,7 @@ from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
 
 
 TEST_PAIR_DELIMITER = '| '
-MYFILENAME = basename(__file__)
+MY_FILENAME = basename(__file__)
 
 
 a = 1
@@ -124,7 +124,7 @@ def lineIsContext(line):
     return (
         int(lineNumber) > 0 and
         ext in ['.py', '.pyc', '.pyo'] and
-        name == splitext(MYFILENAME)[0] and
+        name == splitext(MY_FILENAME)[0] and
         (function == '<module>' or function.endswith('()')))
 
 
