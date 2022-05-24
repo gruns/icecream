@@ -25,8 +25,8 @@ from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
 
 
 TEST_PAIR_DELIMITER = '| '
-MYFILENAME = basename(__file__)
-MYFILEPATH = realpath(__file__)
+MY_FILENAME = basename(__file__)
+MY_FILEPATH = realpath(__file__)
 
 
 a = 1
@@ -129,7 +129,7 @@ def lineIsContext(line):
     return (
         int(lineNumber) > 0 and
         ext in ['.py', '.pyc', '.pyo'] and
-        name == splitext(MYFILENAME)[0] and
+        name == splitext(MY_FILENAME)[0] and
         (function == '<module>' or function.endswith('()')))
 
 def lineIsAbsPathContext(line):
@@ -141,7 +141,7 @@ def lineIsAbsPathContext(line):
     return (
         int(lineNumber) > 0 and
         ext in ['.py', '.pyc', '.pyo'] and
-        path == splitext(MYFILEPATH)[0] and
+        path == splitext(MY_FILEPATH)[0] and
         (function == '<module>' or function.endswith('()')))
 
 def lineAfterContext(line, prefix):
@@ -499,7 +499,7 @@ class TestIceCream(unittest.TestCase):
                 ic(multilineStr)
 
         firstLine = err.getvalue().splitlines()[0]
-        assert lineIsAbsPathContext(firstLine) # TODO
+        assert lineIsAbsPathContext(firstLine)
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
