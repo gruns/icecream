@@ -20,6 +20,7 @@ import sys
 from datetime import datetime
 import functools
 from contextlib import contextmanager
+from functools import wraps
 from os.path import basename
 from textwrap import dedent
 
@@ -202,11 +203,17 @@ class IceCreamDebugger:
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
-            try:
-                out = self._format(callFrame, *args)
-            except NoSourceAvailableError as err:
+
+            ex = Source.executing(callFrame)
+            callNode = ex.node
+            if callNode is None:
                 prefix = callOrValue(self.prefix)
-                out = prefix + 'Error: ' + err.infoMessage
+                out = prefix + 'Error: ' + NoSourceAvailableError.infoMessage
+            elif getattr(ex, 'decorator', None):
+                return self.decorate(args[0])
+            else:
+                out = self._format(callFrame, callNode, *args)
+
             self.outputFunction(out)
 
         if not args:  # E.g. ic().
@@ -218,17 +225,36 @@ class IceCreamDebugger:
 
         return passthrough
 
+    def decorate(self, func):
+        name = func.__name__
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            args_kwargs = (
+                    [repr(arg) for arg in args]
+                    + ['%s=%r' % pair for pair in kwargs.items()]
+            )
+            self.outputFunction(
+                '%scalled %s(%s)' % (self.prefix, name, ', '.join(args_kwargs))
+            )
+            result = func(*args, **kwargs)
+            self.outputFunction('%s%s returned %r' % (self.prefix, name, result))
+            return result
+
+        return wrapper
+
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
-        out = self._format(callFrame, *args)
-        return out
-
-    def _format(self, callFrame, *args):
-        prefix = callOrValue(self.prefix)
 
         callNode = Source.executing(callFrame).node
         if callNode is None:
             raise NoSourceAvailableError()
+
+        out = self._format(callFrame, callNode, *args)
+        return out
+
+    def _format(self, callFrame, callNode, *args):
+        prefix = callOrValue(self.prefix)
 
         context = self._formatContext(callFrame, callNode)
         if not args:
