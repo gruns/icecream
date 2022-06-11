@@ -5,6 +5,8 @@ Added: Ability to output absolute paths, like /path/to/foo.py, instead
   of just filenames, like foo.py, with the contextAbsPath parameter to
   ic.configureOutput(). See https://github.com/gruns/icecream/pull/122.
   Huge thank you to @HelinXu!
+Changed: Raise TypeError if no arguments are provided to
+  ic.configureOutput().
 
 
 ================================================================================
