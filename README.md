@@ -43,8 +43,9 @@ or the more thorough
 print("foo('123')", foo('123'))
 ```
 
-then `ic()` is here to help. With arguments, `ic()` inspects itself and prints
-both its own arguments and the values of those arguments.
+then `ic()` will put a smile on your face. With arguments, `ic()`
+inspects itself and prints both its own arguments and the values of
+those arguments.
 
 ```python
 from icecream import ic
