@@ -331,9 +331,10 @@ line number, and parent function to `ic()`'s output.
 >>> ic.configureOutput(includeContext=True)
 >>>
 >>> def foo():
->>>   ic('str')
+>>>   i = 3
+>>>   ic(i)
 >>> foo()
-ic| example.py:12 in foo()- 'str': 'str'
+ic| example.py:12 in foo()- i: 3
 ```
 
 `includeContext` is False by default.
@@ -349,16 +350,19 @@ file where `ic()` was called.
 >>> from icecream import ic
 >>> ic.configureOutput(includeContext=True, contextAbsPath=True)
 >>>
+>>> i = 3
+>>>
 >>> def foo():
->>>   ic('str')
+>>>   ic(i)
 >>> foo()
-ic| /absolute/path/to/example.py:12 in foo()- 'str': 'str'
+ic| /absolute/path/to/example.py:12 in foo()- i: 3
+>>>
 >>> ic.configureOutput(includeContext=True, contextAbsPath=False)
 >>>
 >>> def foo():
->>>   ic('str')
+>>>   ic(i)
 >>> foo()
-ic| example.py:12 in foo()- 'str': 'str'
+ic| example.py:18 in foo()- i: 3
 ```
 
 `contextAbsPath` is False by default.
