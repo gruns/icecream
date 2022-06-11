@@ -18,7 +18,7 @@ try:  # Python 2.x.
 except ImportError:  # Python 3.x.
     from io import StringIO
 from contextlib import contextmanager
-from os.path import basename, splitext
+from os.path import basename, splitext, realpath
 
 import icecream
 from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
@@ -26,6 +26,7 @@ from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
+MY_FILEPATH = realpath(__file__)
 
 
 a = 1
@@ -62,11 +63,13 @@ def disableColoring():
 
 @contextmanager
 def configureIcecreamOutput(prefix=None, outputFunction=None,
-                            argToStringFunction=None, includeContext=None):
+                            argToStringFunction=None, includeContext=None,
+                            contextAbsPath=None):
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
     oldArgToStringFunction = ic.argToStringFunction
     oldIncludeContext = ic.includeContext
+    oldContextAbsPath = ic.contextAbsPath
 
     if prefix:
         ic.configureOutput(prefix=prefix)
@@ -76,12 +79,14 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
         ic.configureOutput(argToStringFunction=argToStringFunction)
     if includeContext:
         ic.configureOutput(includeContext=includeContext)
+    if contextAbsPath:
+        ic.configureOutput(contextAbsPath=contextAbsPath)
 
     yield
 
     ic.configureOutput(
         oldPrefix, oldOutputFunction, oldArgToStringFunction,
-        oldIncludeContext)
+        oldIncludeContext, oldContextAbsPath)
 
 
 @contextmanager
@@ -127,6 +132,17 @@ def lineIsContext(line):
         name == splitext(MY_FILENAME)[0] and
         (function == '<module>' or function.endswith('()')))
 
+def lineIsAbsPathContext(line):
+    line = stripPrefix(line)  # ic| /absolute/path/to/f.py:33 in foo()
+    sourceLocation, function = line.split(' in ')  # /absolute/path/to/f.py:33 in foo()
+    filepath, lineNumber = sourceLocation.split(':')  # /absolute/path/to/f.py:33
+    path, ext = splitext(filepath)
+
+    return (
+        int(lineNumber) > 0 and
+        ext in ['.py', '.pyc', '.pyo'] and
+        path == splitext(MY_FILEPATH)[0] and
+        (function == '<module>' or function.endswith('()')))
 
 def lineAfterContext(line, prefix):
     if line.startswith(prefix):
@@ -446,6 +462,15 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 1)[0][0]
         assert pair == ('i', '3')
 
+    def testContextAbsPathSingleLine(self):
+        i = 3
+        with configureIcecreamOutput(includeContext=True, contextAbsPath=True):
+            with disableColoring(), captureStandardStreams() as (out, err):
+                ic(i)
+        # Output with absolute path can easily exceed line width, so no assert line num here.
+        pairs = parseOutputIntoPairs(out, err, 0)
+        assert [('i', '3')] in pairs
+
     def testValues(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             # Test both 'asdf' and "asdf"; see
@@ -467,6 +492,18 @@ class TestIceCream(unittest.TestCase):
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
 
+    def testContextAbsPathMultiLine(self):
+        multilineStr = 'line1\nline2'
+        with configureIcecreamOutput(includeContext=True, contextAbsPath=True):
+            with disableColoring(), captureStandardStreams() as (out, err):
+                ic(multilineStr)
+
+        firstLine = err.getvalue().splitlines()[0]
+        assert lineIsAbsPathContext(firstLine)
+
+        pair = parseOutputIntoPairs(out, err, 3)[1][0]
+        assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
+    
     def testFormat(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             """comment"""; noop(); ic(  # noqa
