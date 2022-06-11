@@ -345,6 +345,11 @@ class IceCreamDebugger:
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
                         contextAbsPath=_absent):
+        noParameterProvided = all(
+            v is _absent for k,v in locals().items() if k != 'self')
+        if noParameterProvided:
+            raise TypeError('configureOutput() missing at least one argument')
+
         if prefix is not _absent:
             self.prefix = prefix
 

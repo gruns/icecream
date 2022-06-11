@@ -594,3 +594,7 @@ ic| (a,
             ic({1: 'str'})  # Output should be colored with ANSI control codes.
 
         assert hasAnsiEscapeCodes(err.getvalue())
+
+    def testConfigureOutputWithNoParameters(self):
+        with self.assertRaises(TypeError):
+            ic.configureOutput()
