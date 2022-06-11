@@ -231,11 +231,10 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 ### Configuration
 
 `ic.configureOutput(prefix, outputFunction, argToStringFunction,
-includeContext)` can be used to adopt a custom output prefix (the default is
-`ic| `), change the output function (default is to write to stderr), customize
-how arguments are serialized to strings, and/or include the `ic()` call's
-context (filename, line number, and parent function) in `ic()` output with
-arguments.
+includeContext, contextAbsPath)` controls `ic()`'s output.
+
+`prefix`, if provided, adopts a custom output prefix. `prefix` can be a
+string, like
 
 ```pycon
 >>> from icecream import ic
@@ -244,7 +243,7 @@ arguments.
 hello -> 'world'
 ```
 
-`prefix` can optionally be a function, too.
+or a function.
 
 ```pycon
 >>> import time
@@ -258,8 +257,11 @@ hello -> 'world'
 1519185860 |> 'world': 'world'
 ```
 
-`outputFunction`, if provided, is called with `ic()`'s output instead of that
-output being written to stderr (the default).
+`prefix`'s default value is `ic| `.
+
+`outputFunction`, if provided, is called once for every `ic()` call with
+`ic()`'s output, as a string, instead of that string being written to
+stderr (the default).
 
 ```pycon
 >>> import logging
@@ -276,8 +278,8 @@ WARNING:root:ic| 'eep': 'eep'
 `argToStringFunction`, if provided, is called with argument values to be
 serialized to displayable strings. The default is PrettyPrint's
 [pprint.pformat()](https://docs.python.org/3/library/pprint.html#pprint.pformat),
-but this can be changed to, for example, handle non-standard datatypes in a
-custom fashion.
+but this can be changed to, for example, handle non-standard datatypes
+in a custom fashion.
 
 ```pycon
 >>> from icecream import ic
@@ -292,7 +294,10 @@ custom fashion.
 ic| 7: 7, 'hello': [!string 'hello' with length 5!]
 ```
 
-The default `argToStringFunction` is `icecream.argumentToString`, and has methods to `register` and `unregister` functions to be dispatched for specific classes using `functools.singledispatch`. It also has a `registry` property to view registered functions.
+The default `argToStringFunction` is `icecream.argumentToString`, and
+has methods to `register` and `unregister` functions to be dispatched
+for specific classes using `functools.singledispatch`. It also has a
+`registry` property to view registered functions.
 
 ```pycon
 >>> from icecream import ic, argumentToString
@@ -318,8 +323,8 @@ mappingproxy({object: <function icecream.icecream.argumentToString(obj)>,
 ic| x: array([[0., 0.]])
 ```
 
-`includeContext`, if provided and True, adds the `ic()` call's filename, line
-number, and parent function to `ic()`'s output.
+`includeContext`, if provided and True, adds the `ic()` call's filename,
+line number, and parent function to `ic()`'s output.
 
 ```pycon
 >>> from icecream import ic
@@ -333,7 +338,12 @@ ic| example.py:12 in foo()- 'str': 'str'
 
 `includeContext` is False by default.
 
-`contextAbsPath`, False by default, can be used to control whether `ic()`'s output includes the absolute path of the file where `ic()` is called, provided `includeContext == True`. This is useful when `ic()` is called from multiple files in a project, with files having same names but different paths. Moreover, for most editors such as VSCode, a clickable link to the line where `ic()` is called is provided:
+`contextAbsPath`, if provided and True, outputs absolute filepaths, like
+`/path/to/foo.py`, over just filenames, like `foo.py`, when `ic()` is
+called with `includeContext == True`. This is useful when debugging
+multiple files that share the same filename(s). Moreover, some editors,
+like VSCode, turn absolute filepaths into clickable links that open the
+file where `ic()` was called.
 
 ```pycon
 >>> from icecream import ic
@@ -351,7 +361,7 @@ ic| /absolute/path/to/example.py:12 in foo()- 'str': 'str'
 ic| example.py:12 in foo()- 'str': 'str'
 ```
 
-Here, a click on `/absolute/path/to/example.py:12` brings you to the line of the debugging call. It is really handy when you have debugging outputs from multiple files and want to easily jump to the line where the debugging call is made.
+`contextAbsPath` is False by default.
 
 ### Installation
 
