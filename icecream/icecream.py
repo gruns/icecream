@@ -201,15 +201,19 @@ class IceCreamDebugger:
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
 
-    def __call__(self, *args):
-        if self.enabled:
+    def __call__(self, *args, prefix=None, return_str=False):
+        if self.enabled or return_str:
             callFrame = inspect.currentframe().f_back
             try:
-                out = self._format(callFrame, *args)
+                out = self._format(callFrame, *args, prefix=prefix)
             except NoSourceAvailableError as err:
-                prefix = callOrValue(self.prefix)
+                if prefix is None:
+                    prefix = callOrValue(self.prefix)
+
                 out = prefix + 'Error: ' + err.infoMessage
-            self.outputFunction(out)
+
+            if not return_str:
+                self.outputFunction(out)
 
         if not args:  # E.g. ic().
             passthrough = None
@@ -218,15 +222,19 @@ class IceCreamDebugger:
         else:  # E.g. ic(1, 2, 3).
             passthrough = args
 
-        return passthrough
+        if return_str:
+            return passthrough, out
+        else:
+            return passthrough
 
-    def format(self, *args):
+    def format(self, *args, **kwargs):
         callFrame = inspect.currentframe().f_back
-        out = self._format(callFrame, *args)
+        out = self._format(callFrame, *args, **kwargs)
         return out
 
-    def _format(self, callFrame, *args):
-        prefix = callOrValue(self.prefix)
+    def _format(self, callFrame, *args, prefix=None):
+        if prefix is None:
+            prefix = callOrValue(self.prefix)
 
         callNode = Source.executing(callFrame).node
         if callNode is None:
