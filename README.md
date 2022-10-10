@@ -25,14 +25,13 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
      parent function.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and
-supports Python 2, Python 3, PyPy2, and PyPy3. (Python 3.11 support is
-[forthcoming](https://github.com/alexmojaki/executing/pull/31).)
+supports Python 2, Python 3, PyPy2, and PyPy3.
 
 
 ### Inspect Variables
 
-Have you ever printed variables or expressions to debug your program? If you've
-ever typed something like
+Have you ever printed variables or expressions to debug your program? If
+you've ever typed something like
 
 ```python
 print(foo('123'))
