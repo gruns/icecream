@@ -17,15 +17,15 @@ jobs:
           - python-version: 2.7
             toxenv: py27
           - python-version: 3.5
-            toxenv: py3.5
+            toxenv: py35
           - python-version: 3.6
-            toxenv: py3.6
+            toxenv: py36
           - python-version: 3.7
-            toxenv: py3.7
+            toxenv: py37
           - python-version: 3.8
-            toxenv: py3.8      
+            toxenv: py38      
           - python-version: 3.9
-            toxenv: py3.9
+            toxenv: py39
           - python-version: pypy
             toxenv: pypy
           - python-version: pypy3
