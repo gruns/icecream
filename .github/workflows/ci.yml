@@ -26,10 +26,10 @@ jobs:
             toxenv: py38
           - python-version: 3.9
             toxenv: py39
-          - python-version: pypy
-            toxenv: pypy-2.7
-          - python-version: pypy3
-            toxenv: pypy-3.7
+          - python-version: pypy-2.7
+            toxenv: pypy
+          - python-version: pypy-3.7
+            toxenv: pypy3
 
     steps:
       - uses: actions/checkout@v3
