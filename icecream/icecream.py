@@ -104,7 +104,7 @@ This can happen, for example, when
   - The underlying source code changed during execution. See
     https://stackoverflow.com/a/33175832.
 """
-NO_SOURCE_AVAILABLE_INFO_MESSAGE = (
+DEFAULT_NO_SOURCE_AVAILABLE_MESSAGE = (
     'Error: Failed to access the underlying source code for analysis. Was ic() '
     'invoked in a REPL (e.g. from the command line), a frozen application '
     '(e.g. packaged with PyInstaller), or did the underlying source code '
@@ -193,13 +193,15 @@ class IceCreamDebugger:
     def __init__(self, prefix=DEFAULT_PREFIX,
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction=argumentToString, includeContext=False,
-                 contextAbsPath=False):
+                 contextAbsPath=False,
+                 noSourceAvailableMessage=DEFAULT_NO_SOURCE_AVAILABLE_MESSAGE):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
+        self.noSourceAvailableMessage = noSourceAvailableMessage
 
     def __call__(self, *args):
         if self.enabled:
@@ -243,7 +245,7 @@ class IceCreamDebugger:
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
-            sanitizedArgStrs = [NO_SOURCE_AVAILABLE_INFO_MESSAGE] * len(args)
+            sanitizedArgStrs = [self.noSourceAvailableMessage] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -338,7 +340,8 @@ class IceCreamDebugger:
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
-                        contextAbsPath=_absent):
+                        contextAbsPath=_absent,
+                        noSourceAvailableMessage=_absent):
         noParameterProvided = all(
             v is _absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
@@ -358,6 +361,9 @@ class IceCreamDebugger:
         
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
+
+        if noSourceAvailableMessage is not _absent:
+            self.noSourceAvailableMessage = noSourceAvailableMessage
 
 
 ic = IceCreamDebugger()

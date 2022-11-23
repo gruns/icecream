@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_INFO_MESSAGE
+from icecream import ic, argumentToString, stderrPrint, DEFAULT_NO_SOURCE_AVAILABLE_MESSAGE
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -63,12 +63,14 @@ def disableColoring():
 @contextmanager
 def configureIcecreamOutput(prefix=None, outputFunction=None,
                             argToStringFunction=None, includeContext=None,
-                            contextAbsPath=None):
+                            contextAbsPath=None,
+                            noSourceAvailableMessage=None):
     oldPrefix = ic.prefix
     oldOutputFunction = ic.outputFunction
     oldArgToStringFunction = ic.argToStringFunction
     oldIncludeContext = ic.includeContext
     oldContextAbsPath = ic.contextAbsPath
+    oldNoSourceAvailableMessage = ic.noSourceAvailableMessage
 
     if prefix:
         ic.configureOutput(prefix=prefix)
@@ -80,12 +82,14 @@ def configureIcecreamOutput(prefix=None, outputFunction=None,
         ic.configureOutput(includeContext=includeContext)
     if contextAbsPath:
         ic.configureOutput(contextAbsPath=contextAbsPath)
+    if noSourceAvailableMessage:
+        ic.configureOutput(noSourceAvailableMessage=noSourceAvailableMessage)
 
     yield
 
     ic.configureOutput(
         oldPrefix, oldOutputFunction, oldArgToStringFunction,
-        oldIncludeContext, oldContextAbsPath)
+        oldIncludeContext, oldContextAbsPath, oldNoSourceAvailableMessage)
 
 
 @contextmanager
@@ -533,7 +537,17 @@ class TestIceCream(unittest.TestCase):
         self.assertEqual(err.getvalue().strip(), """
 ic| {0}: 1
     {0}: 2
-        """.format(NO_SOURCE_AVAILABLE_INFO_MESSAGE).strip())
+        """.format(DEFAULT_NO_SOURCE_AVAILABLE_MESSAGE).strip())
+
+    def testNoSourceAvailableConfiguration(self):
+        noSourceAvailableMessage = 'no source'
+        with configureIcecreamOutput(noSourceAvailableMessage=noSourceAvailableMessage):
+            with disableColoring(), captureStandardStreams() as (out, err):
+                eval('ic(a)')
+
+            self.assertEqual(err.getvalue().strip(), """
+    ic| {0}: 1
+            """.format(noSourceAvailableMessage).strip())
 
     def testSingleTupleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
