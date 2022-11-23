@@ -21,8 +21,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NoSourceAvailableError
-
+from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_INFO_MESSAGE
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -529,8 +528,12 @@ class TestIceCream(unittest.TestCase):
 
     def testNoSourceAvailable(self):
         with disableColoring(), captureStandardStreams() as (out, err):
-            eval('ic()')
-        assert NoSourceAvailableError.infoMessage in err.getvalue()
+            eval('ic(a, b)')
+
+        self.assertEqual(err.getvalue().strip(), """
+ic| {0}: 1
+    {0}: 2
+        """.format(NO_SOURCE_AVAILABLE_INFO_MESSAGE).strip())
 
     def testSingleTupleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
