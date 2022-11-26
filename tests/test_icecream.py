@@ -13,6 +13,8 @@
 import functools
 import sys
 import unittest
+import warnings
+
 try:  # Python 2.x.
     from StringIO import StringIO
 except ImportError:  # Python 3.x.
@@ -21,7 +23,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_INFO_MESSAGE
+from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_WARNING_MESSAGE
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -526,14 +528,21 @@ class TestIceCream(unittest.TestCase):
         pairs = parseOutputIntoPairs(out, err, 1)[0]
         assert pairs == [('a', '1'), ('b', '2')]
 
-    def testNoSourceAvailable(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+    def testNoSourceAvailablePrintsValues(self):
+        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
+            # we ignore the warning so that it doesn't interfere with parsing ic's output
+            warnings.simplefilter("ignore")
             eval('ic(a, b)')
+            pairs = parseOutputIntoPairs(out, err, 1)
+            self.assertEqual(pairs, [[('1', None), ("2", None)]])
 
-        self.assertEqual(err.getvalue().strip(), """
-ic| {0}: 1
-    {0}: 2
-        """.format(NO_SOURCE_AVAILABLE_INFO_MESSAGE).strip())
+    def testNoSourceAvailableIssuesExactlyOneWarning(self):
+        with warnings.catch_warnings(record=True) as all_warnings:
+            eval('ic(a)')
+            eval('ic(b)')
+            assert len(all_warnings) == 1
+            warning = all_warnings[-1]
+            assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
 
     def testSingleTupleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):

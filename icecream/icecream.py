@@ -17,6 +17,7 @@ import ast
 import inspect
 import pprint
 import sys
+import warnings
 from datetime import datetime
 import functools
 from contextlib import contextmanager
@@ -37,8 +38,8 @@ from .coloring import SolarizedDark
 
 PYTHON2 = (sys.version_info[0] == 2)
 
-
 _absent = object()
+_arg_source_missing = object()
 
 
 def bindStaticVariable(name, value):
@@ -104,8 +105,8 @@ This can happen, for example, when
   - The underlying source code changed during execution. See
     https://stackoverflow.com/a/33175832.
 """
-NO_SOURCE_AVAILABLE_INFO_MESSAGE = (
-    'Error: Failed to access the underlying source code for analysis. Was ic() '
+NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
+    'Failed to access the underlying source code for analysis. Was ic() '
     'invoked in a REPL (e.g. from the command line), a frozen application '
     '(e.g. packaged with PyInstaller), or did the underlying source code '
     'change during execution?')
@@ -243,7 +244,9 @@ class IceCreamDebugger:
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
-            sanitizedArgStrs = [NO_SOURCE_AVAILABLE_INFO_MESSAGE] * len(args)
+            warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
+                          category=RuntimeWarning)
+            sanitizedArgStrs = [_arg_source_missing] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -266,8 +269,12 @@ class IceCreamDebugger:
         #
         #   ic| "hello": 'hello'.
         #
+        # When the source for an arg is missing we also only print the value,
+        # since we can't know anything about the argument itself.
         pairStrs = [
-            val if isLiteral(arg) else (argPrefix(arg) + val)
+            val
+            if (isLiteral(arg) or arg is _arg_source_missing)
+            else (argPrefix(arg) + val)
             for arg, val in pairs]
 
         allArgsOnOneLine = self._pairDelimiter.join(pairStrs)
