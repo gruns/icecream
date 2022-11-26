@@ -245,7 +245,7 @@ class IceCreamDebugger:
                 for arg in callNode.args]
         else:
             warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
-                          category=RuntimeWarning)
+                          category=RuntimeWarning, stacklevel=4)
             sanitizedArgStrs = [_arg_source_missing] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
