@@ -144,8 +144,12 @@ def indented_lines(prefix, string):
 
 
 def format_pair(prefix, arg, value):
-    arg_lines = indented_lines(prefix, arg)
-    value_prefix = arg_lines[-1] + ': '
+    if arg is _arg_source_missing:
+        arg_lines = []
+        value_prefix = prefix
+    else:
+        arg_lines = indented_lines(prefix, arg)
+        value_prefix = arg_lines[-1] + ': '
 
     looksLikeAString = value[0] + value[-1] in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.

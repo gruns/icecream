@@ -184,12 +184,13 @@ def parseOutputIntoPairs(out, err, assertNumLines,
         if len(pairs[0]) == 1 and line.startswith(' '):
             arg, value = linePairs[-1][-1]
             looksLikeAString = value[0] in ["'", '"']
-            prefix = (arg + ': ') + (' ' if looksLikeAString else '')
+            prefix = ((arg + ': ' if arg is not None else '')  # A multiline value
+                      + (' ' if looksLikeAString else ''))
             dedented = line[len(ic.prefix) + len(prefix):]
             linePairs[-1][-1] = (arg, value + '\n' + dedented)
         else:
             items = [
-                (p[0].strip(), None) if len(p) == 1  # A value, like ic(3).
+                (None, p[0].strip()) if len(p) == 1  # A value, like ic(3).
                 else (p[0].strip(), p[1].strip())  # A variable, like ic(a).
                 for p in pairs]
             linePairs.append(items)
@@ -252,7 +253,7 @@ class TestIceCream(unittest.TestCase):
             ic(a,
                'foo')
         pairs = parseOutputIntoPairs(out, err, 1)[0]
-        assert pairs == [('a',  '1'), ("'foo'", None)]
+        assert pairs == [('a',  '1'), (None, "'foo'")]
 
         with disableColoring(), captureStandardStreams() as (out, err):
             noop(noop(noop({1: ic(
@@ -479,7 +480,7 @@ class TestIceCream(unittest.TestCase):
             ic(3, 'asdf', "asdf")
 
         pairs = parseOutputIntoPairs(out, err, 1)
-        assert pairs == [[('3', None), ("'asdf'", None), ("'asdf'", None)]]
+        assert pairs == [[(None, '3'), (None, "'asdf'"), (None, "'asdf'")]]
 
     def testIncludeContextMultiLine(self):
         multilineStr = 'line1\nline2'
@@ -534,7 +535,19 @@ class TestIceCream(unittest.TestCase):
             warnings.simplefilter("ignore")
             eval('ic(a, b)')
             pairs = parseOutputIntoPairs(out, err, 1)
-            self.assertEqual(pairs, [[('1', None), ("2", None)]])
+            self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
+
+    def testNoSourceAvailablePrintsMultiline(self):
+        """
+        This tests for a bug which caused only multiline prints to fail.
+        """
+        multilineStr = 'line1\nline2'
+        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
+            # we ignore the warning so that it doesn't interfere with parsing ic's output
+            warnings.simplefilter("ignore")
+            eval('ic(multilineStr)')
+            pair = parseOutputIntoPairs(out, err, 2)[0][0]
+            self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
         with warnings.catch_warnings(record=True) as all_warnings:
