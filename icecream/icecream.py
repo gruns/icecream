@@ -17,6 +17,7 @@ import ast
 import inspect
 import pprint
 import sys
+import warnings
 from datetime import datetime
 import functools
 from contextlib import contextmanager
@@ -37,8 +38,8 @@ from .coloring import SolarizedDark
 
 PYTHON2 = (sys.version_info[0] == 2)
 
-
 _absent = object()
+_arg_source_missing = object()
 
 
 def bindStaticVariable(name, value):
@@ -90,25 +91,25 @@ DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
-class NoSourceAvailableError(OSError):
-    """
-    Raised when icecream fails to find or access source code that's
-    required to parse and analyze. This can happen, for example, when
+"""
+This info message is printed instead of the arguments when icecream
+fails to find or access source code that's required to parse and analyze.
+This can happen, for example, when
 
-      - ic() is invoked inside a REPL or interactive shell, e.g. from the
-        command line (CLI) or with python -i.
+  - ic() is invoked inside a REPL or interactive shell, e.g. from the
+    command line (CLI) or with python -i.
 
-      - The source code is mangled and/or packaged, e.g. with a project
-        freezer like PyInstaller.
+  - The source code is mangled and/or packaged, e.g. with a project
+    freezer like PyInstaller.
 
-      - The underlying source code changed during execution. See
-        https://stackoverflow.com/a/33175832.
-    """
-    infoMessage = (
-        'Failed to access the underlying source code for analysis. Was ic() '
-        'invoked in a REPL (e.g. from the command line), a frozen application '
-        '(e.g. packaged with PyInstaller), or did the underlying source code '
-        'change during execution?')
+  - The underlying source code changed during execution. See
+    https://stackoverflow.com/a/33175832.
+"""
+NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
+    'Failed to access the underlying source code for analysis. Was ic() '
+    'invoked in a REPL (e.g. from the command line), a frozen application '
+    '(e.g. packaged with PyInstaller), or did the underlying source code '
+    'change during execution?')
 
 
 def callOrValue(obj):
@@ -143,8 +144,12 @@ def indented_lines(prefix, string):
 
 
 def format_pair(prefix, arg, value):
-    arg_lines = indented_lines(prefix, arg)
-    value_prefix = arg_lines[-1] + ': '
+    if arg is _arg_source_missing:
+        arg_lines = []
+        value_prefix = prefix
+    else:
+        arg_lines = indented_lines(prefix, arg)
+        value_prefix = arg_lines[-1] + ': '
 
     looksLikeAString = value[0] + value[-1] in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
@@ -204,12 +209,7 @@ class IceCreamDebugger:
     def __call__(self, *args):
         if self.enabled:
             callFrame = inspect.currentframe().f_back
-            try:
-                out = self._format(callFrame, *args)
-            except NoSourceAvailableError as err:
-                prefix = callOrValue(self.prefix)
-                out = prefix + 'Error: ' + err.infoMessage
-            self.outputFunction(out)
+            self.outputFunction(self._format(callFrame, *args))
 
         if not args:  # E.g. ic().
             passthrough = None
@@ -228,11 +228,7 @@ class IceCreamDebugger:
     def _format(self, callFrame, *args):
         prefix = callOrValue(self.prefix)
 
-        callNode = Source.executing(callFrame).node
-        if callNode is None:
-            raise NoSourceAvailableError()
-
-        context = self._formatContext(callFrame, callNode)
+        context = self._formatContext(callFrame)
         if not args:
             time = self._formatTime()
             out = prefix + context + time
@@ -240,15 +236,21 @@ class IceCreamDebugger:
             if not self.includeContext:
                 context = ''
             out = self._formatArgs(
-                callFrame, callNode, prefix, context, args)
+                callFrame, prefix, context, args)
 
         return out
 
-    def _formatArgs(self, callFrame, callNode, prefix, context, args):
-        source = Source.for_frame(callFrame)
-        sanitizedArgStrs = [
-            source.get_text_with_indentation(arg)
-            for arg in callNode.args]
+    def _formatArgs(self, callFrame, prefix, context, args):
+        callNode = Source.executing(callFrame).node
+        if callNode is not None:
+            source = Source.for_frame(callFrame)
+            sanitizedArgStrs = [
+                source.get_text_with_indentation(arg)
+                for arg in callNode.args]
+        else:
+            warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
+                          category=RuntimeWarning, stacklevel=4)
+            sanitizedArgStrs = [_arg_source_missing] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -271,8 +273,12 @@ class IceCreamDebugger:
         #
         #   ic| "hello": 'hello'.
         #
+        # When the source for an arg is missing we also only print the value,
+        # since we can't know anything about the argument itself.
         pairStrs = [
-            val if isLiteral(arg) else (argPrefix(arg) + val)
+            val
+            if (isLiteral(arg) or arg is _arg_source_missing)
+            else (argPrefix(arg) + val)
             for arg, val in pairs]
 
         allArgsOnOneLine = self._pairDelimiter.join(pairStrs)
@@ -313,9 +319,8 @@ class IceCreamDebugger:
 
         return '\n'.join(lines)
 
-    def _formatContext(self, callFrame, callNode):
-        filename, lineNumber, parentFunction = self._getContext(
-            callFrame, callNode)
+    def _formatContext(self, callFrame):
+        filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
             parentFunction = '%s()' % parentFunction
@@ -328,9 +333,9 @@ class IceCreamDebugger:
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
         return ' at %s' % formatted
 
-    def _getContext(self, callFrame, callNode):
-        lineNumber = callNode.lineno
+    def _getContext(self, callFrame):
         frameInfo = inspect.getframeinfo(callFrame)
+        lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
         filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
