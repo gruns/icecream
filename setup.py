@@ -79,6 +79,7 @@ setup(
     platforms=['any'],
     packages=find_packages(),
     include_package_data=True,
+    package_data={"icecream": ["py.typed", "*.pyi"]},
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
