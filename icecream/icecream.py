@@ -14,13 +14,13 @@
 from __future__ import print_function
 
 import ast
+import functools
 import inspect
 import pprint
 import sys
 import warnings
-from datetime import datetime
-import functools
 from contextlib import contextmanager
+from datetime import datetime
 from os.path import basename, realpath
 from textwrap import dedent
 
@@ -31,12 +31,12 @@ from pygments import highlight
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
 from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
+from pygments.lexers import Python3Lexer as Py3Lexer
+from pygments.lexers import PythonLexer as PyLexer
 
 from .coloring import SolarizedDark
 
-
-PYTHON2 = (sys.version_info[0] == 2)
+PYTHON2 = sys.version_info[0] == 2
 
 _absent = object()
 _arg_source_missing = object()
@@ -172,7 +172,7 @@ def singledispatch(func):
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
-    closure = dict(zip(func.register.__code__.co_freevars, 
+    closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -366,7 +366,7 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
-        
+
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
 

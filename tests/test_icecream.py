@@ -19,11 +19,13 @@ try:  # Python 2.x.
     from StringIO import StringIO
 except ImportError:  # Python 3.x.
     from io import StringIO
+
 from contextlib import contextmanager
-from os.path import basename, splitext, realpath
+from os.path import basename, realpath, splitext
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_WARNING_MESSAGE
+from icecream import (NO_SOURCE_AVAILABLE_WARNING_MESSAGE, argumentToString,
+                      ic, stderrPrint)
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -505,7 +507,7 @@ class TestIceCream(unittest.TestCase):
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
-    
+
     def testFormat(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             """comment"""; noop(); ic(  # noqa
@@ -595,7 +597,7 @@ ic| (a,
                     list(range(15))])
 
         lines = err.getvalue().strip().splitlines()
-        self.assertRegexpMatches(
+        self.assertRegex(
             lines[0],
             r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
         )
