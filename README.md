@@ -161,7 +161,6 @@ ic| s: 'sup'
 
 To enable strings to be written to either `stdout` or `stderr`, we can use 
 `ic.enableStdout()` or `ic.enableStderr()` toggles between the two.
-to
 
 ```python
 from icecream import ic
