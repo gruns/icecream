@@ -159,6 +159,19 @@ of written to stderr.
 ic| s: 'sup'
 ```
 
+To enable strings to be written to either `stdout` or `stderr`, we can use 
+`ic.enableStdout()` or `ic.enableStderr()` toggles between the two.
+
+```python
+from icecream import ic
+ic("Hello World!") # by default it prints to to stderr
+ic.enableStdout()
+ic("This is printed to stdout") # prints string to stdout
+
+ic.enableStderr()
+ic("This is printed to stderr") # prints string to stderr
+```
+
 Additionally, `ic()`'s output can be entirely disabled, and later re-enabled, with
 `ic.disable()` and `ic.enable()` respectively.
 

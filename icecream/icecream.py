@@ -70,6 +70,10 @@ def stderrPrint(*args):
     print(*args, file=sys.stderr)
 
 
+def stdoutPrint(*args):
+    print(*args)
+
+
 def isLiteral(s):
     try:
         ast.literal_eval(s)
@@ -82,6 +86,12 @@ def colorizedStderrPrint(s):
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         stderrPrint(colored)
+
+
+def colorizedStdoutPrint(s):
+    colored = colorize(s)
+    with supportTerminalColorsInWindows():
+        stdoutPrint(colored)
 
 
 DEFAULT_PREFIX = 'ic| '
@@ -369,6 +379,12 @@ class IceCreamDebugger:
         
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
+
+    def enableStdout(self):
+        self.outputFunction = colorizedStdoutPrint
+
+    def enableStderr(self):
+        self.outputFunction = colorizedStderrPrint
 
 
 ic = IceCreamDebugger()
