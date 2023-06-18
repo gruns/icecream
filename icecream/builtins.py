@@ -19,9 +19,9 @@ except ImportError:
     builtins = __import__('builtins')
 
 
-def install(ic='ic'):
-    setattr(builtins, ic, icecream.ic)
+def install(attribute='ic', value=icecream.ic):
+    setattr(builtins, attribute, value)
 
 
-def uninstall(ic='ic'):
-    delattr(builtins, ic)
+def uninstall(attribute='ic'):
+    delattr(builtins, attribute)
