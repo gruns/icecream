@@ -10,6 +10,11 @@
 # License: MIT
 #
 
-def runMe():
+def runMeDefault():
     x = 3
     ic(x)
+
+
+def runMeCustom():
+    x = 4
+    ik(x)
