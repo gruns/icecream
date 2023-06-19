@@ -249,7 +249,7 @@ or a function.
 ```pycon
 >>> import time
 >>> from icecream import ic
->>>  
+>>>
 >>> def unixTimestamp():
 >>>     return '%i |> ' % int(time.time())
 >>>
@@ -367,6 +367,32 @@ ic| example.py:18 in foo()- i: 3
 ```
 
 `contextAbsPath` is False by default.
+
+#### Multi-Configuration
+You might want to create multiple configurations bound to different names.
+For example, `ic()` with context for usual output in terminal,
+and `ik()` without context for piping to logger which usually has context already.
+The `ik` name is just an example (e.g. short for `ice-kream`).
+
+```python
+from icecream import IceCreamDebugger, ic, install
+
+# Usual instance, for reference.
+ic.configureOutput(includeContext=True)
+install()
+
+# Second instance/configuration.
+ik = IceCreamDebugger()
+ik.configureOutput(includeContext=False, prefix='')
+install(attribute='ik', value=ik)
+
+# Pipe IceCream output to a logger.
+# Logger usually has context already, so the IceCream's context is redundant.
+# So, we could just redirect the IceCream contents without context.
+# Likewise, this makes it possible to control IceCream with log level.
+foo = 'bar'
+logger.debug(ik.format(foo))
+```
 
 ### Installation
 
