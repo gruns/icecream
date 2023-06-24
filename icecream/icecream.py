@@ -184,8 +184,8 @@ def singledispatch(func):
 
 
 @singledispatch
-def argumentToString(obj):
-    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
+def argumentToString(obj, **kwargs):
+    s = DEFAULT_ARG_TO_STRING_FUNCTION(obj, **kwargs)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
@@ -206,7 +206,9 @@ class IceCreamDebugger:
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
+        self.kwargs = kwargs
+
         if self.enabled:
             callFrame = inspect.currentframe().f_back
             self.outputFunction(self._format(callFrame, *args))
@@ -261,7 +263,7 @@ class IceCreamDebugger:
         def argPrefix(arg):
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+        pairs = [(arg, self.argToStringFunction(val, **self.kwargs)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
         # etc, only output the value, not the argument and the value, as the
         # argument and the value will be identical or nigh identical. Ex: with
