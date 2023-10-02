@@ -101,7 +101,7 @@ setup(
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',
-        'executing>=0.3.1',
+        'executing>=0.3.1,<2.0.0',
         'asttokens>=2.0.1',
     ],
     cmdclass={
