@@ -9,3 +9,4 @@ build/
 *.pyo
 *.egg
 *.egg-info
+.vscode
