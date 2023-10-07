@@ -24,8 +24,6 @@ jobs:
             toxenv: py38
           - python-version: 3.9
             toxenv: py39
-          - python-version: pypy-2.7
-            toxenv: pypy
           - python-version: pypy-3.7
             toxenv: pypy3
 
