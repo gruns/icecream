@@ -184,6 +184,15 @@ ic| 3: 3
 `ic()` continues to return its arguments when disabled, of course; no existing
 code with `ic()` breaks.
 
+Finally, by default `ic()` will produce an output with coloring. Colored output can be disabled and enabled.
+
+```
+ic.disableColoring()
+
+ic.enableColoring()
+
+```
+
 
 ### Import Tricks
 
