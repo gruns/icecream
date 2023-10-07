@@ -369,6 +369,20 @@ class IceCreamDebugger:
         
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
+    
+    def disableColoring(self):
+        """Disable color output by rerouting outputFunction to sys.stderr"""
+
+        self.color_outputFunction = self.outputFunction
+        self.outputFunction = stderrPrint
+
+    def enableColoring(self):
+        """Renable color output by restoring original output function"""
+
+        # Check if color_outputFunction has been set already.
+        # If not then coloring hasn't been disabled so do nothing
+        if hasattr(self, "color_outputFunction"):
+            self.outputFunction = self.color_outputFunction
 
 
 ic = IceCreamDebugger()
