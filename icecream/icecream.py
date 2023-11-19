@@ -151,7 +151,7 @@ def format_pair(prefix, arg, value):
         arg_lines = indented_lines(prefix, arg)
         value_prefix = arg_lines[-1] + ': '
 
-    looksLikeAString = value[0] + value[-1] in ["''", '""']
+    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         value = prefixLinesAfterFirst(' ', value)
 
