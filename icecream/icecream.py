@@ -39,7 +39,6 @@ from .coloring import SolarizedDark
 PYTHON2 = (sys.version_info[0] == 2)
 
 _absent = object()
-_arg_source_missing = object()
 
 
 def bindStaticVariable(name, value):
@@ -144,7 +143,7 @@ def indented_lines(prefix, string):
 
 
 def format_pair(prefix, arg, value):
-    if arg is _arg_source_missing:
+    if arg is _absent:
         arg_lines = []
         value_prefix = prefix
     else:
@@ -248,9 +247,10 @@ class IceCreamDebugger:
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
-            warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
-                          category=RuntimeWarning, stacklevel=4)
-            sanitizedArgStrs = [_arg_source_missing] * len(args)
+            warnings.warn(
+                NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
+                category=RuntimeWarning, stacklevel=4)
+            sanitizedArgStrs = [_absent] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -276,8 +276,7 @@ class IceCreamDebugger:
         # When the source for an arg is missing we also only print the value,
         # since we can't know anything about the argument itself.
         pairStrs = [
-            val
-            if (isLiteral(arg) or arg is _arg_source_missing)
+            val if (isLiteral(arg) or arg is _absent)
             else (argPrefix(arg) + val)
             for arg, val in pairs]
 
