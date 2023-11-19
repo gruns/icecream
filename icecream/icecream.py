@@ -134,12 +134,13 @@ def prefixLinesAfterFirst(prefix, s):
     return ''.join(lines)
 
 
-def indented_lines(prefix, string):
+def indentLines(prefix, string):
     lines = string.splitlines()
-    return [prefix + lines[0]] + [
-        ' ' * len(prefix) + line
+    indented = [prefix + lines[0]] + [
+        (' ' * len(prefix)) + line
         for line in lines[1:]
     ]
+    return indented
 
 
 def format_pair(prefix, arg, value):
@@ -147,14 +148,14 @@ def format_pair(prefix, arg, value):
         arg_lines = []
         value_prefix = prefix
     else:
-        arg_lines = indented_lines(prefix, arg)
+        arg_lines = indentLines(prefix, arg)
         value_prefix = arg_lines[-1] + ': '
 
     looksLikeAString = (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         value = prefixLinesAfterFirst(' ', value)
 
-    value_lines = indented_lines(value_prefix, value)
+    value_lines = indentLines(value_prefix, value)
     lines = arg_lines[:-1] + value_lines
     return '\n'.join(lines)
 
@@ -310,7 +311,7 @@ class IceCreamDebugger:
                     format_pair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = indented_lines(prefix, '\n'.join(arg_lines))
+                lines = indentLines(prefix, '\n'.join(arg_lines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
