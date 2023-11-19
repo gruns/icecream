@@ -125,38 +125,37 @@ class Source(executing.Source):
         return result
 
 
-def prefixLinesAfterFirst(prefix, s):
-    lines = s.splitlines(True)
+def prefixLines(prefix, s, startAtLine=0):
+    lines = s.splitlines()
 
-    for i in range(1, len(lines)):
+    for i in range(startAtLine, len(lines)):
         lines[i] = prefix + lines[i]
 
-    return ''.join(lines)
+    return lines
 
 
-def indentLines(prefix, string):
-    lines = string.splitlines()
-    indented = [prefix + lines[0]] + [
-        (' ' * len(prefix)) + line
-        for line in lines[1:]
-    ]
-    return indented
+def prefixFirstLineIndentRemaining(prefix, s):
+    indent = ' ' * len(prefix)
+    lines = prefixLines(indent, s, startAtLine=1)
+    lines[0] = prefix + lines[0]
+    return lines
 
 
-def format_pair(prefix, arg, value):
+def formatPair(prefix, arg, value):
     if arg is _absent:
-        arg_lines = []
-        value_prefix = prefix
+        argLines = []
+        valuePrefix = prefix
     else:
-        arg_lines = indentLines(prefix, arg)
-        value_prefix = arg_lines[-1] + ': '
+        argLines = prefixFirstLineIndentRemaining(prefix, arg)
+        valuePrefix = argLines[-1] + ': '
 
     looksLikeAString = (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
-        value = prefixLinesAfterFirst(' ', value)
+        valueLines = prefixLines(' ', value, startAtLine=1)
+        value = '\n'.join(valueLines)
 
-    value_lines = indentLines(value_prefix, value)
-    lines = arg_lines[:-1] + value_lines
+    valueLines = prefixFirstLineIndentRemaining(valuePrefix, value)
+    lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
 
@@ -298,7 +297,7 @@ class IceCreamDebugger:
             #     b: 22222222222222222222
             if context:
                 lines = [prefix + context] + [
-                    format_pair(len(prefix) * ' ', arg, value)
+                    formatPair(len(prefix) * ' ', arg, value)
                     for arg, value in pairs
                 ]
             # ic| multilineStr: 'line1
@@ -307,11 +306,11 @@ class IceCreamDebugger:
             # ic| a: 11111111111111111111
             #     b: 22222222222222222222
             else:
-                arg_lines = [
-                    format_pair('', arg, value)
+                argLines = [
+                    formatPair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = indentLines(prefix, '\n'.join(arg_lines))
+                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
