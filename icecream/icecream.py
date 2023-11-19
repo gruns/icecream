@@ -263,10 +263,10 @@ class IceCreamDebugger:
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
-        # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
-        # etc, only output the value, not the argument and the value, as the
-        # argument and the value will be identical or nigh identical. Ex: with
-        # ic("hello"), just output
+        # For cleaner output, if <arg> is a literal, eg 3, "a string",
+        # b'bytes', etc, only output the value, not the argument and the
+        # value, because the argument and the value will be identical or
+        # nigh identical. Ex: with ic("hello"), just output
         #
         #   ic| 'hello',
         #
