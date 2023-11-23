@@ -551,11 +551,11 @@ class TestIceCream(unittest.TestCase):
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
         with captureStandardStreams() as (out, err):
-            with warnings.catch_warnings(record=True) as all_warnings:
+            with warnings.catch_warnings(record=True) as allWarnings:
                 eval('ic(a)')
                 eval('ic(b)')
-                assert len(all_warnings) == 1
-                warning = all_warnings[-1]
+                assert len(allWarnings) == 1
+                warning = allWarnings[-1]
                 assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
 
     def testSingleTupleArgument(self):
