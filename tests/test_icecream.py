@@ -554,7 +554,7 @@ class TestIceCream(unittest.TestCase):
                 self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
-        with captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (out, err):
             with warnings.catch_warnings(record=True) as allWarnings:
                 eval('ic(a)')
                 eval('ic(b)')
