@@ -550,12 +550,13 @@ class TestIceCream(unittest.TestCase):
             self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
-        with warnings.catch_warnings(record=True) as all_warnings:
-            eval('ic(a)')
-            eval('ic(b)')
-            assert len(all_warnings) == 1
-            warning = all_warnings[-1]
-            assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
+        with captureStandardStreams() as (out, err):
+            with warnings.catch_warnings(record=True) as all_warnings:
+                eval('ic(a)')
+                eval('ic(b)')
+                assert len(all_warnings) == 1
+                warning = all_warnings[-1]
+                assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
 
     def testSingleTupleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
