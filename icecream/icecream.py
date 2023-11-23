@@ -14,9 +14,14 @@
 from __future__ import print_function
 
 import ast
+import enum
 import inspect
 import pprint
 import sys
+from types import FrameType
+from typing import TYPE_CHECKING, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast
+if TYPE_CHECKING:
+    from typing import Literal
 import warnings
 from datetime import datetime
 import functools
@@ -38,12 +43,15 @@ from .coloring import SolarizedDark
 
 PYTHON2 = (sys.version_info[0] == 2)
 
-_absent = object()
-_arg_source_missing = object()
+class Sentinel(enum.Enum):
+    absent = object()
+    arg_source_missing = object()
 
 
 def bindStaticVariable(name, value):
+    # type: (str, Any) -> Callable
     def decorator(fn):
+        # type: (Callable) -> Callable
         setattr(fn, name, value)
         return fn
     return decorator
@@ -53,12 +61,14 @@ def bindStaticVariable(name, value):
 @bindStaticVariable(
     'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
 def colorize(s):
+    # type: (str) -> str
     self = colorize
     return highlight(s, self.lexer, self.formatter)
 
 
 @contextmanager
 def supportTerminalColorsInWindows():
+    # type: () -> Generator
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
     colorama.init()
@@ -67,10 +77,12 @@ def supportTerminalColorsInWindows():
 
 
 def stderrPrint(*args):
+    # type: (object) -> None
     print(*args, file=sys.stderr)
 
 
 def isLiteral(s):
+    # type: (str) -> bool
     try:
         ast.literal_eval(s)
     except Exception:
@@ -79,6 +91,7 @@ def isLiteral(s):
 
 
 def colorizedStderrPrint(s):
+    # type: (str) -> None
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         stderrPrint(colored)
@@ -113,20 +126,22 @@ NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
 
 
 def callOrValue(obj):
+    # type: (Any) -> Any
     return obj() if callable(obj) else obj
-
 
 class Source(executing.Source):
     def get_text_with_indentation(self, node):
+        # type: (Source, ast.expr) -> str
         result = self.asttokens().get_text(node)
         if '\n' in result:
-            result = ' ' * node.first_token.start[1] + result
+            result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()
         return result
 
 
 def prefixLinesAfterFirst(prefix, s):
+    # type: (str, str) -> str
     lines = s.splitlines(True)
 
     for i in range(1, len(lines)):
@@ -136,6 +151,7 @@ def prefixLinesAfterFirst(prefix, s):
 
 
 def indented_lines(prefix, string):
+    # type: (str, str) -> List[str]
     lines = string.splitlines()
     return [prefix + lines[0]] + [
         ' ' * len(prefix) + line
@@ -144,7 +160,8 @@ def indented_lines(prefix, string):
 
 
 def format_pair(prefix, arg, value):
-    if arg is _arg_source_missing:
+    # type: (str, Union[str, Literal[Sentinel.arg_source_missing]], str) -> str
+    if arg is Sentinel.arg_source_missing:
         arg_lines = []
         value_prefix = prefix
     else:
@@ -161,30 +178,35 @@ def format_pair(prefix, arg, value):
 
 
 def singledispatch(func):
-    if "singledispatch" not in dir(functools):
+    # type: (Callable) -> Callable
+    if sys.version_info < (3, 4): # Need version check not attribute check for mypy
         def unsupport_py2(*args, **kwargs):
+            # type: (Any, Any) -> None
             raise NotImplementedError(
                 "functools.singledispatch is missing in " + sys.version
             )
-        func.register = func.unregister = unsupport_py2
+        func.register = func.unregister = unsupport_py2 # type: ignore[attr-defined]
         return func
 
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
+    assert func.register.__closure__ is not None
     closure = dict(zip(func.register.__code__.co_freevars, 
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
     def unregister(cls):
+        # type: (Type) -> None
         del registry[cls]
         dispatch_cache.clear()
-    func.unregister = unregister
+    func.unregister = unregister # type: ignore[attr-defined]
     return func
 
 
 @singledispatch
 def argumentToString(obj):
+    # type: (Any) -> str
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
@@ -199,6 +221,7 @@ class IceCreamDebugger:
                  outputFunction=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction=argumentToString, includeContext=False,
                  contextAbsPath=False):
+        # type: (IceCreamDebugger, str, Callable[[str], None], Callable[[Any], str], bool,bool) -> None
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
@@ -207,8 +230,11 @@ class IceCreamDebugger:
         self.contextAbsPath = contextAbsPath
 
     def __call__(self, *args):
+        # type: (IceCreamDebugger, Any) -> Any
         if self.enabled:
-            callFrame = inspect.currentframe().f_back
+            currentFrame = inspect.currentframe()
+            assert currentFrame is not None and currentFrame.f_back is not None
+            callFrame = currentFrame.f_back
             self.outputFunction(self._format(callFrame, *args))
 
         if not args:  # E.g. ic().
@@ -221,11 +247,15 @@ class IceCreamDebugger:
         return passthrough
 
     def format(self, *args):
-        callFrame = inspect.currentframe().f_back
+        # type: (IceCreamDebugger, Any) -> str
+        currentFrame = inspect.currentframe()
+        assert currentFrame is not None and currentFrame.f_back is not None
+        callFrame = currentFrame.f_back
         out = self._format(callFrame, *args)
         return out
 
     def _format(self, callFrame, *args):
+        # type: (IceCreamDebugger, FrameType, Any) -> str
         prefix = callOrValue(self.prefix)
 
         context = self._formatContext(callFrame)
@@ -241,16 +271,18 @@ class IceCreamDebugger:
         return out
 
     def _formatArgs(self, callFrame, prefix, context, args):
+        # type: (IceCreamDebugger, FrameType, str, str, Sequence[Any]) -> str
         callNode = Source.executing(callFrame).node
         if callNode is not None:
-            source = Source.for_frame(callFrame)
+            assert isinstance(callNode, ast.Call)
+            source = cast(Source, Source.for_frame(callFrame))
             sanitizedArgStrs = [
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
             warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
                           category=RuntimeWarning, stacklevel=4)
-            sanitizedArgStrs = [_arg_source_missing] * len(args)
+            sanitizedArgStrs = [Sentinel.arg_source_missing] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -258,7 +290,9 @@ class IceCreamDebugger:
         return out
 
     def _constructArgumentOutput(self, prefix, context, pairs):
+        # type: (IceCreamDebugger, str, str, Sequence[Tuple[Union[str, Literal[Sentinel.arg_source_missing]], Any]]) -> str
         def argPrefix(arg):
+            # type: (str) -> str
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
@@ -277,7 +311,7 @@ class IceCreamDebugger:
         # since we can't know anything about the argument itself.
         pairStrs = [
             val
-            if (isLiteral(arg) or arg is _arg_source_missing)
+            if (arg is Sentinel.arg_source_missing or isLiteral(arg))
             else (argPrefix(arg) + val)
             for arg, val in pairs]
 
@@ -320,6 +354,7 @@ class IceCreamDebugger:
         return '\n'.join(lines)
 
     def _formatContext(self, callFrame):
+        # type: (IceCreamDebugger, FrameType) -> str
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
@@ -329,45 +364,49 @@ class IceCreamDebugger:
         return context
 
     def _formatTime(self):
+        # type: (IceCreamDebugger) -> str
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
         return ' at %s' % formatted
 
     def _getContext(self, callFrame):
+        # type: (IceCreamDebugger, FrameType) -> Tuple[str, int, str]
         frameInfo = inspect.getframeinfo(callFrame)
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
+        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename) # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
     def enable(self):
+        # type: (IceCreamDebugger) -> None
         self.enabled = True
 
     def disable(self):
+        # type: (IceCreamDebugger) -> None
         self.enabled = False
 
-    def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent,
-                        contextAbsPath=_absent):
+    def configureOutput(self, prefix=Sentinel.absent, outputFunction=Sentinel.absent,
+                        argToStringFunction=Sentinel.absent, includeContext=Sentinel.absent, contextAbsPath=Sentinel.absent):
+        # type: (IceCreamDebugger, Union[str, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]]) -> None
         noParameterProvided = all(
-            v is _absent for k,v in locals().items() if k != 'self')
+            v is Sentinel.absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
-        if prefix is not _absent:
+        if prefix is not Sentinel.absent:
             self.prefix = prefix
 
-        if outputFunction is not _absent:
+        if outputFunction is not Sentinel.absent:
             self.outputFunction = outputFunction
 
-        if argToStringFunction is not _absent:
+        if argToStringFunction is not Sentinel.absent:
             self.argToStringFunction = argToStringFunction
 
-        if includeContext is not _absent:
+        if includeContext is not Sentinel.absent:
             self.includeContext = includeContext
         
-        if contextAbsPath is not _absent:
+        if contextAbsPath is not Sentinel.absent:
             self.contextAbsPath = contextAbsPath
 
 

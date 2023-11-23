@@ -20,8 +20,10 @@ except ImportError:
 
 
 def install(ic='ic'):
+    # type: (str) -> None
     setattr(builtins, ic, icecream.ic)
 
 
 def uninstall(ic='ic'):
+    # type: (str) -> None
     delattr(builtins, ic)
