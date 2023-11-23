@@ -530,24 +530,28 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [('a', '1'), ('b', '2')]
 
     def testNoSourceAvailablePrintsValues(self):
-        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
-            # we ignore the warning so that it doesn't interfere with parsing ic's output
-            warnings.simplefilter("ignore")
-            eval('ic(a, b)')
-            pairs = parseOutputIntoPairs(out, err, 1)
-            self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
+        with disableColoring(), captureStandardStreams() as (out, err):
+            with warnings.catch_warnings():
+                # we ignore the warning so that it doesn't interfere
+                # with parsing ic's output
+                warnings.simplefilter("ignore")
+                eval('ic(a, b)')
+                pairs = parseOutputIntoPairs(out, err, 1)
+                self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
 
     def testNoSourceAvailablePrintsMultiline(self):
         """
         This tests for a bug which caused only multiline prints to fail.
         """
         multilineStr = 'line1\nline2'
-        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
-            # we ignore the warning so that it doesn't interfere with parsing ic's output
-            warnings.simplefilter("ignore")
-            eval('ic(multilineStr)')
-            pair = parseOutputIntoPairs(out, err, 2)[0][0]
-            self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
+        with disableColoring(), captureStandardStreams() as (out, err):
+            with warnings.catch_warnings():
+                # we ignore the warning so that it doesn't interfere
+                # with parsing ic's output
+                warnings.simplefilter("ignore")
+                eval('ic(multilineStr)')
+                pair = parseOutputIntoPairs(out, err, 2)[0][0]
+                self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
         with captureStandardStreams() as (out, err):
