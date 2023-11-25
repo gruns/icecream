@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: 2.7
-            toxenv: py27
+          # - python-version: 2.7
+          #   toxenv: py27
           - python-version: 3.5
             toxenv: py35
           - python-version: 3.6
