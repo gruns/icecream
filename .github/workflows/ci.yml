@@ -30,6 +30,10 @@ jobs:
             toxenv: pypy
           - python-version: pypy-3.7
             toxenv: pypy3
+          - python-version: 3.9
+            toxenv: mypy
+          - python-version: 3.9
+            toxenv: mypy2            
 
     steps:
       - uses: actions/checkout@v3
