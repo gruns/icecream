@@ -84,6 +84,12 @@ def colorizedStderrPrint(s):
         stderrPrint(colored)
 
 
+def colorizedStdoutPrint(s):
+    colored = colorize(s)
+    with supportTerminalColorsInWindows():
+        print(colored)
+
+
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
@@ -346,6 +352,12 @@ class IceCreamDebugger:
 
     def disable(self):
         self.enabled = False
+
+    def use_stdout():
+        self.outputFunction = colorizedStdoutPrint
+
+    def use_stderr():
+        self.outputFunction = colorizedStderrPrint
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
