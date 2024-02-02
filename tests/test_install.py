@@ -13,21 +13,28 @@
 import unittest
 
 import icecream
+from install_test_import import (
+    runMeCustom,
+    runMeDefault,
+)
 from test_icecream import (
-    disableColoring, captureStandardStreams, parseOutputIntoPairs)
-
-from install_test_import import runMe
+    captureStandardStreams,
+    disableColoring,
+    parseOutputIntoPairs,
+)
 
 
 class TestIceCreamInstall(unittest.TestCase):
-    def testInstall(self):
+
+    def testInstallDefault(self):
         icecream.install()
         with disableColoring(), captureStandardStreams() as (out, err):
-            runMe()
+            runMeDefault()
+
         assert parseOutputIntoPairs(out, err, 1)[0][0] == ('x', '3')
         icecream.uninstall()  # Clean up builtins.
 
-    def testUninstall(self):
+    def testUninstallDefault(self):
         try:
             icecream.uninstall()
         except AttributeError:  # Already uninstalled.
@@ -35,4 +42,26 @@ class TestIceCreamInstall(unittest.TestCase):
 
         # NameError: global name 'ic' is not defined.
         with self.assertRaises(NameError):
-            runMe()
+            runMeDefault()
+
+    def testInstallCustom(self):
+        # Create new instance of IceCream and install it.
+        ik = icecream.IceCreamDebugger()
+        ik.configureOutput(includeContext=False, prefix='')
+        icecream.install(attribute='ik', value=ik)
+
+        with disableColoring(icecream_instance=ik), captureStandardStreams() as (out, err):
+            runMeCustom()
+
+        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('x', '4')
+        icecream.uninstall(attribute='ik')  # Clean up builtins.
+
+    def testUninstallCustom(self):
+        try:
+            icecream.uninstall('ik')
+        except AttributeError:  # Already uninstalled.
+            pass
+
+        # NameError: global name 'ik' is not defined.
+        with self.assertRaises(NameError):
+            runMeCustom()

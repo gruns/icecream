@@ -54,12 +54,12 @@ class FakeTeletypeBuffer(StringIO):
 
 
 @contextmanager
-def disableColoring():
-    originalOutputFunction = ic.outputFunction
+def disableColoring(icecream_instance=ic):
+    originalOutputFunction = icecream_instance.outputFunction
 
-    ic.configureOutput(outputFunction=stderrPrint)
+    icecream_instance.configureOutput(outputFunction=stderrPrint)
     yield
-    ic.configureOutput(outputFunction=originalOutputFunction)
+    icecream_instance.configureOutput(outputFunction=originalOutputFunction)
 
 
 @contextmanager
@@ -505,7 +505,7 @@ class TestIceCream(unittest.TestCase):
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
-    
+
     def testFormat(self):
         with disableColoring(), captureStandardStreams() as (out, err):
             """comment"""; noop(); ic(  # noqa
