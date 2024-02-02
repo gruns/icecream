@@ -12,11 +12,11 @@
 
 import unittest
 
-import icecream
-from test_icecream import (
-    disableColoring, captureStandardStreams, parseOutputIntoPairs)
-
 from install_test_import import runMe
+from test_icecream import (captureStandardStreams, disableColoring,
+                           parseOutputIntoPairs)
+
+import icecream
 
 
 class TestIceCreamInstall(unittest.TestCase):
