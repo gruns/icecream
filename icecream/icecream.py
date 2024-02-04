@@ -45,7 +45,6 @@ PYTHON2 = (sys.version_info[0] == 2)
 
 class Sentinel(enum.Enum):
     absent = object()
-    arg_source_missing = object()
 
 
 def bindStaticVariable(name, value):
@@ -140,40 +139,40 @@ class Source(executing.Source):
         return result
 
 
-def prefixLinesAfterFirst(prefix, s):
-    # type: (str, str) -> str
-    lines = s.splitlines(True)
+def prefixLines(prefix, s, startAtLine=0):
+    # type: (str, str, int) -> list[str]
+    lines = s.splitlines()
 
-    for i in range(1, len(lines)):
+    for i in range(startAtLine, len(lines)):
         lines[i] = prefix + lines[i]
 
-    return ''.join(lines)
+    return lines
 
 
-def indented_lines(prefix, string):
+def prefixFirstLineIndentRemaining(prefix, s):
     # type: (str, str) -> List[str]
-    lines = string.splitlines()
-    return [prefix + lines[0]] + [
-        ' ' * len(prefix) + line
-        for line in lines[1:]
-    ]
+    indent = ' ' * len(prefix)
+    lines = prefixLines(indent, s, startAtLine=1)
+    lines[0] = prefix + lines[0]
+    return lines
 
 
-def format_pair(prefix, arg, value):
-    # type: (str, Union[str, Literal[Sentinel.arg_source_missing]], str) -> str
-    if arg is Sentinel.arg_source_missing:
-        arg_lines = []
-        value_prefix = prefix
+def formatPair(prefix, arg, value):
+    # type: (str, Union[str, Literal[Sentinel.absent]], str) -> str
+    if arg is Sentinel.absent:
+        argLines = []
+        valuePrefix = prefix
     else:
-        arg_lines = indented_lines(prefix, arg)
-        value_prefix = arg_lines[-1] + ': '
+        argLines = prefixFirstLineIndentRemaining(prefix, arg)
+        valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = value[0] + value[-1] in ["''", '""']
+    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
-        value = prefixLinesAfterFirst(' ', value)
+        valueLines = prefixLines(' ', value, startAtLine=1)
+        value = '\n'.join(valueLines)
 
-    value_lines = indented_lines(value_prefix, value)
-    lines = arg_lines[:-1] + value_lines
+    valueLines = prefixFirstLineIndentRemaining(valuePrefix, value)
+    lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
 
@@ -280,9 +279,10 @@ class IceCreamDebugger:
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
-            warnings.warn(NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
-                          category=RuntimeWarning, stacklevel=4)
-            sanitizedArgStrs = [Sentinel.arg_source_missing] * len(args)
+            warnings.warn(
+                NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
+                category=RuntimeWarning, stacklevel=4)
+            sanitizedArgStrs = [Sentinel.absent] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, args))
 
@@ -290,16 +290,16 @@ class IceCreamDebugger:
         return out
 
     def _constructArgumentOutput(self, prefix, context, pairs):
-        # type: (IceCreamDebugger, str, str, Sequence[Tuple[Union[str, Literal[Sentinel.arg_source_missing]], Any]]) -> str
+        # type: (IceCreamDebugger, str, str, Sequence[Tuple[Union[str, Literal[Sentinel.absent]], Any]]) -> str
         def argPrefix(arg):
             # type: (str) -> str
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
-        # For cleaner output, if <arg> is a literal, eg 3, "string", b'bytes',
-        # etc, only output the value, not the argument and the value, as the
-        # argument and the value will be identical or nigh identical. Ex: with
-        # ic("hello"), just output
+        # For cleaner output, if <arg> is a literal, eg 3, "a string",
+        # b'bytes', etc, only output the value, not the argument and the
+        # value, because the argument and the value will be identical or
+        # nigh identical. Ex: with ic("hello"), just output
         #
         #   ic| 'hello',
         #
@@ -310,8 +310,7 @@ class IceCreamDebugger:
         # When the source for an arg is missing we also only print the value,
         # since we can't know anything about the argument itself.
         pairStrs = [
-            val
-            if (arg is Sentinel.arg_source_missing or isLiteral(arg))
+            val if (arg is Sentinel.absent or isLiteral(arg))
             else (argPrefix(arg) + val)
             for arg, val in pairs]
 
@@ -332,7 +331,7 @@ class IceCreamDebugger:
             #     b: 22222222222222222222
             if context:
                 lines = [prefix + context] + [
-                    format_pair(len(prefix) * ' ', arg, value)
+                    formatPair(len(prefix) * ' ', arg, value)
                     for arg, value in pairs
                 ]
             # ic| multilineStr: 'line1
@@ -341,11 +340,11 @@ class IceCreamDebugger:
             # ic| a: 11111111111111111111
             #     b: 22222222222222222222
             else:
-                arg_lines = [
-                    format_pair('', arg, value)
+                argLines = [
+                    formatPair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = indented_lines(prefix, '\n'.join(arg_lines))
+                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
