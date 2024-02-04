@@ -140,7 +140,7 @@ class Source(executing.Source):
 
 
 def prefixLines(prefix, s, startAtLine=0):
-    # type: (str, str, int) -> list[str]
+    # type: (str, str, int) -> List[str]
     lines = s.splitlines()
 
     for i in range(startAtLine, len(lines)):
