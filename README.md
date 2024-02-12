@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="logo.svg" width="220px" height="370px" alt="icecream">
+  <img src="logo.svg" width="220px" height="370px" alt="IceCream">
 </h1>
 
 <p align="center">
