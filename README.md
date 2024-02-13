@@ -17,9 +17,9 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
 `ic()` is like `print()`, but better:
 
-  1. It prints both expressions/variable names and their values.
+  1. It prints both variables and expressions along with their values.
   2. It's 60% faster to type.
-  3. Data structures are pretty printed.
+  3. Data structures are formatted and pretty printed.
   4. Output is syntax highlighted.
   5. It optionally includes program context: filename, line number, and
      parent function.
