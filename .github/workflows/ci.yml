@@ -30,7 +30,7 @@ jobs:
             toxenv: py311
           - python-version: 3.12
             toxenv: py312
-          - python-version: pypy-3.7
+          - python-version: pypy-3.10
             toxenv: pypy3
 
     steps:
