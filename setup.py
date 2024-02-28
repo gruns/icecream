@@ -37,7 +37,7 @@ class Publish(Command):
         os.system('python setup.py sdist bdist_wheel')
 
         sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
-        wheel = 'dist/icecream-%s-py2.py3-none-any.whl' % meta['__version__']
+        wheel = 'dist/icecream-%s-py3-none-any.whl' % meta['__version__']
         rc = os.system('twine upload "%s" "%s"' % (sdist, wheel))
 
         sys.exit(rc)
@@ -86,8 +86,6 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
@@ -96,10 +94,13 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=[],
+    tests_require=[
+        'tox>=4',
+    ],
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',

@@ -24,8 +24,7 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
   5. It optionally includes program context: filename, line number, and
      parent function.
 
-IceCream is well tested, [permissively licensed](LICENSE.txt), and
-supports Python 2, Python 3, PyPy2, and PyPy3.
+IceCream is well tested, [permissively licensed](LICENSE.txt), and supports Python 3 and PyPy3.
 
 
 ### Inspect Variables
