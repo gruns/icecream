@@ -99,7 +99,9 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=[],
+    tests_require=[
+        'tox>=4',
+    ],
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',
