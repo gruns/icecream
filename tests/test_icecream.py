@@ -600,7 +600,7 @@ ic| (a,
                     list(range(15))])
 
         lines = err.getvalue().strip().splitlines()
-        self.assertRegexpMatches(
+        self.assertRegex(
             lines[0],
             r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
         )
