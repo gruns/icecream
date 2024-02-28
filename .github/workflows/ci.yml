@@ -14,23 +14,23 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: 3.5
+          - python-version: '3.5'
             toxenv: py35
-          - python-version: 3.6
+          - python-version: '3.6'
             toxenv: py36
-          - python-version: 3.7
+          - python-version: '3.7'
             toxenv: py37
-          - python-version: 3.8
+          - python-version: '3.8'
             toxenv: py38
-          - python-version: 3.9
+          - python-version: '3.9'
             toxenv: py39
-          - python-version: 3.10
+          - python-version: '3.10'
             toxenv: py310
-          - python-version: 3.11
+          - python-version: '3.11'
             toxenv: py311
-          - python-version: 3.12
+          - python-version: '3.12'
             toxenv: py312
-          - python-version: pypy-3.10
+          - python-version: 'pypy-3.10'
             toxenv: pypy3
 
     steps:
