@@ -15,10 +15,7 @@ import sys
 import unittest
 import warnings
 
-try:  # Python 2.x.
-    from StringIO import StringIO
-except ImportError:  # Python 3.x.
-    from io import StringIO
+from io import StringIO
 from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
@@ -395,15 +392,6 @@ class TestIceCream(unittest.TestCase):
     def testSingledispatchArgumentToString(self):
         def argumentToString_tuple(obj):
             return "Dispatching tuple!"
-
-        # Unsupport Python2
-        if "singledispatch" not in dir(functools):
-            for attr in ("register", "unregister"):
-                with self.assertRaises(NotImplementedError):
-                    getattr(argumentToString, attr)(
-                        tuple, argumentToString_tuple
-                    )
-            return
 
         # Prepare input and output
         x = (1, 2)
