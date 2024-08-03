@@ -33,13 +33,15 @@ from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
-from .coloring import SolarizedDark
+# from .coloring import SolarizedDark
+from pygments.styles import get_style_by_name
 
 
 PYTHON2 = (sys.version_info[0] == 2)
 
 _absent = object()
 
+_style_theme = get_style_by_name(name="solarized-dark")
 
 def bindStaticVariable(name, value):
     def decorator(fn):
@@ -48,7 +50,7 @@ def bindStaticVariable(name, value):
     return decorator
 
 
-@bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
+@bindStaticVariable('formatter', Terminal256Formatter(style=_style_theme))
 @bindStaticVariable(
     'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
 def colorize(s):
