@@ -61,10 +61,12 @@ def colorize(s):
 def supportTerminalColorsInWindows():
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
-    __tmp = sys.platform.startswith('win')
-    if __tmp: colorama.init()
-    yield
-    if __tmp: colorama.deinit()
+    if sys.platform.startswith('win'):
+        colorama.init()
+        yield
+        colorama.deinit()
+    else:
+        yield
 
 
 def stderrPrint(*args):
