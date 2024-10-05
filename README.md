@@ -1,3 +1,14 @@
+This is a fork repo of [gruns](https://github.com/gruns)'s [icecream](https://github.com/gruns/icecream).
+
+Refactor implementation method of `ic`, changing it from an instance to a function, improving visibility and intuitiveness in the users' IDE.
+
+Installing this fork with pip:
+```
+$ pip install git+https://github.com/YunfangHou/icecream.git
+```
+
+Below is the original readme file.
+
 <h1 align="center">
   <img src="logo.svg" width="220px" height="370px" alt="icecream">
 </h1>
