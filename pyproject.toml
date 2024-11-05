@@ -1,0 +1,5 @@
+[tool.mypy]
+show_error_codes=true
+disallow_untyped_defs=true
+disallow_untyped_calls=true
+warn_redundant_casts=true
