@@ -268,7 +268,7 @@ stderr (the default).
 >>> from icecream import ic
 >>>
 >>> def warn(s):
->>>     logging.warning(s)
+>>>     logging.warning("%s", s)
 >>>
 >>> ic.configureOutput(outputFunction=warn)
 >>> ic('eep')
