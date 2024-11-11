@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -7,16 +6,13 @@ on:
   pull_request:
     branches:
       - master
-
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - python-version: '3.5'
-            toxenv: py35
           - python-version: '3.6'
             toxenv: py36
           - python-version: '3.7'
@@ -31,9 +27,10 @@ jobs:
             toxenv: py311
           - python-version: '3.12'
             toxenv: py312
+          - python-version: '3.13'
+            toxenv: py313
           - python-version: 'pypy-3.10'
             toxenv: pypy3
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
