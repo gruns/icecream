@@ -400,6 +400,7 @@ Delicious IceCream should be enjoyed in every language.
 - Lua: [icecream-lua](https://github.com/wlingze/icecream-lua)
 - Clojure(Script): [icecream-cljc](https://github.com/Eigenbahn/icecream-cljc)
 - Bash: [IceCream-Bash](https://github.com/jtplaarj/IceCream-Bash)
+- SystemVerilog: [icecream_sv](https://github.com/xver/icecream_sv)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
