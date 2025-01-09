@@ -28,7 +28,7 @@ IceCream is well tested, [permissively licensed](LICENSE.txt), and supports Pyth
 
 👥 IceCream is looking for a lead contributor + maintainer. Would you
 love to lead IceCream and improve debugging for everyone in Python?
-Please [reach out](grunseid+icecream@gmail.com) and let me know! 🙌
+Please [reach out](mailto:grunseid+icecream@gmail.com) and let me know! 🙌
 
 
 ### Inspect Variables
