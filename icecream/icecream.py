@@ -161,7 +161,7 @@ def singledispatch(func):
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
-    closure = dict(zip(func.register.__code__.co_freevars, 
+    closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -194,6 +194,7 @@ class IceCreamDebugger:
         self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
+        self.scope = False
 
     def __call__(self, *args):
         if self.enabled:
@@ -218,9 +219,11 @@ class IceCreamDebugger:
         prefix = callOrValue(self.prefix)
 
         context = self._formatContext(callFrame)
-        if not args:
+        if not args and not self.scope:
             time = self._formatTime()
             out = prefix + context + time
+        elif not args and self.scope:
+            out = self._formatScope(callFrame, prefix, context)
         else:
             if not self.includeContext:
                 context = ''
@@ -228,6 +231,14 @@ class IceCreamDebugger:
                 callFrame, prefix, context, args)
 
         return out
+
+    def _formatScope(self, callFrame, prefix, context):
+        local_scope_vars = {n:v for n, v in callFrame.f_locals.items()
+                            if not ((n.startswith("__") and n.endswith("__")) or isinstance(v, type(self)))}
+        scope_pairs = [(k, self.argToStringFunction(v)) for k, v in local_scope_vars.items()]
+        out = self._constructArgumentOutput(prefix, context, scope_pairs)
+        return out
+
 
     def _formatArgs(self, callFrame, prefix, context, args):
         callNode = Source.executing(callFrame).node
@@ -336,6 +347,9 @@ class IceCreamDebugger:
     def disable(self):
         self.enabled = False
 
+    def scope(self):
+        self.scope = not self.scope
+
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
                         contextAbsPath=_absent):
@@ -355,7 +369,7 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
-        
+
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
 
