@@ -161,7 +161,7 @@ def singledispatch(func):
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
-    closure = dict(zip(func.register.__code__.co_freevars,
+    closure = dict(zip(func.register.__code__.co_freevars, 
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -357,7 +357,6 @@ class IceCreamDebugger:
             v is _absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
-
         if prefix is not _absent:
             self.prefix = prefix
 
