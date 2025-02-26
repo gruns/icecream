@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #
@@ -34,7 +34,7 @@ class Publish(Command):
         pass
 
     def run(self):
-        os.system('python setup.py sdist bdist_wheel')
+        os.system('python3 setup.py sdist bdist_wheel')
 
         sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
         wheel = 'dist/icecream-%s-py3-none-any.whl' % meta['__version__']
