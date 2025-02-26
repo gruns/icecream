@@ -371,6 +371,23 @@ ic| example.py:18 in foo()- i: 3
 
 `contextAbsPath` is False by default.
 
+If you want to use icecream with multiple log levels, like with Python’s
+`logging` module, you can use `ic.format()` to integrate icecream’s
+debugging with your logger:
+
+```python
+import logging
+from icecream import ic
+
+foo = 'bar'
+logging.debug(ic.format(foo))
+```
+
+❕ This is a bit clunky. Would you prefer built-in log level support in
+icecream? If so, please share your thoughts in
+[issue](https://github.com/gruns/icecream/issues/146).
+
+
 ### Installation
 
 Installing IceCream with pip is easy.
