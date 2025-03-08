@@ -1,11 +1,10 @@
 ================================================================================
  v2.1.4
 ================================================================================
-Changed: Drop support for all Python versions prior to Python 3.8, now
-  long past EOL. Notably, Python 2 is no longer supported.
+Changed: Drop support for all Python versions prior to Python 3.8, which
+  are now long past EOL. Notably: Python 2 is no longer supported.
 Changed: Update the 'executing' dependency to >= v2.1.0 to improve
   source code analysis and support Python 3.13.
-
 
 ================================================================================
  v2.1.3
@@ -17,7 +16,6 @@ Added: The contextAbsPath= parameter to ic.configureOutput() which, when
 Changed: Raise TypeError if no arguments are provided to
   ic.configureOutput().
 
-
 ================================================================================
  v2.1.2
 ================================================================================
@@ -25,14 +23,12 @@ Added: Ability to register and unregister singledispatch argumentToString
   functions. See https://github.com/gruns/icecream/pull/115. Huge thank you
   to @atusy!
 
-
 ================================================================================
  v2.1.1
 ================================================================================
 Added: Support for Python 3.9.
 Changed: Use timestamps in the local timezone instead of less helpful
   UTC timestamps.
-
 
 ================================================================================
  v2.1.0
@@ -42,7 +38,6 @@ Added: install() and uninstall() functions that add or remove ic() from
 Changed: Switch to ast.literal_eval() to determine if an argument and
   value are the same, and thus only the value should be output. Huge
   thank you to Ed Cardinal and Alex Hall.
-
 
 ================================================================================
  v2.0.0
@@ -54,7 +49,6 @@ Changed: Switched core AST parsing engine to Alex Hall's executing
 Changed: Whitespace in arguments is no longer collapsed. Indentation in
   multiline arguments is now preserved.
 
-
 ================================================================================
  v1.5.0
 ================================================================================
@@ -63,7 +57,6 @@ Fixed: Support multiline container arguments. e.g.
         b])
 Fixed: Include LICENSE.txt in source distributions.
 Changed: Collapse argument whitespace, e.g. ic([ a,  b ]) -> ic| [a, b].
-
 
 ================================================================================
  v1.4.0
@@ -75,7 +68,6 @@ Fixed: Fail gracefully when the underlying source code changes during execution.
 Changed: Print values (e.g. 1, 'foo', etc) by themselves, nonredundantly. For
   example, ic(3) now prints 'ic| 3' instead of 'ic| 3: 3'.
 
-
 ================================================================================
  v1.3.1
 ================================================================================
@@ -83,7 +75,6 @@ Removed: Support for Python 3.3, which reached EOL on 2017-09-29.
 Fixed: ic() invocations that fail to find or access source code (e.g. eval(),
   exec(), python -i, etc) now print an error message instead of throwing an
   IOError (Python 2) or OSError (Python 3).
-
 
 ================================================================================
  v1.3
