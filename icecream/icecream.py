@@ -209,6 +209,8 @@ class IceCreamDebugger:
 
         return passthrough
 
+    __truediv__ = __call__
+
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
         out = self._format(callFrame, *args)
