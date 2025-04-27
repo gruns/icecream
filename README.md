@@ -26,10 +26,7 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and supports Python 3 and PyPy3.
 
-👥 IceCream is looking for a lead contributor + maintainer. Would you
-love to lead IceCream and improve debugging for everyone in Python?
-Please [reach out](mailto:grunseid+icecream@gmail.com) and let me know! 🙌
-
+2025-04-26: Big scoop: I'm thrilled to share that @Jakeroid is now a maintainer of IceCream! 🎉 IceCream’s future just got a whole lot sweeter. 🍦
 
 ### Inspect Variables
 
