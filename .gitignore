@@ -10,3 +10,4 @@ build/
 *.egg
 *.egg-info
 .aider*
+venv
