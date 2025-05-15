@@ -27,6 +27,7 @@ from textwrap import dedent
 import colorama
 import executing
 from pygments import highlight
+
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
@@ -161,7 +162,7 @@ def singledispatch(func):
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
-    closure = dict(zip(func.register.__code__.co_freevars, 
+    closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -340,7 +341,7 @@ class IceCreamDebugger:
                         argToStringFunction=_absent, includeContext=_absent,
                         contextAbsPath=_absent):
         noParameterProvided = all(
-            v is _absent for k,v in locals().items() if k != 'self')
+            v is _absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
@@ -355,7 +356,7 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
-        
+
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
 
