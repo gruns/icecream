@@ -634,3 +634,45 @@ ic| (a,
         # Should contain the literal \n, not a real newline
         self.assertIn(r"folder\newfolder\file.txt", output)
         self.assertNotIn("folder\n", output)
+
+    def test_raw_string_with_backslash_n(self):
+        s = r"raw\string\with\backslashn"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        self.assertIn(r"raw\string\with\backslashn", output)
+        self.assertNotIn("raw\nstring", output)
+
+    def test_both_literal_and_actual_newline(self):
+        s = "foo\\nbar\nbaz"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        # Should contain 'foo\nbar' on one line, 'baz' on the next
+        self.assertIn("foo\\nbar\nbaz", output)
+        self.assertNotIn("foo\nbar\nbaz", output)
+
+    def test_multiple_actual_newlines(self):
+        s = "a\nb\nc"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        self.assertIn("a\nb\nc", output)
+        self.assertNotIn("a\\nb\\nc", output)
+
+    def test_escaped_backslash_n(self):
+        s = "foo\\\\nbar"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        self.assertIn("foo\\\\nbar", output)
+        self.assertNotIn("foo\\nbar", output)
+
+    def test_both_escaped_and_unescaped_newlines(self):
+        s = "foo\\nbar\nbaz\\nqux"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        # Should contain 'foo\nbar' on one line, 'baz\nqux' on the next
+        self.assertIn("foo\\nbar\nbaz\\nqux", output)
+        self.assertNotIn("foo\nbar\nbaz\nqux", output)
