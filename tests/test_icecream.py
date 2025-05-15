@@ -616,3 +616,21 @@ ic| (a,
     def testConfigureOutputWithNoParameters(self):
         with self.assertRaises(TypeError):
             ic.configureOutput()
+
+    def test_actual_newline_character(self):
+        s = "line1\nline2"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        # Should contain a real newline between line1 and line2
+        self.assertIn("line1\nline2", output)
+        self.assertNotIn(r"line1\nline2", output)
+
+    def test_literal_backslash_n(self):
+        s = r"folder\newfolder\file.txt"
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(s)
+        output = err.getvalue()
+        # Should contain the literal \n, not a real newline
+        self.assertIn(r"folder\newfolder\file.txt", output)
+        self.assertNotIn("folder\n", output)
