@@ -12,7 +12,7 @@
 
 __title__ = 'icecream'
 __license__ = 'MIT'
-__version__ = '2.1.4'
+__version__ = '2.1.5'
 __author__ = 'Ansgar Grunseid'
 __contact__ = 'grunseid@gmail.com'
 __url__ = 'https://github.com/gruns/icecream'
