@@ -180,6 +180,15 @@ def argumentToString(obj):
     return s
 
 
+@argumentToString.register(str)
+def _(obj):
+
+    if '\n' in obj:
+        return "'''" + obj + "'''"
+
+    return "'" + obj.replace('\\', '\\\\') + "'"
+
+
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
