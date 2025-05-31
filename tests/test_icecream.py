@@ -616,3 +616,32 @@ ic| (a,
     def testConfigureOutputWithNoParameters(self):
         with self.assertRaises(TypeError):
             ic.configureOutput()
+
+    def test_multiline_strings_output(self):
+
+        test1 = "A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file"
+        test2 = r"A\veryvery\long\path\to\no\even\longer\HelloWorld _01_Heritisfinallythe file.file"
+        test3 = "line\nline"
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test1)
+            curr_res = err.getvalue().strip()
+            expected = r"ic| test1: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test2)
+            curr_res = err.getvalue().strip()
+            # expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test3)
+            curr_res = err.getvalue().strip()
+            expected = r"""ic| test3: '''line
+            line'''"""
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
