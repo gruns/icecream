@@ -205,19 +205,19 @@ class IceCreamDebugger:
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
 
-    def __call__(self, *args):
-        if self.enabled:
-            callFrame = inspect.currentframe().f_back
-            self.outputFunction(self._format(callFrame, *args))
+    # def __call__(self, *args):
+    #     if self.enabled:
+    #         callFrame = inspect.currentframe().f_back
+    #         self.outputFunction(self._format(callFrame, *args))
 
-        if not args:  # E.g. ic().
-            passthrough = None
-        elif len(args) == 1:  # E.g. ic(1).
-            passthrough = args[0]
-        else:  # E.g. ic(1, 2, 3).
-            passthrough = args
+    #     if not args:  # E.g. ic().
+    #         passthrough = None
+    #     elif len(args) == 1:  # E.g. ic(1).
+    #         passthrough = args[0]
+    #     else:  # E.g. ic(1, 2, 3).
+    #         passthrough = args
 
-        return passthrough
+    #     return passthrough
 
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
@@ -370,4 +370,20 @@ class IceCreamDebugger:
             self.contextAbsPath = contextAbsPath
 
 
-ic = IceCreamDebugger()
+    def ic_aux(self, *args):
+        if self.enabled:
+            callFrame = inspect.currentframe().f_back.f_back
+            self.outputFunction(self._format(callFrame, *args))
+
+        if not args:  # E.g. ic().
+            passthrough = None
+        elif len(args) == 1:  # E.g. ic(1).
+            passthrough = args[0]
+        else:  # E.g. ic(1, 2, 3).
+            passthrough = args
+
+        return passthrough
+    
+def ic(*args):
+    icd_instance = IceCreamDebugger()
+    icd_instance.ic_aux(*args)
