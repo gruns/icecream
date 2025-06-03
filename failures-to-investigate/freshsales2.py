@@ -60,7 +60,7 @@ def lookupFullContact(contact):
     contactId = contact['id']
     resp = requests.get(
         f'{FS_API_URL}/contacts/{contactId}?include=sales_accounts',
-        headers=FS_AUTH_HEADERS)
+        headers=FS_AUTH_HEADERS, timeout=30)
     contact = (resp.json() or {}).get('contact')
     return contact
 
@@ -91,7 +91,7 @@ def findFirstCompanyWithWebsite(websiteUrl):
 def _findEntitiesWith(entityType, query, queryValue):
     resp = requests.get(
         f'{FS_API_URL}/lookup?f={query}&entities={entityType}',
-        params={'q': queryValue}, headers=FS_AUTH_HEADERS)
+        params={'q': queryValue}, headers=FS_AUTH_HEADERS, timeout=30)
     entities = (
         resp.json() or {}).get(f'{entityType}s', {}).get(f'{entityType}s', [])
     return entities
@@ -106,7 +106,7 @@ def createNote(entityType, entityId, message):
             }
         }
     resp = requests.post(
-        f'{FS_API_URL}/notes', json=data, headers=FS_AUTH_HEADERS)
+        f'{FS_API_URL}/notes', json=data, headers=FS_AUTH_HEADERS, timeout=30)
 
     if resp.status_code != 201:
         err = f'Failed to create {entityType} note for id {entityId}.'
@@ -127,7 +127,7 @@ def createCompany(data):
 def _createEntity(entityType, data):
     wrapped = {entityType: data}
     url = f'{FS_API_URL}/{entityType}s'
-    resp = requests.post(url, json=wrapped, headers=FS_AUTH_HEADERS)
+    resp = requests.post(url, json=wrapped, headers=FS_AUTH_HEADERS, timeout=30)
 
     if resp.status_code not in [200, 201]:
         raise RuntimeError(f'Failed to create new {entityType}.')
@@ -148,7 +148,7 @@ def updateCompany(companyId, data):
 def _updateEntity(entityType, entityId, data):
     wrapped = {entityType: data}
     url = f'{FS_API_URL}/{entityType.lower()}s/{entityId}'
-    resp = requests.put(url, json=wrapped, headers=FS_AUTH_HEADERS)
+    resp = requests.put(url, json=wrapped, headers=FS_AUTH_HEADERS, timeout=30)
 
     if resp.status_code != 200:
         err = f'Failed to update {entityType.title()} with id {entityId}.'
@@ -168,13 +168,13 @@ def _lookupEntitiesInView(entityType, viewId):
     def pageUrl(pageNo):
         return url + f'?page={pageNo}'
 
-    resp = requests.get(url, headers=FS_AUTH_HEADERS)
+    resp = requests.get(url, headers=FS_AUTH_HEADERS, timeout=30)
     js = resp.json()
     entities += js.get(f'{entityType}s')
     totalPages = js.get('meta', {}).get('total_pages')
 
     for pageNo in range(2, totalPages + 1):
-        resp = requests.get(pageUrl(pageNo), headers=FS_AUTH_HEADERS)
+        resp = requests.get(pageUrl(pageNo), headers=FS_AUTH_HEADERS, timeout=30)
         entities += (resp.json() or {}).get(f'{entityType}s')
 
     return entities
