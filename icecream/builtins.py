@@ -10,7 +10,7 @@
 # License: MIT
 #
 
-import icecream
+from .icecream import ic
 
 
 try:
@@ -19,9 +19,9 @@ except ImportError:
     builtins = __import__('builtins')
 
 
-def install(ic='ic'):
-    setattr(builtins, ic, icecream.ic)
+def install(ic_name='ic'):
+    setattr(builtins, ic_name, ic)
 
 
-def uninstall(ic='ic'):
-    delattr(builtins, ic)
+def uninstall(ic_name='ic'):
+    delattr(builtins, ic_name)
