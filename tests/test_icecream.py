@@ -10,7 +10,6 @@
 # License: MIT
 #
 
-import functools
 import sys
 import unittest
 import warnings
@@ -32,7 +31,7 @@ b = 2
 c = 3
 
 
-def noop(*args, **kwargs):
+def noop(*_args, **_kwargs):
     return
 
 
@@ -211,20 +210,20 @@ class TestIceCream(unittest.TestCase):
         assert is_non_empty_string(icecream.__url__)
 
     def testWithoutArgs(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             ic()
         assert lineIsContextAndTime(err.getvalue())
 
     def testAsArgument(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             noop(ic(a), ic(b))
-        pairs = parseOutputIntoPairs(out, err, 2)
+        pairs = parseOutputIntoPairs(_out, err, 2)
         assert pairs[0][0] == ('a', '1') and pairs[1][0] == ('b', '2')
 
-        with disableColoring(), captureStandardStreams() as (out, err):
-            dic = {1: ic(a)}  # noqa
-            lst = [ic(b), ic()]  # noqa
-        pairs = parseOutputIntoPairs(out, err, 3)
+        with disableColoring(), captureStandardStreams() as (_out, err):
+            _dic = {1: ic(a)}  # noqa
+            _lst = [ic(b), ic()]  # noqa
+        pairs = parseOutputIntoPairs(_out, err, 3)
         assert pairs[0][0] == ('a', '1')
         assert pairs[1][0] == ('b', '2')
         assert lineIsContextAndTime(err.getvalue().splitlines()[-1])
@@ -285,8 +284,8 @@ class TestIceCream(unittest.TestCase):
         assert parseOutputIntoPairs(out, err, 1)[0][0] == ('a', '1')
 
     def testComments(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
-            """Comment."""; ic(); # Comment.  # noqa
+        with disableColoring(), captureStandardStreams() as (_out, err):
+            ic()  # Comment.  # noqa
         assert lineIsContextAndTime(err.getvalue())
 
     def testMethodArguments(self):
@@ -310,21 +309,21 @@ class TestIceCream(unittest.TestCase):
             ('noop ()', 'None')]
 
     def testReturnValue(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, _err):
             assert ic() is None
             assert ic(1) == 1
             assert ic(1, 2, 3) == (1, 2, 3)
 
     def testDifferentName(self):
-        from icecream import ic as foo
-        with disableColoring(), captureStandardStreams() as (out, err):
+        from icecream import ic as foo  # pylint: disable=reimported,import-outside-toplevel
+        with disableColoring(), captureStandardStreams() as (_out, err):
             foo()
         assert lineIsContextAndTime(err.getvalue())
 
         newname = foo
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             newname(a)
-        pair = parseOutputIntoPairs(out, err, 1)[0][0]
+        pair = parseOutputIntoPairs(_out, err, 1)[0][0]
         assert pair == ('a', '1')
 
     def testPrefixConfiguration(self):
@@ -379,7 +378,7 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [[('a', '1')], [('c', '3')]]
 
     def testArgToStringFunction(self):
-        def hello(obj):
+        def hello(_obj):
             return 'zwei'
 
         with configureIcecreamOutput(argToStringFunction=hello):
@@ -390,7 +389,7 @@ class TestIceCream(unittest.TestCase):
         assert pair == ('eins', 'zwei')
 
     def testSingledispatchArgumentToString(self):
-        def argumentToString_tuple(obj):
+        def argumentToString_tuple(_obj):
             return "Dispatching tuple!"
 
         # Prepare input and output
@@ -493,17 +492,17 @@ class TestIceCream(unittest.TestCase):
 
         pair = parseOutputIntoPairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
-    
+
     def testFormat(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
-            """comment"""; noop(); ic(  # noqa
+        with disableColoring(), captureStandardStreams() as (_out, err):
+            noop(); ic(  # noqa
                 'sup'); noop()  # noqa
-        """comment"""; noop(); s = ic.format(  # noqa
+        noop(); s = ic.format(  # noqa
             'sup'); noop()  # noqa
         assert s == err.getvalue().rstrip()
 
     def testMultilineInvocationWithComments(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             ic(  # Comment.
 
                 a,  # Comment.
@@ -514,17 +513,17 @@ class TestIceCream(unittest.TestCase):
 
                 )  # Comment.
 
-        pairs = parseOutputIntoPairs(out, err, 1)[0]
+        pairs = parseOutputIntoPairs(_out, err, 1)[0]
         assert pairs == [('a', '1'), ('b', '2')]
 
     def testNoSourceAvailablePrintsValues(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             with warnings.catch_warnings():
                 # we ignore the warning so that it doesn't interfere
                 # with parsing ic's output
                 warnings.simplefilter("ignore")
                 eval('ic(a, b)')
-                pairs = parseOutputIntoPairs(out, err, 1)
+                pairs = parseOutputIntoPairs(_out, err, 1)
                 self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
 
     def testNoSourceAvailablePrintsMultiline(self):
@@ -532,17 +531,17 @@ class TestIceCream(unittest.TestCase):
         This tests for a bug which caused only multiline prints to fail.
         """
         multilineStr = 'line1\nline2'
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             with warnings.catch_warnings():
                 # we ignore the warning so that it doesn't interfere
                 # with parsing ic's output
                 warnings.simplefilter("ignore")
                 eval('ic(multilineStr)')
-                pair = parseOutputIntoPairs(out, err, 2)[0][0]
+                pair = parseOutputIntoPairs(_out, err, 2)[0][0]
                 self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, _err):
             with warnings.catch_warnings(record=True) as allWarnings:
                 eval('ic(a)')
                 eval('ic(b)')
@@ -558,7 +557,7 @@ class TestIceCream(unittest.TestCase):
         self.assertEqual(pair, ('(a, b)', '(1, 2)'))
 
     def testMultilineContainerArgs(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             ic((a,
                 b))
             ic([a,
@@ -580,7 +579,7 @@ ic| (a,
                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
         """.strip())
 
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disableColoring(), captureStandardStreams() as (_out, err):
             with configureIcecreamOutput(includeContext=True):
                 ic((a,
                     b),
@@ -608,7 +607,7 @@ ic| (a,
             ('(a, b)', '(1, 2)'), ('(b, a)', '(2, 1)'), ('a', '1'), ('b', '2')])
 
     def testColoring(self):
-        with captureStandardStreams() as (out, err):
+        with captureStandardStreams() as (_out, err):
             ic({1: 'str'})  # Output should be colored with ANSI control codes.
 
         assert hasAnsiEscapeCodes(err.getvalue())
