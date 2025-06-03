@@ -36,9 +36,9 @@ class Publish(Command):
     def run(self):
         os.system('python3 setup.py sdist bdist_wheel')
 
-        sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
-        wheel = 'dist/icecream-%s-py3-none-any.whl' % meta['__version__']
-        rc = os.system('twine upload "%s" "%s"' % (sdist, wheel))
+        sdist = f"dist/icecream-{meta['__version__']}.tar.gz"
+        wheel = f"dist/icecream-{meta['__version__']}-py3-none-any.whl"
+        rc = os.system(f'twine upload "{sdist}" "{wheel}"')
 
         sys.exit(rc)
 

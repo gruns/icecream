@@ -259,7 +259,7 @@ class IceCreamDebugger:
 
     def _constructArgumentOutput(self, prefix, context, pairs):
         def argPrefix(arg):
-            return '%s: ' % arg
+            return f'{arg}: '
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "a string",
@@ -322,15 +322,15 @@ class IceCreamDebugger:
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
-            parentFunction = '%s()' % parentFunction
+            parentFunction = f'{parentFunction}()'
 
-        context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
+        context = f'{filename}:{lineNumber} in {parentFunction}'
         return context
 
     def _formatTime(self):
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
-        return ' at %s' % formatted
+        return f' at {formatted}'
 
     def _getContext(self, callFrame):
         frameInfo = inspect.getframeinfo(callFrame)
