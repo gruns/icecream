@@ -133,7 +133,7 @@ def lineIsContext(line):
 def lineIsAbsPathContext(line):
     line = stripPrefix(line)  # ic| /absolute/path/to/f.py:33 in foo()
     sourceLocation, function = line.split(' in ')  # /absolute/path/to/f.py:33 in foo()
-    filepath, lineNumber = sourceLocation.split(':')  # /absolute/path/to/f.py:33
+    filepath, lineNumber = sourceLocation.rsplit(':', 1)  # /absolute/path/to/f.py:33
     path, ext = splitext(filepath)
 
     return (
