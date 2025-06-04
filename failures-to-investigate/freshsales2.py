@@ -16,10 +16,14 @@ import requests
 
 from icecream import ic
 
-_corePath = abspath(pjoin(dirname(__file__), '../'))
-if _corePath not in sys.path:
-    sys.path.append(_corePath)
-from common.utils import lget, stripStringStart
+# Try to import from common.utils, add to path if needed
+try:
+    from common.utils import lget, stripStringStart
+except ImportError:
+    _corePath = abspath(pjoin(dirname(__file__), '../'))
+    if _corePath not in sys.path:
+        sys.path.append(_corePath)
+    from common.utils import lget, stripStringStart
 
 DEFAULT_FIRST_NAME = 'there'
 DEFAULT_LAST_NAME = '-'
