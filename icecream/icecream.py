@@ -164,6 +164,7 @@ def singledispatch(func):
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
+
     def unregister(cls):
         del registry[cls]
         dispatch_cache.clear()
@@ -308,7 +309,8 @@ class IceCreamDebugger:
                     formatPair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
+                lines = prefixFirstLineIndentRemaining(
+                    prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
@@ -335,7 +337,9 @@ class IceCreamDebugger:
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
+        filepath = (
+            realpath if self.contextAbsPath else basename)(
+            frameInfo.filename)
         return filepath, lineNumber, parentFunction
 
     def enable(self):
