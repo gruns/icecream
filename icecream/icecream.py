@@ -14,28 +14,27 @@
 from __future__ import print_function
 
 import ast
+import functools
 import inspect
 import pprint
 import sys
 import warnings
-from datetime import datetime
-import functools
 from contextlib import contextmanager
+from datetime import datetime
 from os.path import basename, realpath
 from textwrap import dedent
 
 import colorama
 import executing
 from pygments import highlight
-
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
 from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
+from pygments.lexers import Python3Lexer as Py3Lexer
+from pygments.lexers import PythonLexer as PyLexer
 
 from .coloring import SolarizedDark
-
 
 _absent = object()
 

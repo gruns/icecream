@@ -5,19 +5,20 @@
 #
 # License _!_
 
-from os.path import abspath, dirname, join as pjoin
 import pprint
 import sys
 import time
+from os.path import abspath, dirname
+from os.path import join as pjoin
 
 import requests
+
 from icecream import ic
 
 _corePath = abspath(pjoin(dirname(__file__), '../'))
 if _corePath not in sys.path:
     sys.path.append(_corePath)
 from common.utils import lget
-
 
 DEFAULT_FIRST_NAME = 'there'
 DEFAULT_LAST_NAME = '-'

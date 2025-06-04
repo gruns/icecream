@@ -13,13 +13,13 @@
 import sys
 import unittest
 import warnings
-
-from io import StringIO
 from contextlib import contextmanager
-from os.path import basename, splitext, realpath
+from io import StringIO
+from os.path import basename, realpath, splitext
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_WARNING_MESSAGE
+from icecream import (NO_SOURCE_AVAILABLE_WARNING_MESSAGE, argumentToString,
+                      ic, stderrPrint)
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -315,7 +315,8 @@ class TestIceCream(unittest.TestCase):
             assert ic(1, 2, 3) == (1, 2, 3)
 
     def testDifferentName(self):
-        from icecream import ic as foo  # pylint: disable=reimported,import-outside-toplevel
+        from icecream import \
+            ic as foo  # pylint: disable=reimported,import-outside-toplevel
         with disableColoring(), captureStandardStreams() as (_out, err):
             foo()
         assert lineIsContextAndTime(err.getvalue())
