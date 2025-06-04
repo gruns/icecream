@@ -86,13 +86,15 @@ def findFirstCompanyWithWebsite(websiteUrl):
     #
     # As a workaround, filter all returned companies to verify that the domains
     # match.
-    hostNoWww = lambda url: stripStringStart(urlparse(url).hostname, 'www.')
+    def host_no_www(url):
+        return stripStringStart(urlparse(url).hostname, 'www.')
+
     allCompanies = _findEntitiesWith('sales_account', 'website', websiteUrl)
     ic(allCompanies)
     ic(websiteUrl)
     companies = [
         c for c in _findEntitiesWith('sales_account', 'website', websiteUrl)
-        if hostNoWww(c.get('website')) == hostNoWww(websiteUrl)]
+        if host_no_www(c.get('website')) == host_no_www(websiteUrl)]
     ic(companies)
     firstCompany = lget(companies, 0)
     return firstCompany
@@ -236,7 +238,7 @@ def createAndOrAssociateCompanyWithContact(websiteUrl, contact):
             'id': companyToAdd['id'],
             # There can only be one primary Company associated with a
             # Contact. See https://www.freshsales.io/api/#create_contact.
-            'is_primary': False if companies else True,
+            'is_primary': not companies,
             }
         companies.append(companyData)
 

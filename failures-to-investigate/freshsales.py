@@ -216,7 +216,7 @@ def createAndOrAssociateCompanyWithContact(websiteUrl, contact):
             'id': companyToAdd['id'],
             # There can only be one primary Company associated with a
             # Contact. See https://www.freshsales.io/api/#create_contact.
-            'is_primary': False if companies else True,
+            'is_primary': not companies,
             }
         companies.append(companyData)
 
