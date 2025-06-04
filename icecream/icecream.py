@@ -146,7 +146,7 @@ def formatPair(prefix, arg, value):
         argLines = prefixFirstLineIndentRemaining(prefix, arg)
         valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
+    looksLikeAString = value[0] + value[-1] in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         valueLines = prefixLines(' ', value, startAtLine=1)
         value = '\n'.join(valueLines)
