@@ -15,6 +15,7 @@ import os
 import sys
 from os.path import dirname
 from os.path import join as pjoin
+from unittest import TestLoader, TextTestRunner
 
 from setuptools import Command, find_packages, setup
 from setuptools.command.test import test as TestCommand
@@ -59,7 +60,6 @@ class RunTests(TestCommand):
     without tests/ being a Python module.
     """
     def run_tests(self):
-        from unittest import TestLoader, TextTestRunner
         tests_dir = pjoin(dirname(__file__), 'tests')
         suite = TestLoader().discover(tests_dir)
         result = TextTestRunner().run(suite)

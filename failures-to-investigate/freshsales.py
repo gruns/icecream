@@ -12,6 +12,7 @@ from os.path import abspath, dirname
 from os.path import join as pjoin
 
 import requests
+from furl import furl
 
 from icecream import ic
 
@@ -71,7 +72,6 @@ def findFirstCompanyWithWebsite(websiteUrl):
     return _findFirstEntityOf('sales_account', 'website', websiteUrl)
 def _findFirstEntityOf(entityType, query, queryValue):
     url = f'{FS_API_URL}/lookup?f={query}&entities={entityType}'
-    from furl import furl
     ic(url, furl(f'{FS_API_URL}/lookup?f={query}&entities={entityType}').set(
         {'q': queryValue}).url)
 

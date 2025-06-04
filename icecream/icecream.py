@@ -32,7 +32,6 @@ from pygments import highlight
 # TerminalTrueColorFormatter.
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import Python3Lexer as Py3Lexer
-from pygments.lexers import PythonLexer as PyLexer
 
 from .coloring import SolarizedDark
 
