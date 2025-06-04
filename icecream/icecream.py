@@ -71,7 +71,7 @@ def stderrPrint(*args):
 def isLiteral(s):
     try:
         ast.literal_eval(s)
-    except Exception:
+    except (ValueError, TypeError, SyntaxError):
         return False
     return True
 
