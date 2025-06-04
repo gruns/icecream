@@ -263,7 +263,7 @@ def upgradeContactWhoSubmittedSplashPage(contact, websiteUrl):
 
 def noteContactSubmittedPepSplashPage(contact, websiteUrl):
     createAndOrAssociateCompanyWithContact(websiteUrl, contact)
-    
+
     PEP = 9000004543
     updateContact(contact['id'], {
         'custom_field': {
