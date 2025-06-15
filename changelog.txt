@@ -1,7 +1,13 @@
 ================================================================================
  v2.1.5
 ================================================================================
-Changed: Improved printing for `str` type of variables.
+Changed: Improved printing for variables of type `str`.
+
+Fixed issues that affected the output of multiline strings and strings
+containing special characters such as escaped newlines and tabs.
+
+Strings are now printed exactly as they are, faithfully representing their
+actual value.
 
 ================================================================================
  v2.1.4
