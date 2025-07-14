@@ -1,0 +1,6 @@
+from typing import Any
+
+builtins: Any
+
+def install(ic: str = ...) -> None: ...
+def uninstall(ic: str = ...) -> None: ...
