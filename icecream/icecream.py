@@ -27,6 +27,7 @@ from textwrap import dedent
 import colorama
 import executing
 from pygments import highlight
+
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
@@ -35,8 +36,6 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
-
-PYTHON2 = (sys.version_info[0] == 2)
 
 _absent = object()
 
@@ -50,7 +49,7 @@ def bindStaticVariable(name, value):
 
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable(
-    'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
+    'lexer', Py3Lexer(ensurenl=False))
 def colorize(s):
     self = colorize
     return highlight(s, self.lexer, self.formatter)
@@ -160,18 +159,10 @@ def formatPair(prefix, arg, value):
 
 
 def singledispatch(func):
-    if "singledispatch" not in dir(functools):
-        def unsupport_py2(*args, **kwargs):
-            raise NotImplementedError(
-                "functools.singledispatch is missing in " + sys.version
-            )
-        func.register = func.unregister = unsupport_py2
-        return func
-
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
-    closure = dict(zip(func.register.__code__.co_freevars, 
+    closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -187,6 +178,15 @@ def argumentToString(obj, **kwargs):
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj, **kwargs)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
+
+
+@argumentToString.register(str)
+def _(obj):
+
+    if '\n' in obj:
+        return "'''" + obj + "'''"
+
+    return "'" + obj.replace('\\', '\\\\') + "'"
 
 
 class IceCreamDebugger:
@@ -352,7 +352,7 @@ class IceCreamDebugger:
                         argToStringFunction=_absent, includeContext=_absent,
                         contextAbsPath=_absent):
         noParameterProvided = all(
-            v is _absent for k,v in locals().items() if k != 'self')
+            v is _absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
@@ -367,7 +367,7 @@ class IceCreamDebugger:
 
         if includeContext is not _absent:
             self.includeContext = includeContext
-        
+
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
 

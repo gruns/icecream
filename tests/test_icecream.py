@@ -15,10 +15,7 @@ import sys
 import unittest
 import warnings
 
-try:  # Python 2.x.
-    from StringIO import StringIO
-except ImportError:  # Python 3.x.
-    from io import StringIO
+from io import StringIO
 from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
@@ -396,15 +393,6 @@ class TestIceCream(unittest.TestCase):
         def argumentToString_tuple(obj):
             return "Dispatching tuple!"
 
-        # Unsupport Python2
-        if "singledispatch" not in dir(functools):
-            for attr in ("register", "unregister"):
-                with self.assertRaises(NotImplementedError):
-                    getattr(argumentToString, attr)(
-                        tuple, argumentToString_tuple
-                    )
-            return
-
         # Prepare input and output
         x = (1, 2)
         default_output = ic.format(x)
@@ -600,7 +588,7 @@ ic| (a,
                     list(range(15))])
 
         lines = err.getvalue().strip().splitlines()
-        self.assertRegexpMatches(
+        self.assertRegex(
             lines[0],
             r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
         )
@@ -628,3 +616,32 @@ ic| (a,
     def testConfigureOutputWithNoParameters(self):
         with self.assertRaises(TypeError):
             ic.configureOutput()
+
+    def test_multiline_strings_output(self):
+
+        test1 = "A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file"
+        test2 = r"A\veryvery\long\path\to\no\even\longer\HelloWorld _01_Heritisfinallythe file.file"
+        test3 = "line\nline"
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test1)
+            curr_res = err.getvalue().strip()
+            expected = r"ic| test1: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test2)
+            curr_res = err.getvalue().strip()
+            # expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test3)
+            curr_res = err.getvalue().strip()
+            expected = r"""ic| test3: '''line
+            line'''"""
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
