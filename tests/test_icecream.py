@@ -645,3 +645,43 @@ ic| (a,
             line'''"""
             self.assertEqual(curr_res, expected)
             del curr_res, expected
+
+    def test_sympy_dict_keys_do_not_crash(self):
+        """Regression: ic() must not raise when dict keys are SymPy symbols."""
+
+        try:
+            import sympy as sp
+        except Exception:
+            self.skipTest("sympy not installed")
+
+        x, y = sp.symbols("x y")
+        d = {x: "hello", y: "world"}
+
+        with disableColoring(), captureStandardStreams() as (out, err):
+            # If the bug regresses, this line raises TypeError.
+            ic(d)
+
+        s = err.getvalue().strip()
+        # Basic sanity checks without assuming exact formatting or ordering.
+        self.assertIn("ic|", s)
+        self.assertIn("hello", s)
+        self.assertIn("world", s)
+
+    def test_sympy_solve_result_does_not_crash(self):
+        """Regression: ic() must handle SymPy solve() outputs."""
+
+        try:
+            import sympy as sp
+        except Exception:
+            self.skipTest("sympy not installed")
+
+        x, y = sp.symbols("x y")
+        res = sp.solve([x + 2, y - 2])   # list/dict of symbolic items
+
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(res)
+
+        s = err.getvalue()
+        self.assertIn("ic|", s)
+        # Don’t assert exact text; just ensure something printed.
+        self.assertTrue(len(s) > 0)
