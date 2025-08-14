@@ -82,12 +82,21 @@ def colorizedStderrPrint(s):
         stderrPrint(colored)
 
 
+def pformatWithFallback(*args, **kwargs): 
+  try:
+    return pprint.pformat(*args, **kwargs)
+  except TypeError as e:
+    warnings.warn(f"pprint failed to print: {e}; trying without sorting" )
+    kwargs = kwargs.copy()
+    kwargs["sort_dicts"] = False
+    return pprint.pformat(*args, **kwargs)
+
+
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
-DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
-
+DEFAULT_ARG_TO_STRING_FUNCTION = pformat_with_fallback
 
 """
 This info message is printed instead of the arguments when icecream
