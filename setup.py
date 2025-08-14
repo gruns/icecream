@@ -13,10 +13,12 @@
 
 import os
 import sys
-from os.path import dirname, join as pjoin
-from setuptools import setup, find_packages, Command
-from setuptools.command.test import test as TestCommand
+from os.path import dirname
+from os.path import join as pjoin
+from unittest import TestLoader, TextTestRunner
 
+from setuptools import Command, find_packages, setup
+from setuptools.command.test import test as TestCommand
 
 meta = {}
 with open(pjoin('icecream', '__version__.py')) as f:
@@ -36,9 +38,9 @@ class Publish(Command):
     def run(self):
         os.system('python3 setup.py sdist bdist_wheel')
 
-        sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
-        wheel = 'dist/icecream-%s-py3-none-any.whl' % meta['__version__']
-        rc = os.system('twine upload "%s" "%s"' % (sdist, wheel))
+        sdist = f"dist/icecream-{meta['__version__']}.tar.gz"
+        wheel = f"dist/icecream-{meta['__version__']}-py3-none-any.whl"
+        rc = os.system(f'twine upload "{sdist}" "{wheel}"')
 
         sys.exit(rc)
 
@@ -58,7 +60,6 @@ class RunTests(TestCommand):
     without tests/ being a Python module.
     """
     def run_tests(self):
-        from unittest import TestLoader, TextTestRunner
         tests_dir = pjoin(dirname(__file__), 'tests')
         suite = TestLoader().discover(tests_dir)
         result = TextTestRunner().run(suite)

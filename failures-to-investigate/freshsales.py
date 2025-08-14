@@ -5,19 +5,25 @@
 #
 # License _!_
 
-from os.path import abspath, dirname, join as pjoin
 import pprint
 import sys
 import time
+from os.path import abspath, dirname
+from os.path import join as pjoin
 
 import requests
+from furl import furl
+
 from icecream import ic
 
-_corePath = abspath(pjoin(dirname(__file__), '../'))
-if _corePath not in sys.path:
-    sys.path.append(_corePath)
-from common.utils import lget
-
+# Try to import from common.utils, add to path if needed
+try:
+    from common.utils import lget
+except ImportError:
+    _corePath = abspath(pjoin(dirname(__file__), '../'))
+    if _corePath not in sys.path:
+        sys.path.append(_corePath)
+    from common.utils import lget
 
 DEFAULT_FIRST_NAME = 'there'
 DEFAULT_LAST_NAME = '-'
@@ -59,24 +65,27 @@ def lookupFullContact(contact):
     contactId = contact['id']
     resp = requests.get(
         f'{FS_API_URL}/contacts/{contactId}?include=sales_accounts',
-        headers=FS_AUTH_HEADERS)
+        headers=FS_AUTH_HEADERS, timeout=30)
     contact = (resp.json() or {}).get('contact')
     return contact
 
 
 def findFirstContactWithEmail(emailAddr):
     return _findFirstEntityOf('contact', 'email', emailAddr)
+
+
 def findFirstCompanyWithWebsite(websiteUrl):
     return _findFirstEntityOf('sales_account', 'website', websiteUrl)
+
+
 def _findFirstEntityOf(entityType, query, queryValue):
     url = f'{FS_API_URL}/lookup?f={query}&entities={entityType}'
-    from furl import furl
     ic(url, furl(f'{FS_API_URL}/lookup?f={query}&entities={entityType}').set(
         {'q': queryValue}).url)
 
     resp = requests.get(
         f'{FS_API_URL}/lookup?f={query}&entities={entityType}',
-        params={'q': queryValue}, headers=FS_AUTH_HEADERS)
+        params={'q': queryValue}, headers=FS_AUTH_HEADERS, timeout=30)
     entities = (
         resp.json() or {}).get(f'{entityType}s', {}).get(f'{entityType}s', [])
 
@@ -90,10 +99,10 @@ def createNote(entityType, entityId, message):
             'description': message,
             'targetable_id': entityId,
             'targetable_type': entityType,
-            }
         }
+    }
     resp = requests.post(
-        f'{FS_API_URL}/notes', json=data, headers=FS_AUTH_HEADERS)
+        f'{FS_API_URL}/notes', json=data, headers=FS_AUTH_HEADERS, timeout=30)
 
     if resp.status_code != 201:
         err = f'Failed to create {entityType} note for id {entityId}.'
@@ -103,18 +112,25 @@ def createNote(entityType, entityId, message):
 def createLead(data):
     return _createEntity('lead', data)
 
+
 def createContact(data):
     ANSGAR_GRUNSEID = 9000013180
     data.setdefault('owner_id', ANSGAR_GRUNSEID)
     return _createEntity('contact', data)
 
+
 def createCompany(data):
     return _createEntity('sales_account', data)
+
 
 def _createEntity(entityType, data):
     wrapped = {entityType: data}
     url = f'{FS_API_URL}/{entityType}s'
-    resp = requests.post(url, json=wrapped, headers=FS_AUTH_HEADERS)
+    resp = requests.post(
+        url,
+        json=wrapped,
+        headers=FS_AUTH_HEADERS,
+        timeout=30)
 
     if resp.status_code not in [200, 201]:
         raise RuntimeError(f'Failed to create new {entityType}.')
@@ -126,16 +142,19 @@ def _createEntity(entityType, data):
 def updateLead(leadId, data):
     return _updateEntity('lead', leadId, data)
 
+
 def updateContact(contactId, data):
     return _updateEntity('contact', contactId, data)
+
 
 def updateCompany(companyId, data):
     return _updateEntity('sales_account', companyId, data)
 
+
 def _updateEntity(entityType, entityId, data):
     wrapped = {entityType: data}
     url = f'{FS_API_URL}/{entityType.lower()}s/{entityId}'
-    resp = requests.put(url, json=wrapped, headers=FS_AUTH_HEADERS)
+    resp = requests.put(url, json=wrapped, headers=FS_AUTH_HEADERS, timeout=30)
 
     if resp.status_code != 200:
         err = f'Failed to update {entityType.title()} with id {entityId}.'
@@ -148,20 +167,25 @@ def _updateEntity(entityType, entityId, data):
 def lookupContactsInView(viewId):
     return _lookupEntitiesInView('contact', viewId)
 
+
 def _lookupEntitiesInView(entityType, viewId):
     entities = []
 
     url = f'{FS_API_URL}/{entityType.lower()}s/view/{viewId}'
+
     def pageUrl(pageNo):
         return url + f'?page={pageNo}'
 
-    resp = requests.get(url, headers=FS_AUTH_HEADERS)
+    resp = requests.get(url, headers=FS_AUTH_HEADERS, timeout=30)
     js = resp.json()
     entities += js.get(f'{entityType}s')
     totalPages = js.get('meta', {}).get('total_pages')
 
     for pageNo in range(2, totalPages + 1):
-        resp = requests.get(pageUrl(pageNo), headers=FS_AUTH_HEADERS)
+        resp = requests.get(
+            pageUrl(pageNo),
+            headers=FS_AUTH_HEADERS,
+            timeout=30)
         entities += (resp.json() or {}).get(f'{entityType}s')
 
     return entities
@@ -189,7 +213,7 @@ def optContactIn(contact):
     OPTED_IN = 9000159976
     updateContact(contact['id'], {
         'contact_status_id': OPTED_IN,
-        })
+    })
 
 
 def createAndOrAssociateCompanyWithContact(websiteUrl, contact):
@@ -208,18 +232,18 @@ def createAndOrAssociateCompanyWithContact(websiteUrl, contact):
         companyToAdd = createCompany({
             'name': websiteUrl,
             'website': websiteUrl,
-            })
+        })
 
     if companyToAdd:
         companyData = {
             'id': companyToAdd['id'],
             # There can only be one primary Company associated with a
             # Contact. See https://www.freshsales.io/api/#create_contact.
-            'is_primary': False if companies else True,
-            }
+            'is_primary': not companies,
+        }
         companies.append(companyData)
 
-    updateContact(contact['id'], { 'sales_accounts': companies })
+    updateContact(contact['id'], {'sales_accounts': companies})
 
     return company or companyToAdd
 
@@ -242,13 +266,13 @@ def upgradeContactWhoSubmittedSplashPage(contact, websiteUrl):
 
 def noteContactSubmittedPepSplashPage(contact, websiteUrl):
     createAndOrAssociateCompanyWithContact(websiteUrl, contact)
-    
+
     PEP = 9000004543
     updateContact(contact['id'], {
         'custom_field': {
             'cf_product': 'Pep',
-            },
-        })
+        },
+    })
 
     dateStr = time.ctime()
     emailAddr = contact['email']
@@ -261,6 +285,7 @@ def noteContactSubmittedPepSplashPage(contact, websiteUrl):
 def createCrawledIndieHackersContact(name, emailAddr, websiteUrl, noteData):
     INDIE_HACKERS = 9000321821
     _createCrawledContact(name, emailAddr, websiteUrl, INDIE_HACKERS, noteData)
+
 
 def _createCrawledContact(name, emailAddr, websiteUrl, leadSourceId, noteData):
     firstName, lastName = splitName(name)
@@ -298,7 +323,7 @@ def createSplashPageLead(name, emailAddr, websiteUrl):
         'email': emailAddr,
         'company': {
             'website': websiteUrl,
-            },
+        },
         'lead_stage_id': INTERESTED,
         'lead_source_id': ARC_IO_SIGN_UP_FORM,
     })
@@ -321,10 +346,10 @@ def createPepSplashPageLead(emailAddr, websiteUrl):
         'email': emailAddr,
         'company': {
             'website': websiteUrl,
-            },
+        },
         'deal': {
             'deal_product_id': PEP,
-            },
+        },
         'lead_stage_id': INTERESTED,
         'lead_source_id': PEP_SIGN_UP_FORM,
     })
@@ -365,7 +390,7 @@ def handleWordPressPluginInstall(emailAddr, websiteUrl):
         updateContact(contact['id'], {
             'lead_source_id': WORDPRESS,
             'contact_status_id': ALPHA_CODE,
-            })
+        })
     else:
         contact = createContact({
             'email': emailAddr,
@@ -373,7 +398,7 @@ def handleWordPressPluginInstall(emailAddr, websiteUrl):
             'last_name': websiteUrl,
             'lead_source_id': WORDPRESS,
             'contact_status_id': ALPHA_CODE,
-            })
+        })
 
     CUSTOMER = 9000095000
     company = createAndOrAssociateCompanyWithContact(websiteUrl, contact)
@@ -381,8 +406,8 @@ def handleWordPressPluginInstall(emailAddr, websiteUrl):
         'business_type_id': CUSTOMER,
         'custom_field': {
             'cf_source': 'Wordpress',
-            },
-        })
+        },
+    })
 
     dateStr = time.ctime()
     note = (
@@ -398,7 +423,7 @@ def handleWordPressPluginCreatedArcAccount(emailAddr):
         return
 
     CUSTOMER = 9000066454
-    updateContact(contact['id'], { 'contact_status_id': CUSTOMER })
+    updateContact(contact['id'], {'contact_status_id': CUSTOMER})
 
     dateStr = time.ctime()
     note = (
@@ -413,7 +438,7 @@ def handleWordPressPluginUninstall(emailAddr):
         return
 
     FORMER_CUSTOMER = 9000124405
-    updateContact(contact['id'], { 'contact_status_id': FORMER_CUSTOMER })
+    updateContact(contact['id'], {'contact_status_id': FORMER_CUSTOMER})
 
     dateStr = time.ctime()
     note = (

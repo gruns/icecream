@@ -14,28 +14,26 @@
 from __future__ import print_function
 
 import ast
+import functools
 import inspect
 import pprint
 import sys
 import warnings
-from datetime import datetime
-import functools
 from contextlib import contextmanager
+from datetime import datetime
 from os.path import basename, realpath
 from textwrap import dedent
 
 import colorama
 import executing
 from pygments import highlight
-
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
 from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
+from pygments.lexers import Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
-
 
 _absent = object()
 
@@ -71,7 +69,7 @@ def stderrPrint(*args):
 def isLiteral(s):
     try:
         ast.literal_eval(s)
-    except Exception:
+    except (ValueError, TypeError, SyntaxError):
         return False
     return True
 
@@ -161,7 +159,7 @@ def formatPair(prefix, arg, value):
         argLines = prefixFirstLineIndentRemaining(prefix, arg)
         valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
+    looksLikeAString = value[0] + value[-1] in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         valueLines = prefixLines(' ', value, startAtLine=1)
         value = '\n'.join(valueLines)
@@ -179,6 +177,7 @@ def singledispatch(func):
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
+
     def unregister(cls):
         del registry[cls]
         dispatch_cache.clear()
@@ -272,7 +271,7 @@ class IceCreamDebugger:
 
     def _constructArgumentOutput(self, prefix, context, pairs):
         def argPrefix(arg):
-            return '%s: ' % arg
+            return f'{arg}: '
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "a string",
@@ -323,7 +322,8 @@ class IceCreamDebugger:
                     formatPair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
+                lines = prefixFirstLineIndentRemaining(
+                    prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
@@ -335,22 +335,24 @@ class IceCreamDebugger:
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
-            parentFunction = '%s()' % parentFunction
+            parentFunction = f'{parentFunction}()'
 
-        context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
+        context = f'{filename}:{lineNumber} in {parentFunction}'
         return context
 
     def _formatTime(self):
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
-        return ' at %s' % formatted
+        return f' at {formatted}'
 
     def _getContext(self, callFrame):
         frameInfo = inspect.getframeinfo(callFrame)
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
+        filepath = (
+            realpath if self.contextAbsPath else basename)(
+            frameInfo.filename)
         return filepath, lineNumber, parentFunction
 
     def enable(self):

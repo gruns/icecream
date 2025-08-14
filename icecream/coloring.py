@@ -11,9 +11,9 @@
 #
 
 from pygments.style import Style
-from pygments.token import (
-    Text, Name, Error, Other, String, Number, Keyword, Generic, Literal,
-    Comment, Operator, Whitespace, Punctuation)
+from pygments.token import (Comment, Error, Generic, Keyword, Literal, Name,
+                            Number, Operator, Other, Punctuation, String, Text,
+                            Whitespace)
 
 
 # Solarized: https://ethanschoonover.com/solarized/
