@@ -11,8 +11,6 @@
 # License: MIT
 #
 
-from __future__ import print_function
-
 import ast
 import inspect
 import pprint
