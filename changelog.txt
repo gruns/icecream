@@ -1,4 +1,15 @@
 ================================================================================
+v2.1.6
+================================================================================
+Fixed: Pretty-printing of SymPy (and similar) objects.
+
+Previously, calling ic() on structures containing SymPy objects could raise
+  a TypeError because pprint.pformat(sort_dicts=True) attempted to sort
+  unorderable keys. IceCream now keeps sort_dicts=True on the fast path and
+  falls back to sort_dicts=False when pprint raises, ensuring robust output
+  without crashes.
+
+================================================================================
  v2.1.5
 ================================================================================
 Changed: Improved printing for variables of type `str`.
