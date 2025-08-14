@@ -232,6 +232,8 @@ class IceCreamDebugger:
 
         return passthrough
 
+    __truediv__ = __call__
+
     def format(self, *args):
         callFrame = inspect.currentframe().f_back
         out = self._format(callFrame, *args)
@@ -253,12 +255,17 @@ class IceCreamDebugger:
         return out
 
     def _formatArgs(self, callFrame, prefix, context, args):
+        # TODO: change the name since could be also a BinOp node
         callNode = Source.executing(callFrame).node
         if callNode is not None:
             source = Source.for_frame(callFrame)
+            if isinstance(callNode, ast.BinOp):
+                args_nodes = (callNode.right, )
+            else:
+                args_nodes = callNode.args
             sanitizedArgStrs = [
                 source.get_text_with_indentation(arg)
-                for arg in callNode.args]
+                for arg in args_nodes]
         else:
             warnings.warn(
                 NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
