@@ -77,7 +77,7 @@ setup(
         'Information and documentation can be found at '
         'https://github.com/gruns/icecream.'),
     platforms=['any'],
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     classifiers=[
         'License :: OSI Approved :: MIT License',
