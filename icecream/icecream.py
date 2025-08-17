@@ -44,10 +44,8 @@ from .coloring import SolarizedDark
 class Sentinel(enum.Enum):
     absent = object()
 
-def bindStaticVariable(name, value):
-    # type: (str, Any) -> Callable
-    def decorator(fn):
-        # type: (Callable) -> Callable
+def bindStaticVariable(name: str, value: Any) -> Callable:
+    def decorator(fn: Callable) -> Callable:
         setattr(fn, name, value)
         return fn
     return decorator
@@ -56,15 +54,13 @@ def bindStaticVariable(name, value):
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable(
     'lexer', Py3Lexer(ensurenl=False))
-def colorize(s):
-    # type: (str) -> str
+def colorize(s: str) -> str:
     self = colorize
-    return highlight(s, self.lexer, self.formatter)
+    return highlight(s, cast(Py3Lexer, self.lexer), cast(Terminal256Formatter, self.formatter)) # pyright: ignore[reportFunctionMemberAccess]
 
 
 @contextmanager
-def supportTerminalColorsInWindows():
-    # type: () -> Generator
+def supportTerminalColorsInWindows() -> Generator:
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
     colorama.init()
@@ -72,13 +68,11 @@ def supportTerminalColorsInWindows():
     colorama.deinit()
 
 
-def stderrPrint(*args):
-    # type: (object) -> None
+def stderrPrint(*args: object) -> None:
     print(*args, file=sys.stderr)
 
 
-def isLiteral(s):
-    # type: (str) -> bool
+def isLiteral(s: str) -> bool:
     try:
         ast.literal_eval(s)
     except Exception:
@@ -86,14 +80,13 @@ def isLiteral(s):
     return True
 
 
-def colorizedStderrPrint(s):
-    # type: (str) -> None
+def colorizedStderrPrint(s: str) -> None:
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         stderrPrint(colored)
 
 
-def safe_pformat(obj, *args, **kwargs):
+def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
     try:
         return pprint.pformat(obj, *args, **kwargs)
     except TypeError as e:
@@ -134,13 +127,11 @@ NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
     'change during execution?')
 
 
-def callOrValue(obj):
-    # type: (Any) -> Any
+def callOrValue(obj: object) -> object:
     return obj() if callable(obj) else obj
 
 class Source(executing.Source):
-    def get_text_with_indentation(self, node):
-        # type: (Source, ast.expr) -> str
+    def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
         if '\n' in result:
             result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
@@ -149,8 +140,7 @@ class Source(executing.Source):
         return result
 
 
-def prefixLines(prefix, s, startAtLine=0):
-    # type: (str, str, int) -> List[str]
+def prefixLines(prefix: str, s: str, startAtLine: int=0) -> List[str]:
     lines = s.splitlines()
 
     for i in range(startAtLine, len(lines)):
@@ -159,16 +149,14 @@ def prefixLines(prefix, s, startAtLine=0):
     return lines
 
 
-def prefixFirstLineIndentRemaining(prefix, s):
-    # type: (str, str) -> List[str]
+def prefixFirstLineIndentRemaining(prefix: str, s: str) -> List[str]:
     indent = ' ' * len(prefix)
     lines = prefixLines(indent, s, startAtLine=1)
     lines[0] = prefix + lines[0]
     return lines
 
 
-def formatPair(prefix, arg, value):
-    # type: (str, Union[str, Literal[Sentinel.absent]], str) -> str
+def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
     if arg is Sentinel.absent:
         argLines = []
         valuePrefix = prefix
@@ -186,7 +174,7 @@ def formatPair(prefix, arg, value):
     return '\n'.join(lines)
 
 
-def singledispatch(func):
+def singledispatch(func: Callable) -> functools._SingleDispatchCallable:
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
@@ -195,8 +183,7 @@ def singledispatch(func):
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
-    def unregister(cls):
-        # type: (Type) -> None
+    def unregister(cls: Type) -> None:
         del registry[cls]
         dispatch_cache.clear()
     func.unregister = unregister # type: ignore[attr-defined]
@@ -204,16 +191,14 @@ def singledispatch(func):
 
 
 @singledispatch
-def argumentToString(obj):
-    # type: (Any) -> str
+def argumentToString(obj: object) -> str:
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
 
 @argumentToString.register(str)
-def _(obj):
-
+def _(obj: str) -> str:
     if '\n' in obj:
         return "'''" + obj + "'''"
 
@@ -225,11 +210,10 @@ class IceCreamDebugger:
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
-    def __init__(self, prefix=DEFAULT_PREFIX,
-                 outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False,
-                 contextAbsPath=False):
-        # type: (IceCreamDebugger, str, Callable[[str], None], Callable[[Any], str], bool,bool) -> None
+    def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
+                 outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
+                 argToStringFunction: Callable[[Any], str]=argumentToString, includeContext: bool=False,
+                 contextAbsPath: bool=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
@@ -237,8 +221,7 @@ class IceCreamDebugger:
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
 
-    def __call__(self, *args):
-        # type: (IceCreamDebugger, Any) -> Any
+    def __call__(self, *args: object) -> object:
         if self.enabled:
             currentFrame = inspect.currentframe()
             assert currentFrame is not None and currentFrame.f_back is not None
@@ -254,17 +237,15 @@ class IceCreamDebugger:
 
         return passthrough
 
-    def format(self, *args):
-        # type: (IceCreamDebugger, Any) -> str
+    def format(self, *args: object) -> str:
         currentFrame = inspect.currentframe()
         assert currentFrame is not None and currentFrame.f_back is not None
         callFrame = currentFrame.f_back
         out = self._format(callFrame, *args)
         return out
 
-    def _format(self, callFrame, *args):
-        # type: (IceCreamDebugger, FrameType, Any) -> str
-        prefix = callOrValue(self.prefix)
+    def _format(self, callFrame: FrameType, *args: object) -> str:
+        prefix = cast(str, callOrValue(self.prefix))
 
         context = self._formatContext(callFrame)
         if not args:
@@ -278,8 +259,7 @@ class IceCreamDebugger:
 
         return out
 
-    def _formatArgs(self, callFrame, prefix, context, args):
-        # type: (IceCreamDebugger, FrameType, str, str, Sequence[Any]) -> str
+    def _formatArgs(self, callFrame: FrameType, prefix: str, context: str, args: Sequence[object]) -> str:
         callNode = Source.executing(callFrame).node
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
@@ -293,15 +273,13 @@ class IceCreamDebugger:
                 category=RuntimeWarning, stacklevel=4)
             sanitizedArgStrs = [Sentinel.absent] * len(args)
 
-        pairs = list(zip(sanitizedArgStrs, args))
+        pairs = list(zip(sanitizedArgStrs, cast(List[str], args)))
 
         out = self._constructArgumentOutput(prefix, context, pairs)
         return out
 
-    def _constructArgumentOutput(self, prefix, context, pairs):
-        # type: (IceCreamDebugger, str, str, Sequence[Tuple[Union[str, Literal[Sentinel.absent]], Any]]) -> str
-        def argPrefix(arg):
-            # type: (str) -> str
+    def _constructArgumentOutput(self, prefix: str, context: str, pairs: Sequence[Tuple[Union[str, Sentinel], str]]) -> str:
+        def argPrefix(arg: str) -> str:
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
@@ -361,8 +339,7 @@ class IceCreamDebugger:
 
         return '\n'.join(lines)
 
-    def _formatContext(self, callFrame):
-        # type: (IceCreamDebugger, FrameType) -> str
+    def _formatContext(self, callFrame: FrameType) -> str:
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
@@ -371,14 +348,12 @@ class IceCreamDebugger:
         context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
         return context
 
-    def _formatTime(self):
-        # type: (IceCreamDebugger) -> str
+    def _formatTime(self) -> str:
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
         return ' at %s' % formatted
 
-    def _getContext(self, callFrame):
-        # type: (IceCreamDebugger, FrameType) -> Tuple[str, int, str]
+    def _getContext(self, callFrame: FrameType) -> Tuple[str, int, str]:
         frameInfo = inspect.getframeinfo(callFrame)
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
@@ -386,17 +361,14 @@ class IceCreamDebugger:
         filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename) # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
-    def enable(self):
-        # type: (IceCreamDebugger) -> None
+    def enable(self) -> None:
         self.enabled = True
 
-    def disable(self):
-        # type: (IceCreamDebugger) -> None
+    def disable(self) -> None:
         self.enabled = False
 
-    def configureOutput(self, prefix=None, outputFunction=Sentinel.absent,
-                        argToStringFunction=Sentinel.absent, includeContext=Sentinel.absent, contextAbsPath=Sentinel.absent, lineWrapWidth=Sentinel.absent):
-        # type: (Optional[IceCreamDebugger], Union[str, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]]) -> None
+    def configureOutput(self: "IceCreamDebugger", prefix: Optional[str] = None, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
+                        argToStringFunction: Union[Callable, Literal[Sentinel.absent]]=Sentinel.absent, includeContext: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, contextAbsPath: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, lineWrapWidth: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent) -> None:
         noParameterProvided = all(
             v is Sentinel.absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
