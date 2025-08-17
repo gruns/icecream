@@ -371,14 +371,14 @@ class IceCreamDebugger:
     def disable(self) -> None:
         self.enabled = False
 
-    def configureOutput(self: "IceCreamDebugger", prefix: Optional[str] = None, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
+    def configureOutput(self: "IceCreamDebugger", prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
                         argToStringFunction: Union[Callable, Literal[Sentinel.absent]]=Sentinel.absent, includeContext: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, contextAbsPath: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, lineWrapWidth: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent) -> None:
         noParameterProvided = all(
             v is Sentinel.absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
-        if prefix is not None:
+        if prefix is not Sentinel.absent:
             self.prefix = prefix
 
         if outputFunction is not Sentinel.absent:
