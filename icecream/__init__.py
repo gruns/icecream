@@ -10,8 +10,6 @@
 # License: MIT
 #
 
-from os.path import dirname, join as pjoin
-
 from .icecream import *  # noqa
 from .builtins import install, uninstall
 
