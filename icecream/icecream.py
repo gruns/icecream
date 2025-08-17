@@ -361,7 +361,7 @@ class IceCreamDebugger:
 
     def configureOutput(self, prefix=_absent, outputFunction=_absent,
                         argToStringFunction=_absent, includeContext=_absent,
-                        contextAbsPath=_absent):
+                        contextAbsPath=_absent, lineWrapWidth=_absent):
         noParameterProvided = all(
             v is _absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
@@ -381,6 +381,9 @@ class IceCreamDebugger:
 
         if contextAbsPath is not _absent:
             self.contextAbsPath = contextAbsPath
+
+        if lineWrapWidth is not _absent:
+            self.lineWrapWidth = lineWrapWidth
 
 
 ic = IceCreamDebugger()
