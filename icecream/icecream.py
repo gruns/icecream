@@ -19,9 +19,7 @@ import inspect
 import pprint
 import sys
 from types import FrameType
-from typing import TYPE_CHECKING, Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast
-if TYPE_CHECKING:
-    from typing import Literal
+from typing import Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast, Literal
 import warnings
 from datetime import datetime
 import functools
