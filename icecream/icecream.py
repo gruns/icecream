@@ -173,8 +173,14 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
     lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
+class _SingleDispatchCallable:
+    def __call__(self, *args: object) -> str:
+        # This is a marker class, not a real thing you should use
+        raise NotImplemented
+    
+    register: Callable[[Type], Callable]
 
-def singledispatch(func: Callable) -> functools._SingleDispatchCallable:
+def singledispatch(func: Callable) -> _SingleDispatchCallable:
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
@@ -187,7 +193,7 @@ def singledispatch(func: Callable) -> functools._SingleDispatchCallable:
         del registry[cls]
         dispatch_cache.clear()
     func.unregister = unregister # type: ignore[attr-defined]
-    return func
+    return cast(_SingleDispatchCallable, func)
 
 
 @singledispatch
@@ -212,7 +218,7 @@ class IceCreamDebugger:
 
     def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
                  outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction: Callable[[Any], str]=argumentToString, includeContext: bool=False,
+                 argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
                  contextAbsPath: bool=False):
         self.enabled = True
         self.prefix = prefix
