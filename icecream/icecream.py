@@ -19,7 +19,7 @@ import inspect
 import pprint
 import sys
 from types import FrameType
-from typing import TYPE_CHECKING, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast
 if TYPE_CHECKING:
     from typing import Literal
 import warnings
@@ -32,6 +32,7 @@ from textwrap import dedent
 import colorama
 import executing
 from pygments import highlight
+
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
@@ -40,12 +41,8 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
-
-PYTHON2 = (sys.version_info[0] == 2)
-
 class Sentinel(enum.Enum):
     absent = object()
-
 
 def bindStaticVariable(name, value):
     # type: (str, Any) -> Callable
@@ -58,7 +55,7 @@ def bindStaticVariable(name, value):
 
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable(
-    'lexer', PyLexer(ensurenl=False) if PYTHON2 else Py3Lexer(ensurenl=False))
+    'lexer', Py3Lexer(ensurenl=False))
 def colorize(s):
     # type: (str) -> str
     self = colorize
@@ -96,12 +93,25 @@ def colorizedStderrPrint(s):
         stderrPrint(colored)
 
 
+def safe_pformat(obj, *args, **kwargs):
+    try:
+        return pprint.pformat(obj, *args, **kwargs)
+    except TypeError as e:
+        # Sorting likely tripped on symbolic/elementwise comparisons
+        warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
+        try:
+            # Py 3.8+: disable sorting globally for all nested dicts
+            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
+        except TypeError:
+            # Py < 3.8: last-ditch, always works
+            return repr(obj)
+
+
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
-DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
-
+DEFAULT_ARG_TO_STRING_FUNCTION = safe_pformat
 
 """
 This info message is printed instead of the arguments when icecream
@@ -177,21 +187,11 @@ def formatPair(prefix, arg, value):
 
 
 def singledispatch(func):
-    # type: (Callable) -> Callable
-    if sys.version_info < (3, 4): # Need version check not attribute check for mypy
-        def unsupport_py2(*args, **kwargs):
-            # type: (Any, Any) -> None
-            raise NotImplementedError(
-                "functools.singledispatch is missing in " + sys.version
-            )
-        func.register = func.unregister = unsupport_py2 # type: ignore[attr-defined]
-        return func
-
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
     assert func.register.__closure__ is not None
-    closure = dict(zip(func.register.__code__.co_freevars, 
+    closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
@@ -209,6 +209,15 @@ def argumentToString(obj):
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
+
+
+@argumentToString.register(str)
+def _(obj):
+
+    if '\n' in obj:
+        return "'''" + obj + "'''"
+
+    return "'" + obj.replace('\\', '\\\\') + "'"
 
 
 class IceCreamDebugger:
@@ -385,15 +394,15 @@ class IceCreamDebugger:
         # type: (IceCreamDebugger) -> None
         self.enabled = False
 
-    def configureOutput(self, prefix=Sentinel.absent, outputFunction=Sentinel.absent,
-                        argToStringFunction=Sentinel.absent, includeContext=Sentinel.absent, contextAbsPath=Sentinel.absent):
-        # type: (IceCreamDebugger, Union[str, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]]) -> None
+    def configureOutput(self, prefix=None, outputFunction=Sentinel.absent,
+                        argToStringFunction=Sentinel.absent, includeContext=Sentinel.absent, contextAbsPath=Sentinel.absent, lineWrapWidth=Sentinel.absent):
+        # type: (Optional[IceCreamDebugger], Union[str, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[Callable, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]], Union[bool, Literal[Sentinel.absent]]) -> None
         noParameterProvided = all(
             v is Sentinel.absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
-        if prefix is not Sentinel.absent:
+        if prefix is not None:
             self.prefix = prefix
 
         if outputFunction is not Sentinel.absent:
@@ -407,6 +416,9 @@ class IceCreamDebugger:
         
         if contextAbsPath is not Sentinel.absent:
             self.contextAbsPath = contextAbsPath
+
+        if lineWrapWidth is not Sentinel.absent:
+            self.lineWrapWidth = lineWrapWidth
 
 
 ic = IceCreamDebugger()
