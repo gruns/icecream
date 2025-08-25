@@ -23,6 +23,7 @@ import functools
 from contextlib import contextmanager
 from os.path import basename, realpath
 from textwrap import dedent
+import traceback
 
 import colorama
 import executing
@@ -220,8 +221,11 @@ class IceCreamDebugger:
 
     def __call__(self, *args):
         if self.enabled:
-            callFrame = inspect.currentframe().f_back
-            self.outputFunction(self._format(callFrame, *args))
+            try:
+                callFrame = inspect.currentframe().f_back
+                self.outputFunction(self._format(callFrame, *args))
+            except:
+                print(f"IceCreamDebugger: exception ignored:\n\n{traceback.format_exc()}", sys.stderr)
 
         if not args:  # E.g. ic().
             passthrough = None
