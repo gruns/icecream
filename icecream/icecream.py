@@ -12,9 +12,12 @@
 #
 
 import ast
+import enum
 import inspect
 import pprint
 import sys
+from types import FrameType
+from typing import Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast, Literal
 import warnings
 from datetime import datetime
 import functools
@@ -34,12 +37,11 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
+class Sentinel(enum.Enum):
+    absent = object()
 
-_absent = object()
-
-
-def bindStaticVariable(name, value):
-    def decorator(fn):
+def bindStaticVariable(name: str, value: Any) -> Callable:
+    def decorator(fn: Callable) -> Callable:
         setattr(fn, name, value)
         return fn
     return decorator
@@ -48,13 +50,13 @@ def bindStaticVariable(name, value):
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable(
     'lexer', Py3Lexer(ensurenl=False))
-def colorize(s):
+def colorize(s: str) -> str:
     self = colorize
-    return highlight(s, self.lexer, self.formatter)
+    return highlight(s, cast(Py3Lexer, self.lexer), cast(Terminal256Formatter, self.formatter)) # pyright: ignore[reportFunctionMemberAccess]
 
 
 @contextmanager
-def supportTerminalColorsInWindows():
+def supportTerminalColorsInWindows() -> Generator:
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
     if sys.platform.startswith('win'):
@@ -65,11 +67,11 @@ def supportTerminalColorsInWindows():
         yield
 
 
-def stderrPrint(*args):
+def stderrPrint(*args: object) -> None:
     print(*args, file=sys.stderr)
 
 
-def isLiteral(s):
+def isLiteral(s: str) -> bool:
     try:
         ast.literal_eval(s)
     except Exception:
@@ -77,13 +79,13 @@ def isLiteral(s):
     return True
 
 
-def colorizedStderrPrint(s):
+def colorizedStderrPrint(s: str) -> None:
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         stderrPrint(colored)
 
 
-def safe_pformat(obj, *args, **kwargs):
+def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
     try:
         return pprint.pformat(obj, *args, **kwargs)
     except TypeError as e:
@@ -124,21 +126,20 @@ NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
     'change during execution?')
 
 
-def callOrValue(obj):
+def callOrValue(obj: object) -> object:
     return obj() if callable(obj) else obj
 
-
 class Source(executing.Source):
-    def get_text_with_indentation(self, node):
+    def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
         if '\n' in result:
-            result = ' ' * node.first_token.start[1] + result
+            result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()
         return result
 
 
-def prefixLines(prefix, s, startAtLine=0):
+def prefixLines(prefix: str, s: str, startAtLine: int=0) -> List[str]:
     lines = s.splitlines()
 
     for i in range(startAtLine, len(lines)):
@@ -147,15 +148,15 @@ def prefixLines(prefix, s, startAtLine=0):
     return lines
 
 
-def prefixFirstLineIndentRemaining(prefix, s):
+def prefixFirstLineIndentRemaining(prefix: str, s: str) -> List[str]:
     indent = ' ' * len(prefix)
     lines = prefixLines(indent, s, startAtLine=1)
     lines[0] = prefix + lines[0]
     return lines
 
 
-def formatPair(prefix, arg, value):
-    if arg is _absent:
+def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
+    if arg is Sentinel.absent:
         argLines = []
         valuePrefix = prefix
     else:
@@ -171,32 +172,38 @@ def formatPair(prefix, arg, value):
     lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
+class _SingleDispatchCallable:
+    def __call__(self, *args: object) -> str:
+        # This is a marker class, not a real thing you should use
+        raise NotImplemented
+    
+    register: Callable[[Type], Callable]
 
-def singledispatch(func):
+def singledispatch(func: Callable) -> _SingleDispatchCallable:
     func = functools.singledispatch(func)
 
     # add unregister based on https://stackoverflow.com/a/25951784
+    assert func.register.__closure__ is not None
     closure = dict(zip(func.register.__code__.co_freevars,
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
-    def unregister(cls):
+    def unregister(cls: Type) -> None:
         del registry[cls]
         dispatch_cache.clear()
-    func.unregister = unregister
-    return func
+    func.unregister = unregister # type: ignore[attr-defined]
+    return cast(_SingleDispatchCallable, func)
 
 
 @singledispatch
-def argumentToString(obj):
+def argumentToString(obj: object) -> str:
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
     s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
 
 @argumentToString.register(str)
-def _(obj):
-
+def _(obj: str) -> str:
     if '\n' in obj:
         return "'''" + obj + "'''"
 
@@ -208,10 +215,10 @@ class IceCreamDebugger:
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
-    def __init__(self, prefix=DEFAULT_PREFIX,
-                 outputFunction=DEFAULT_OUTPUT_FUNCTION,
-                 argToStringFunction=argumentToString, includeContext=False,
-                 contextAbsPath=False):
+    def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
+                 outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
+                 argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
+                 contextAbsPath: bool=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
@@ -219,9 +226,11 @@ class IceCreamDebugger:
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
 
-    def __call__(self, *args):
+    def __call__(self, *args: object) -> object:
         if self.enabled:
-            callFrame = inspect.currentframe().f_back
+            currentFrame = inspect.currentframe()
+            assert currentFrame is not None and currentFrame.f_back is not None
+            callFrame = currentFrame.f_back
             self.outputFunction(self._format(callFrame, *args))
 
         if not args:  # E.g. ic().
@@ -233,13 +242,15 @@ class IceCreamDebugger:
 
         return passthrough
 
-    def format(self, *args):
-        callFrame = inspect.currentframe().f_back
+    def format(self, *args: object) -> str:
+        currentFrame = inspect.currentframe()
+        assert currentFrame is not None and currentFrame.f_back is not None
+        callFrame = currentFrame.f_back
         out = self._format(callFrame, *args)
         return out
 
-    def _format(self, callFrame, *args):
-        prefix = callOrValue(self.prefix)
+    def _format(self, callFrame: FrameType, *args: object) -> str:
+        prefix = cast(str, callOrValue(self.prefix))
 
         context = self._formatContext(callFrame)
         if not args:
@@ -253,10 +264,11 @@ class IceCreamDebugger:
 
         return out
 
-    def _formatArgs(self, callFrame, prefix, context, args):
+    def _formatArgs(self, callFrame: FrameType, prefix: str, context: str, args: Sequence[object]) -> str:
         callNode = Source.executing(callFrame).node
         if callNode is not None:
-            source = Source.for_frame(callFrame)
+            assert isinstance(callNode, ast.Call)
+            source = cast(Source, Source.for_frame(callFrame))
             sanitizedArgStrs = [
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
@@ -264,15 +276,15 @@ class IceCreamDebugger:
             warnings.warn(
                 NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
                 category=RuntimeWarning, stacklevel=4)
-            sanitizedArgStrs = [_absent] * len(args)
+            sanitizedArgStrs = [Sentinel.absent] * len(args)
 
-        pairs = list(zip(sanitizedArgStrs, args))
+        pairs = list(zip(sanitizedArgStrs, cast(List[str], args)))
 
         out = self._constructArgumentOutput(prefix, context, pairs)
         return out
 
-    def _constructArgumentOutput(self, prefix, context, pairs):
-        def argPrefix(arg):
+    def _constructArgumentOutput(self, prefix: str, context: str, pairs: Sequence[Tuple[Union[str, Sentinel], str]]) -> str:
+        def argPrefix(arg: str) -> str:
             return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
@@ -290,7 +302,7 @@ class IceCreamDebugger:
         # When the source for an arg is missing we also only print the value,
         # since we can't know anything about the argument itself.
         pairStrs = [
-            val if (isLiteral(arg) or arg is _absent)
+            val if (arg is Sentinel.absent or isLiteral(arg))
             else (argPrefix(arg) + val)
             for arg, val in pairs]
 
@@ -332,7 +344,7 @@ class IceCreamDebugger:
 
         return '\n'.join(lines)
 
-    def _formatContext(self, callFrame):
+    def _formatContext(self, callFrame: FrameType) -> str:
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
         if parentFunction != '<module>':
@@ -341,49 +353,48 @@ class IceCreamDebugger:
         context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
         return context
 
-    def _formatTime(self):
+    def _formatTime(self) -> str:
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
         return ' at %s' % formatted
 
-    def _getContext(self, callFrame):
+    def _getContext(self, callFrame: FrameType) -> Tuple[str, int, str]:
         frameInfo = inspect.getframeinfo(callFrame)
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)
+        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename) # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
-    def enable(self):
+    def enable(self) -> None:
         self.enabled = True
 
-    def disable(self):
+    def disable(self) -> None:
         self.enabled = False
 
-    def configureOutput(self, prefix=_absent, outputFunction=_absent,
-                        argToStringFunction=_absent, includeContext=_absent,
-                        contextAbsPath=_absent, lineWrapWidth=_absent):
+    def configureOutput(self: "IceCreamDebugger", prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
+                        argToStringFunction: Union[Callable, Literal[Sentinel.absent]]=Sentinel.absent, includeContext: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, contextAbsPath: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, lineWrapWidth: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent) -> None:
         noParameterProvided = all(
-            v is _absent for k, v in locals().items() if k != 'self')
+            v is Sentinel.absent for k,v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
-        if prefix is not _absent:
+        if prefix is not Sentinel.absent:
             self.prefix = prefix
 
-        if outputFunction is not _absent:
+        if outputFunction is not Sentinel.absent:
             self.outputFunction = outputFunction
 
-        if argToStringFunction is not _absent:
+        if argToStringFunction is not Sentinel.absent:
             self.argToStringFunction = argToStringFunction
 
-        if includeContext is not _absent:
+        if includeContext is not Sentinel.absent:
             self.includeContext = includeContext
-
-        if contextAbsPath is not _absent:
+        
+        if contextAbsPath is not Sentinel.absent:
             self.contextAbsPath = contextAbsPath
 
-        if lineWrapWidth is not _absent:
+        if lineWrapWidth is not Sentinel.absent:
             self.lineWrapWidth = lineWrapWidth
 
 

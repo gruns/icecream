@@ -15,9 +15,9 @@ import icecream
 builtins = __import__('builtins')
 
 
-def install(ic='ic'):
+def install(ic: str='ic') -> None:
     setattr(builtins, ic, icecream.ic)
 
 
-def uninstall(ic='ic'):
+def uninstall(ic: str='ic') -> None:
     delattr(builtins, ic)
