@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 #
@@ -34,10 +34,10 @@ class Publish(Command):
         pass
 
     def run(self):
-        os.system('python setup.py sdist bdist_wheel')
+        os.system('python3 setup.py sdist bdist_wheel')
 
         sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
-        wheel = 'dist/icecream-%s-py2.py3-none-any.whl' % meta['__version__']
+        wheel = 'dist/icecream-%s-py3-none-any.whl' % meta['__version__']
         rc = os.system('twine upload "%s" "%s"' % (sdist, wheel))
 
         sys.exit(rc)
@@ -77,31 +77,33 @@ setup(
         'Information and documentation can be found at '
         'https://github.com/gruns/icecream.'),
     platforms=['any'],
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
+    package_data={'icecream': ['py.typed']},
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    tests_require=[],
+    tests_require=[
+        'tox>=4',
+    ],
     install_requires=[
         'colorama>=0.3.9',
         'pygments>=2.2.0',
-        'executing>=0.3.1',
+        'executing>=2.1.0',
         'asttokens>=2.0.1',
     ],
     cmdclass={

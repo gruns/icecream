@@ -9,3 +9,5 @@ build/
 *.pyo
 *.egg
 *.egg-info
+.aider*
+playground

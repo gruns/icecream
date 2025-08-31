@@ -15,10 +15,7 @@ import sys
 import unittest
 import warnings
 
-try:  # Python 2.x.
-    from StringIO import StringIO
-except ImportError:  # Python 3.x.
-    from io import StringIO
+from io import StringIO
 from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
@@ -396,15 +393,6 @@ class TestIceCream(unittest.TestCase):
         def argumentToString_tuple(obj):
             return "Dispatching tuple!"
 
-        # Unsupport Python2
-        if "singledispatch" not in dir(functools):
-            for attr in ("register", "unregister"):
-                with self.assertRaises(NotImplementedError):
-                    getattr(argumentToString, attr)(
-                        tuple, argumentToString_tuple
-                    )
-            return
-
         # Prepare input and output
         x = (1, 2)
         default_output = ic.format(x)
@@ -530,32 +518,37 @@ class TestIceCream(unittest.TestCase):
         assert pairs == [('a', '1'), ('b', '2')]
 
     def testNoSourceAvailablePrintsValues(self):
-        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
-            # we ignore the warning so that it doesn't interfere with parsing ic's output
-            warnings.simplefilter("ignore")
-            eval('ic(a, b)')
-            pairs = parseOutputIntoPairs(out, err, 1)
-            self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
+        with disableColoring(), captureStandardStreams() as (out, err):
+            with warnings.catch_warnings():
+                # we ignore the warning so that it doesn't interfere
+                # with parsing ic's output
+                warnings.simplefilter("ignore")
+                eval('ic(a, b)')
+                pairs = parseOutputIntoPairs(out, err, 1)
+                self.assertEqual(pairs, [[(None, '1'), (None, "2")]])
 
     def testNoSourceAvailablePrintsMultiline(self):
         """
         This tests for a bug which caused only multiline prints to fail.
         """
         multilineStr = 'line1\nline2'
-        with disableColoring(), captureStandardStreams() as (out, err), warnings.catch_warnings():
-            # we ignore the warning so that it doesn't interfere with parsing ic's output
-            warnings.simplefilter("ignore")
-            eval('ic(multilineStr)')
-            pair = parseOutputIntoPairs(out, err, 2)[0][0]
-            self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
+        with disableColoring(), captureStandardStreams() as (out, err):
+            with warnings.catch_warnings():
+                # we ignore the warning so that it doesn't interfere
+                # with parsing ic's output
+                warnings.simplefilter("ignore")
+                eval('ic(multilineStr)')
+                pair = parseOutputIntoPairs(out, err, 2)[0][0]
+                self.assertEqual(pair, (None, ic.argToStringFunction(multilineStr)))
 
     def testNoSourceAvailableIssuesExactlyOneWarning(self):
-        with warnings.catch_warnings(record=True) as all_warnings:
-            eval('ic(a)')
-            eval('ic(b)')
-            assert len(all_warnings) == 1
-            warning = all_warnings[-1]
-            assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
+        with disableColoring(), captureStandardStreams() as (out, err):
+            with warnings.catch_warnings(record=True) as allWarnings:
+                eval('ic(a)')
+                eval('ic(b)')
+                assert len(allWarnings) == 1
+                warning = allWarnings[-1]
+                assert NO_SOURCE_AVAILABLE_WARNING_MESSAGE in str(warning.message)
 
     def testSingleTupleArgument(self):
         with disableColoring(), captureStandardStreams() as (out, err):
@@ -595,7 +588,7 @@ ic| (a,
                     list(range(15))])
 
         lines = err.getvalue().strip().splitlines()
-        self.assertRegexpMatches(
+        self.assertRegex(
             lines[0],
             r'ic\| test_icecream.py:\d+ in testMultilineContainerArgs\(\)',
         )
@@ -623,3 +616,72 @@ ic| (a,
     def testConfigureOutputWithNoParameters(self):
         with self.assertRaises(TypeError):
             ic.configureOutput()
+
+    def test_multiline_strings_output(self):
+
+        test1 = "A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file"
+        test2 = r"A\veryvery\long\path\to\no\even\longer\HelloWorld _01_Heritisfinallythe file.file"
+        test3 = "line\nline"
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test1)
+            curr_res = err.getvalue().strip()
+            expected = r"ic| test1: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test2)
+            curr_res = err.getvalue().strip()
+            # expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            expected = r"ic| test2: 'A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file'"
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test3)
+            curr_res = err.getvalue().strip()
+            expected = r"""ic| test3: '''line
+            line'''"""
+            self.assertEqual(curr_res, expected)
+            del curr_res, expected
+
+    def test_sympy_dict_keys_do_not_crash(self):
+        """Regression: ic() must not raise when dict keys are SymPy symbols."""
+
+        try:
+            import sympy as sp
+        except Exception:
+            self.skipTest("sympy not installed")
+
+        x, y = sp.symbols("x y")
+        d = {x: "hello", y: "world"}
+
+        with disableColoring(), captureStandardStreams() as (out, err):
+            # If the bug regresses, this line raises TypeError.
+            ic(d)
+
+        s = err.getvalue().strip()
+        # Basic sanity checks without assuming exact formatting or ordering.
+        self.assertIn("ic|", s)
+        self.assertIn("hello", s)
+        self.assertIn("world", s)
+
+    def test_sympy_solve_result_does_not_crash(self):
+        """Regression: ic() must handle SymPy solve() outputs."""
+
+        try:
+            import sympy as sp
+        except Exception:
+            self.skipTest("sympy not installed")
+
+        x, y = sp.symbols("x y")
+        res = sp.solve([x + 2, y - 2])   # list/dict of symbolic items
+
+        with disableColoring(), captureStandardStreams() as (out, err):
+            ic(res)
+
+        s = err.getvalue()
+        self.assertIn("ic|", s)
+        # Don’t assert exact text; just ensure something printed.
+        self.assertTrue(len(s) > 0)

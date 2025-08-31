@@ -1,11 +1,11 @@
 <h1 align="center">
-  <img src="logo.svg" width="220px" height="370px" alt="icecream">
+  <img src="logo.svg" width="220px" height="370px" alt="IceCream">
 </h1>
 
 <p align="center">
   <a href="https://pypi.python.org/pypi/icecream"><img src="https://badge.fury.io/py/icecream.svg"></a>
   <a href="https://github.com/gruns/icecream/actions/workflows/ci.yml"><img src="https://github.com/gruns/icecream/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="http://unlicense.org/"><img src="https://img.shields.io/pypi/l/icecream.svg"></a>
+  <a href="/LICENSE.txt"><img src="https://img.shields.io/pypi/l/icecream.svg"></a>
   <a href="https://pypi.python.org/pypi/icecream"><img src="https://img.shields.io/pypi/pyversions/icecream.svg"></a>
 </p>
 
@@ -17,16 +17,16 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
 `ic()` is like `print()`, but better:
 
-  1. It prints both expressions/variable names and their values.
+  1. It prints both variables and expressions along with their values.
   2. It's 60% faster to type.
-  3. Data structures are pretty printed.
+  3. Data structures are formatted and pretty printed.
   4. Output is syntax highlighted.
   5. It optionally includes program context: filename, line number, and
      parent function.
 
-IceCream is well tested, [permissively licensed](LICENSE.txt), and
-supports Python 2, Python 3, PyPy2, and PyPy3.
+IceCream is well tested, [permissively licensed](LICENSE.txt), and supports Python 3 and PyPy3.
 
+2025-04-26: Big scoop: I'm thrilled to share that @Jakeroid is now a maintainer of IceCream! 🎉 IceCream’s future just got a whole lot sweeter. 🍦
 
 ### Inspect Variables
 
@@ -269,7 +269,7 @@ stderr (the default).
 >>> from icecream import ic
 >>>
 >>> def warn(s):
->>>     logging.warning(s)
+>>>     logging.warning("%s", s)
 >>>
 >>> ic.configureOutput(outputFunction=warn)
 >>> ic('eep')
@@ -368,6 +368,23 @@ ic| example.py:18 in foo()- i: 3
 
 `contextAbsPath` is False by default.
 
+If you want to use icecream with multiple log levels, like with Python’s
+`logging` module, you can use `ic.format()` to integrate icecream’s
+debugging with your logger:
+
+```python
+import logging
+from icecream import ic
+
+foo = 'bar'
+logging.debug(ic.format(foo))
+```
+
+❕ This is a bit clunky. Would you prefer built-in log level support in
+icecream? If so, please share your thoughts in
+[issue](https://github.com/gruns/icecream/issues/146).
+
+
 ### Installation
 
 Installing IceCream with pip is easy.
@@ -401,6 +418,7 @@ Delicious IceCream should be enjoyed in every language.
 - Lua: [icecream-lua](https://github.com/wlingze/icecream-lua)
 - Clojure(Script): [icecream-cljc](https://github.com/Eigenbahn/icecream-cljc)
 - Bash: [IceCream-Bash](https://github.com/jtplaarj/IceCream-Bash)
+- SystemVerilog: [icecream_sv](https://github.com/xver/icecream_sv)
 
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
