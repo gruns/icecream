@@ -85,6 +85,13 @@ def colorizedStderrPrint(s: str) -> None:
         stderrPrint(colored)
 
 
+
+def colorizedStdoutPrint(s):
+    colored = colorize(s)
+    with supportTerminalColorsInWindows():
+        print(colored)
+
+
 def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
     try:
         return pprint.pformat(obj, *args, **kwargs)
@@ -371,6 +378,12 @@ class IceCreamDebugger:
 
     def disable(self) -> None:
         self.enabled = False
+
+    def use_stdout():
+        self.outputFunction = colorizedStdoutPrint
+
+    def use_stderr():
+        self.outputFunction = colorizedStderrPrint
 
     def configureOutput(self: "IceCreamDebugger", prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
                         argToStringFunction: Union[Callable, Literal[Sentinel.absent]]=Sentinel.absent, includeContext: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, contextAbsPath: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, lineWrapWidth: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent) -> None:
