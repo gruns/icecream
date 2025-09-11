@@ -17,5 +17,5 @@ __author__ = 'Ansgar Grunseid'
 __contact__ = 'grunseid@gmail.com'
 __url__ = 'https://github.com/gruns/icecream'
 __description__ = (
-    'Never use print() to debug again; inspect variables, expressions, and '
+    'Never use print() to debug again: inspect variables, expressions, and '
     'program execution with a single, simple function call.')
