@@ -37,8 +37,10 @@ from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
 
 from .coloring import SolarizedDark
 
+
 class Sentinel(enum.Enum):
     absent = object()
+
 
 def bindStaticVariable(name: str, value: Any) -> Callable:
     def decorator(fn: Callable) -> Callable:
@@ -48,11 +50,14 @@ def bindStaticVariable(name: str, value: Any) -> Callable:
 
 
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
-@bindStaticVariable(
-    'lexer', Py3Lexer(ensurenl=False))
+@bindStaticVariable('lexer', Py3Lexer(ensurenl=False))
 def colorize(s: str) -> str:
     self = colorize
-    return highlight(s, cast(Py3Lexer, self.lexer), cast(Terminal256Formatter, self.formatter)) # pyright: ignore[reportFunctionMemberAccess]
+    return highlight(
+        s,
+        cast(Py3Lexer, self.lexer),
+        cast(Terminal256Formatter, self.formatter)
+    )  # pyright: ignore[reportFunctionMemberAccess]
 
 
 @contextmanager
@@ -83,7 +88,6 @@ def colorizedStderrPrint(s: str) -> None:
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         stderrPrint(colored)
-
 
 
 def colorizedStdoutPrint(s):
@@ -136,6 +140,7 @@ NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
 def callOrValue(obj: object) -> object:
     return obj() if callable(obj) else obj
 
+
 class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
@@ -146,7 +151,7 @@ class Source(executing.Source):
         return result
 
 
-def prefixLines(prefix: str, s: str, startAtLine: int=0) -> List[str]:
+def prefixLines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
     lines = s.splitlines()
 
     for i in range(startAtLine, len(lines)):
@@ -179,12 +184,14 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
     lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
+
 class _SingleDispatchCallable:
     def __call__(self, *args: object) -> str:
         # This is a marker class, not a real thing you should use
         raise NotImplemented
     
     register: Callable[[Type], Callable]
+
 
 def singledispatch(func: Callable) -> _SingleDispatchCallable:
     func = functools.singledispatch(func)
@@ -195,10 +202,12 @@ def singledispatch(func: Callable) -> _SingleDispatchCallable:
                        func.register.__closure__))
     registry = closure['registry'].cell_contents
     dispatch_cache = closure['dispatch_cache'].cell_contents
+
     def unregister(cls: Type) -> None:
         del registry[cls]
         dispatch_cache.clear()
-    func.unregister = unregister # type: ignore[attr-defined]
+
+    func.unregister = unregister  # type: ignore[attr-defined]
     return cast(_SingleDispatchCallable, func)
 
 
@@ -370,7 +379,7 @@ class IceCreamDebugger:
         lineNumber = frameInfo.lineno
         parentFunction = frameInfo.function
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename) # type: ignore[operator]
+        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)  # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
     def enable(self) -> None:
@@ -379,16 +388,23 @@ class IceCreamDebugger:
     def disable(self) -> None:
         self.enabled = False
 
-    def use_stdout():
+    def use_stdout(self) -> None:
         self.outputFunction = colorizedStdoutPrint
 
-    def use_stderr():
+    def use_stderr(self) -> None:
         self.outputFunction = colorizedStderrPrint
 
-    def configureOutput(self: "IceCreamDebugger", prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent, outputFunction: Union[Callable, Literal[Sentinel.absent]] =Sentinel.absent,
-                        argToStringFunction: Union[Callable, Literal[Sentinel.absent]]=Sentinel.absent, includeContext: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, contextAbsPath: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent, lineWrapWidth: Union[bool, Literal[Sentinel.absent]]=Sentinel.absent) -> None:
+    def configureOutput(
+        self: "IceCreamDebugger",
+        prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent,
+        outputFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
+        argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
+        includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent
+    ) -> None:
         noParameterProvided = all(
-            v is Sentinel.absent for k,v in locals().items() if k != 'self')
+            v is Sentinel.absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
 
@@ -403,7 +419,7 @@ class IceCreamDebugger:
 
         if includeContext is not Sentinel.absent:
             self.includeContext = includeContext
-        
+
         if contextAbsPath is not Sentinel.absent:
             self.contextAbsPath = contextAbsPath
 
