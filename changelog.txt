@@ -1,4 +1,13 @@
 ================================================================================
+v2.1.8
+================================================================================
+Added: You can pass a pre-configured ic instance to builtins.
+Added: You can configure IceCream to output to either stdout or stderr.
+
+Big thanks to the community! This release was made possible by the people
+  who contributed to the library.
+
+================================================================================
 v2.1.7
 ================================================================================
 Added: Configurable line wrap length.

@@ -27,13 +27,13 @@ class Publish(Command):
     """Publish to PyPI with twine."""
     user_options = []
 
-    def initialize_options(self):
+    def initialize_options(self) -> None:
         pass
 
-    def finalize_options(self):
+    def finalize_options(self) -> None:
         pass
 
-    def run(self):
+    def run(self) -> None:
         os.system('python3 setup.py sdist bdist_wheel')
 
         sdist = 'dist/icecream-%s.tar.gz' % meta['__version__']
@@ -57,7 +57,7 @@ class RunTests(TestCommand):
     Running the unit tests manually here enables `python setup.py test`
     without tests/ being a Python module.
     """
-    def run_tests(self):
+    def run_tests(self) -> None:
         from unittest import TestLoader, TextTestRunner
         tests_dir = pjoin(dirname(__file__), 'tests')
         suite = TestLoader().discover(tests_dir)

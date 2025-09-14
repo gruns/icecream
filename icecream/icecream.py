@@ -90,7 +90,7 @@ def colorizedStderrPrint(s: str) -> None:
         stderrPrint(colored)
 
 
-def colorizedStdoutPrint(s):
+def colorizedStdoutPrint(s: str) -> None:
     colored = colorize(s)
     with supportTerminalColorsInWindows():
         print(colored)
