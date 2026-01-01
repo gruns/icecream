@@ -424,3 +424,5 @@ Delicious IceCream should be enjoyed in every language.
 If you'd like a similar `ic()` function in your favorite language, please open a
 pull request! IceCream's goal is to sweeten print debugging with a handy-dandy
 `ic()` function in every language.
+
+<!-- Tested by automated system -->
