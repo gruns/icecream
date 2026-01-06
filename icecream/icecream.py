@@ -110,118 +110,12 @@ def colorizedStdoutPrint(s: str) -> None:
 
 def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
     try:
-        # For lists, try with a larger width first to avoid unnecessary line breaks
-        if isinstance(obj, list):
-            formatted = pprint.pformat(obj, *args, width=120, **kwargs)
-            # If it still breaks into multiple lines but is reasonably short, use repr
-            # Target lists that are in the problematic range (13-35 elements) where
-            # pprint breaks them into one-per-line but they could reasonably fit on one line
-            # Exclude cases with nested lists (likely part of multiline expressions)
-            if (
-                "\n" in formatted
-                and len(formatted) < 120
-                and 13 <= len(obj) <= 35
-                and formatted.count("\n") > 10
-                and not any("[" in line for line in formatted.splitlines()[1:])
-            ):  # No nested lists
-                return repr(obj)
-            return formatted
         return pprint.pformat(obj, *args, **kwargs)
     except TypeError as e:
         # Sorting likely tripped on symbolic/elementwise comparisons
         warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
         try:
             # Py 3.8+: disable sorting globally for all nested dicts
-            if isinstance(obj, list):
-                formatted = pprint.pformat(
-                    obj, *args, sort_dicts=False, width=120, **kwargs
-                )
-                if (
-                    "\n" in formatted
-                    and len(formatted) < 120
-                    and 13 <= len(obj) <= 35
-                    and formatted.count("\n") > 10
-                    and not any("[" in line for line in formatted.splitlines()[1:])
-                ):
-                    return repr(obj)
-                return formatted
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
-        except TypeError:
-            # Py < 3.8: last-ditch, always works
-            return repr(obj)
-            return formatted
-        return pprint.pformat(obj, *args, **kwargs)
-    except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
-        warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
-        try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            if isinstance(obj, list):
-                formatted = pprint.pformat(
-                    obj, *args, sort_dicts=False, width=120, **kwargs
-                )
-                if (
-                    "\n" in formatted
-                    and len(formatted) < 120
-                    and 13 <= len(obj) <= 35
-                    and formatted.count("\n") > 10
-                ):
-                    return repr(obj)
-                return formatted
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
-        except TypeError:
-            # Py < 3.8: last-ditch, always works
-            return repr(obj)
-            return formatted
-        return pprint.pformat(obj, *args, **kwargs)
-    except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
-        warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
-        try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            if isinstance(obj, list):
-                formatted = pprint.pformat(
-                    obj, *args, sort_dicts=False, width=120, **kwargs
-                )
-                if "\n" in formatted and len(formatted) < 60 and len(obj) <= 12:
-                    return repr(obj)
-                return formatted
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
-        except TypeError:
-            # Py < 3.8: last-ditch, always works
-            return repr(obj)
-            return formatted
-        return pprint.pformat(obj, *args, **kwargs)
-    except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
-        warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
-        try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            if isinstance(obj, list):
-                formatted = pprint.pformat(
-                    obj, *args, sort_dicts=False, width=120, **kwargs
-                )
-                if "\n" in formatted and len(formatted) < 80 and len(obj) <= 20:
-                    return repr(obj)
-                return formatted
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
-        except TypeError:
-            # Py < 3.8: last-ditch, always works
-            return repr(obj)
-            return formatted
-        return pprint.pformat(obj, *args, **kwargs)
-    except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
-        warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
-        try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            if isinstance(obj, list):
-                formatted = pprint.pformat(
-                    obj, *args, sort_dicts=False, width=120, **kwargs
-                )
-                if "\n" in formatted and len(formatted) < 100:
-                    return repr(obj)
-                return formatted
             return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
         except TypeError:
             # Py < 3.8: last-ditch, always works
