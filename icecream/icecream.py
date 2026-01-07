@@ -17,20 +17,7 @@ import inspect
 import pprint
 import sys
 from types import FrameType
-from typing import (
-    Optional,
-    cast,
-    Any,
-    Callable,
-    Generator,
-    List,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-    cast,
-    Literal,
-)
+from typing import Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast, Literal
 import warnings
 from datetime import datetime
 import functools
@@ -59,16 +46,17 @@ def bindStaticVariable(name: str, value: Any) -> Callable:
     def decorator(fn: Callable) -> Callable:
         setattr(fn, name, value)
         return fn
-
     return decorator
 
 
-@bindStaticVariable("formatter", Terminal256Formatter(style=SolarizedDark))
-@bindStaticVariable("lexer", Py3Lexer(ensurenl=False))
+@bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
+@bindStaticVariable('lexer', Py3Lexer(ensurenl=False))
 def colorize(s: str) -> str:
     self = colorize
     return highlight(
-        s, cast(Py3Lexer, self.lexer), cast(Terminal256Formatter, self.formatter)
+        s,
+        cast(Py3Lexer, self.lexer),
+        cast(Terminal256Formatter, self.formatter)
     )  # pyright: ignore[reportFunctionMemberAccess]
 
 
@@ -76,7 +64,7 @@ def colorize(s: str) -> str:
 def supportTerminalColorsInWindows() -> Generator:
     # Filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
-    if sys.platform.startswith("win"):
+    if sys.platform.startswith('win'):
         colorama.init()
         yield
         colorama.deinit()
@@ -109,22 +97,61 @@ def colorizedStdoutPrint(s: str) -> None:
 
 
 def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
+    """pprint.pformat() with a couple of small safety/usability tweaks.
+
+    In addition to the usual TypeError handling below, we special–case
+    "medium sized" flat lists. For those, the standard pprint heuristics
+    sometimes choose a one-item-per-line layout which makes the order of
+    values hard to visually follow in ic()'s output. For such lists we
+    prefer the more compact repr()-style representation.
+    """
+
+    def _pformat(extra_kwargs: Optional[dict] = None) -> str:
+        # Helper so we always pass the same args/kwargs to pprint.
+        final_kwargs = dict(kwargs)
+        if extra_kwargs:
+            final_kwargs.update(extra_kwargs)
+        return pprint.pformat(obj, *args, **final_kwargs)
+
     try:
-        return pprint.pformat(obj, *args, **kwargs)
+        # For flat lists we try a slightly wider layout first. This keeps
+        # simple medium-sized lists on a single line in the common case.
+        is_flat_list = (
+            isinstance(obj, list)
+            and not args
+            and 'width' not in kwargs
+            and not any(isinstance(el, (list, tuple, dict, set)) for el in obj)
+        )
+        if is_flat_list:
+            formatted = _pformat({'width': 120})
+        else:
+            formatted = _pformat(None)
     except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
+        # Sorting likely tripped on symbolic/elementwise comparisons.
         warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
         try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
+            # Py 3.8+: disable sorting globally for all nested dicts.
+            return _pformat({'sort_dicts': False})
         except TypeError:
-            # Py < 3.8: last-ditch, always works
+            # Py < 3.8: last-ditch, always works.
             return repr(obj)
 
+    # Heuristic: if pprint decided to break a flat, medium-sized list across
+    # many lines, fall back to repr() which keeps the list visually compact
+    # and easier to read in ic()'s prefix/value layout.
+    if is_flat_list and 13 <= len(obj) <= 35:
+        lines = formatted.splitlines()
+        if len(lines) > 10:
+            one_line = repr(obj)
+            if len(one_line) <= 120:
+                return one_line
 
-DEFAULT_PREFIX = "ic| "
+    return formatted
+
+
+DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
-DEFAULT_CONTEXT_DELIMITER = "- "
+DEFAULT_CONTEXT_DELIMITER = '- '
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = safe_pformat
 
@@ -143,11 +170,10 @@ This can happen, for example, when
     https://stackoverflow.com/a/33175832.
 """
 NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
-    "Failed to access the underlying source code for analysis. Was ic() "
-    "invoked in a REPL (e.g. from the command line), a frozen application "
-    "(e.g. packaged with PyInstaller), or did the underlying source code "
-    "change during execution?"
-)
+    'Failed to access the underlying source code for analysis. Was ic() '
+    'invoked in a REPL (e.g. from the command line), a frozen application '
+    '(e.g. packaged with PyInstaller), or did the underlying source code '
+    'change during execution?')
 
 
 def callOrValue(obj: object) -> object:
@@ -157,8 +183,8 @@ def callOrValue(obj: object) -> object:
 class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
-        if "\n" in result:
-            result = " " * node.first_token.start[1] + result  # type: ignore[attr-defined]
+        if '\n' in result:
+            result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()
         return result
@@ -174,7 +200,7 @@ def prefixLines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
 
 
 def prefixFirstLineIndentRemaining(prefix: str, s: str) -> List[str]:
-    indent = " " * len(prefix)
+    indent = ' ' * len(prefix)
     lines = prefixLines(indent, s, startAtLine=1)
     lines[0] = prefix + lines[0]
     return lines
@@ -186,23 +212,23 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
         valuePrefix = prefix
     else:
         argLines = prefixFirstLineIndentRemaining(prefix, arg)
-        valuePrefix = argLines[-1] + ": "
+        valuePrefix = argLines[-1] + ': '
 
     looksLikeAString = (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
-        valueLines = prefixLines(" ", value, startAtLine=1)
-        value = "\n".join(valueLines)
+        valueLines = prefixLines(' ', value, startAtLine=1)
+        value = '\n'.join(valueLines)
 
     valueLines = prefixFirstLineIndentRemaining(valuePrefix, value)
     lines = argLines[:-1] + valueLines
-    return "\n".join(lines)
+    return '\n'.join(lines)
 
 
 class _SingleDispatchCallable:
     def __call__(self, *args: object) -> str:
         # This is a marker class, not a real thing you should use
         raise NotImplemented
-
+    
     register: Callable[[Type], Callable]
 
 
@@ -211,9 +237,10 @@ def singledispatch(func: Callable) -> _SingleDispatchCallable:
 
     # add unregister based on https://stackoverflow.com/a/25951784
     assert func.register.__closure__ is not None
-    closure = dict(zip(func.register.__code__.co_freevars, func.register.__closure__))
-    registry = closure["registry"].cell_contents
-    dispatch_cache = closure["dispatch_cache"].cell_contents
+    closure = dict(zip(func.register.__code__.co_freevars,
+                       func.register.__closure__))
+    registry = closure['registry'].cell_contents
+    dispatch_cache = closure['dispatch_cache'].cell_contents
 
     def unregister(cls: Type) -> None:
         del registry[cls]
@@ -226,33 +253,27 @@ def singledispatch(func: Callable) -> _SingleDispatchCallable:
 @singledispatch
 def argumentToString(obj: object) -> str:
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
-    s = s.replace("\\n", "\n")  # Preserve string newlines in output.
+    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
     return s
 
 
 @argumentToString.register(str)
 def _(obj: str) -> str:
-    if "\n" in obj:
+    if '\n' in obj:
         return "'''" + obj + "'''"
 
-    return "'" + obj.replace("\\", "\\\\") + "'"
+    return "'" + obj.replace('\\', '\\\\') + "'"
 
 
 class IceCreamDebugger:
-    _pairDelimiter = ", "  # Used by the tests in tests/.
+    _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
 
-    def __init__(
-        self,
-        prefix: Union[str, Callable[[], str]] = DEFAULT_PREFIX,
-        outputFunction: Callable[[str], None] = DEFAULT_OUTPUT_FUNCTION,
-        argToStringFunction: Union[
-            _SingleDispatchCallable, Callable[[Any], str]
-        ] = argumentToString,
-        includeContext: bool = False,
-        contextAbsPath: bool = False,
-    ):
+    def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
+                 outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
+                 argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
+                 contextAbsPath: bool=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
@@ -292,27 +313,24 @@ class IceCreamDebugger:
             out = prefix + context + time
         else:
             if not self.includeContext:
-                context = ""
-            out = self._formatArgs(callFrame, prefix, context, args)
+                context = ''
+            out = self._formatArgs(
+                callFrame, prefix, context, args)
 
         return out
 
-    def _formatArgs(
-        self, callFrame: FrameType, prefix: str, context: str, args: Sequence[object]
-    ) -> str:
+    def _formatArgs(self, callFrame: FrameType, prefix: str, context: str, args: Sequence[object]) -> str:
         callNode = Source.executing(callFrame).node
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
             source = cast(Source, Source.for_frame(callFrame))
             sanitizedArgStrs = [
-                source.get_text_with_indentation(arg) for arg in callNode.args
-            ]
+                source.get_text_with_indentation(arg)
+                for arg in callNode.args]
         else:
             warnings.warn(
                 NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
-                category=RuntimeWarning,
-                stacklevel=4,
-            )
+                category=RuntimeWarning, stacklevel=4)
             sanitizedArgStrs = [Sentinel.absent] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, cast(List[str], args)))
@@ -320,14 +338,9 @@ class IceCreamDebugger:
         out = self._constructArgumentOutput(prefix, context, pairs)
         return out
 
-    def _constructArgumentOutput(
-        self,
-        prefix: str,
-        context: str,
-        pairs: Sequence[Tuple[Union[str, Sentinel], str]],
-    ) -> str:
+    def _constructArgumentOutput(self, prefix: str, context: str, pairs: Sequence[Tuple[Union[str, Sentinel], str]]) -> str:
         def argPrefix(arg: str) -> str:
-            return "%s: " % arg
+            return '%s: ' % arg
 
         pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "a string",
@@ -344,16 +357,14 @@ class IceCreamDebugger:
         # When the source for an arg is missing we also only print the value,
         # since we can't know anything about the argument itself.
         pairStrs = [
-            val
-            if (arg is Sentinel.absent or isLiteral(arg))
+            val if (arg is Sentinel.absent or isLiteral(arg))
             else (argPrefix(arg) + val)
-            for arg, val in pairs
-        ]
+            for arg, val in pairs]
 
         allArgsOnOneLine = self._pairDelimiter.join(pairStrs)
         multilineArgs = len(allArgsOnOneLine.splitlines()) > 1
 
-        contextDelimiter = self.contextDelimiter if context else ""
+        contextDelimiter = self.contextDelimiter if context else ''
         allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
         firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
 
@@ -367,7 +378,8 @@ class IceCreamDebugger:
             #     b: 22222222222222222222
             if context:
                 lines = [prefix + context] + [
-                    formatPair(len(prefix) * " ", arg, value) for arg, value in pairs
+                    formatPair(len(prefix) * ' ', arg, value)
+                    for arg, value in pairs
                 ]
             # ic| multilineStr: 'line1
             #                    line2'
@@ -375,28 +387,31 @@ class IceCreamDebugger:
             # ic| a: 11111111111111111111
             #     b: 22222222222222222222
             else:
-                argLines = [formatPair("", arg, value) for arg, value in pairs]
-                lines = prefixFirstLineIndentRemaining(prefix, "\n".join(argLines))
+                argLines = [
+                    formatPair('', arg, value)
+                    for arg, value in pairs
+                ]
+                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
             lines = [prefix + context + contextDelimiter + allArgsOnOneLine]
 
-        return "\n".join(lines)
+        return '\n'.join(lines)
 
     def _formatContext(self, callFrame: FrameType) -> str:
         filename, lineNumber, parentFunction = self._getContext(callFrame)
 
-        if parentFunction != "<module>":
-            parentFunction = "%s()" % parentFunction
+        if parentFunction != '<module>':
+            parentFunction = '%s()' % parentFunction
 
-        context = "%s:%s in %s" % (filename, lineNumber, parentFunction)
+        context = '%s:%s in %s' % (filename, lineNumber, parentFunction)
         return context
 
     def _formatTime(self) -> str:
         now = datetime.now()
-        formatted = now.strftime("%H:%M:%S.%f")[:-3]
-        return " at %s" % formatted
+        formatted = now.strftime('%H:%M:%S.%f')[:-3]
+        return ' at %s' % formatted
 
     def _getContext(self, callFrame: FrameType) -> Tuple[str, int, str]:
         frameInfo = inspect.getframeinfo(callFrame)
@@ -422,18 +437,15 @@ class IceCreamDebugger:
         self: "IceCreamDebugger",
         prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent,
         outputFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
-        argToStringFunction: Union[
-            Callable, Literal[Sentinel.absent]
-        ] = Sentinel.absent,
+        argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
         contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
-        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent
     ) -> None:
         noParameterProvided = all(
-            v is Sentinel.absent for k, v in locals().items() if k != "self"
-        )
+            v is Sentinel.absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
-            raise TypeError("configureOutput() missing at least one argument")
+            raise TypeError('configureOutput() missing at least one argument')
 
         if prefix is not Sentinel.absent:
             self.prefix = prefix
