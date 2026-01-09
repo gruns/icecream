@@ -685,3 +685,95 @@ ic| (a,
         self.assertIn("ic|", s)
         # Don’t assert exact text; just ensure something printed.
         self.assertTrue(len(s) > 0)
+    
+    def test_control_characters_escaped(self):
+        """Test that control characters are properly escaped in output."""
+        
+        test_null = "hello\x00world"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_null)
+        output = err.getvalue().strip()
+        self.assertIn(r'\x00', output)
+        self.assertIn("test_null: 'hello\\\\x00world'", output)
+        
+        test_tab = "hello\tworld"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_tab)
+        output = err.getvalue().strip()
+        self.assertIn(r'\t', output)
+        self.assertIn("test_tab: 'hello\\\\tworld'", output)
+        
+        test_bs = "hello\bworld"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_bs)
+        output = err.getvalue().strip()
+        self.assertIn(r'\b', output)
+        self.assertIn("test_bs: 'hello\\\\bworld'", output)
+
+    def test_invisible_unicode_escaped(self):
+        """Test that invisible Unicode characters are properly escaped."""
+        
+        test_zwsp = "hello\u200bworld"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_zwsp)
+        output = err.getvalue().strip()
+        self.assertIn(r'\u200b', output)
+        self.assertIn("test_zwsp: 'hello\\\\u200bworld'", output)
+        
+        test_nbsp = "hello\u00a0world"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_nbsp)
+        output = err.getvalue().strip()
+        self.assertIn(r'\u00a0', output)
+        self.assertIn("test_nbsp: 'hello\\\\u00a0world'", output)
+
+    def test_newline_only_strings(self):
+        """Test strings with only newlines (baseline compatibility)."""
+        
+        test_baseline1 = "line\nline"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_baseline1)
+        output = err.getvalue().strip()
+        self.assertIn("'''line\n                     line'''", output)
+        
+        test_baseline2 = "line1\nline2"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_baseline2)
+        output = err.getvalue().strip()
+        self.assertIn("'''line1\n                     line2'''", output)
+        
+        test_other_newline = "first\nsecond\nthird"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_other_newline)
+        output = err.getvalue().strip()
+        self.assertIn(r'\n', output)
+
+    def test_backslash_escaping(self):
+        """Test that backslashes are properly escaped."""
+        
+        test_backslash = "path\\to\\file"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_backslash)
+        output = err.getvalue().strip()
+        self.assertIn(r'path\\to\\file', output)
+        
+        test_bs_ctrl = "path\\to\tfile"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_bs_ctrl)
+        output = err.getvalue().strip()
+        self.assertIn(r'path\\to\\tfile', output)
+
+    def test_normal_strings_unchanged(self):
+        """Test that normal strings without control chars work as expected."""
+        
+        test_normal = "hello world"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_normal)
+        output = err.getvalue().strip()
+        self.assertIn("test_normal: 'hello world'", output)
+        
+        test_unicode = "hello 世界 🌍"
+        with disableColoring(), captureStandardStreams() as (_, err):
+            ic(test_unicode)
+        output = err.getvalue().strip()
+        self.assertIn("test_unicode: 'hello 世界 🌍'", output)
