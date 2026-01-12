@@ -97,17 +97,56 @@ def colorizedStdoutPrint(s: str) -> None:
 
 
 def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
+    """pprint.pformat() with a couple of small safety/usability tweaks.
+
+    In addition to the usual TypeError handling below, we special–case
+    "medium sized" flat lists. For those, the standard pprint heuristics
+    sometimes choose a one-item-per-line layout which makes the order of
+    values hard to visually follow in ic()'s output. For such lists we
+    prefer the more compact repr()-style representation.
+    """
+
+    def _pformat(extra_kwargs: Optional[dict] = None) -> str:
+        # Helper so we always pass the same args/kwargs to pprint.
+        final_kwargs = dict(kwargs)
+        if extra_kwargs:
+            final_kwargs.update(extra_kwargs)
+        return pprint.pformat(obj, *args, **final_kwargs)
+
     try:
-        return pprint.pformat(obj, *args, **kwargs)
+        # For flat lists we try a slightly wider layout first. This keeps
+        # simple medium-sized lists on a single line in the common case.
+        is_flat_list = (
+            isinstance(obj, list)
+            and not args
+            and 'width' not in kwargs
+            and not any(isinstance(el, (list, tuple, dict, set)) for el in obj)
+        )
+        if is_flat_list:
+            formatted = _pformat({'width': 120})
+        else:
+            formatted = _pformat(None)
     except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
+        # Sorting likely tripped on symbolic/elementwise comparisons.
         warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
         try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
+            # Py 3.8+: disable sorting globally for all nested dicts.
+            return _pformat({'sort_dicts': False})
         except TypeError:
-            # Py < 3.8: last-ditch, always works
+            # Py < 3.8: last-ditch, always works.
             return repr(obj)
+
+    # Heuristic: if pprint decided to break a flat, medium-sized list across
+    # many lines, fall back to repr() which keeps the list visually compact
+    # and easier to read in ic()'s prefix/value layout.
+    if is_flat_list and isinstance(obj, list) and 13 <= len(obj) <= 35:
+        lines = formatted.splitlines()
+        if len(lines) > 10:
+            one_line = repr(obj)
+            if len(one_line) <= 120:
+                return one_line
+
+    return formatted
 
 
 DEFAULT_PREFIX = 'ic| '

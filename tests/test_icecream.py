@@ -555,6 +555,20 @@ class TestIceCream(unittest.TestCase):
         pair = parse_output_into_pairs(out, err, 1)[0][0]
         self.assertEqual(pair, ('(a, b)', '(1, 2)'))
 
+    def test_flat_medium_list_prints_on_one_line(self):
+        """Flat medium-sized lists should not be split one item per line."""
+        data = [1, 1, 1, 1, 1, 1, 1, 1,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0,
+                1, 1, 1, 1, 1,
+                0, 1, 0, 1, 0, 1, 0]
+
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            ic(data)
+
+        # The whole ic() call should fit on a single line.
+        self.assertEqual(len(err.getvalue().strip().splitlines()), 1)
+
     def test_multiline_container_args(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
             ic((a,
