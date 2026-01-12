@@ -139,7 +139,7 @@ def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
     # Heuristic: if pprint decided to break a flat, medium-sized list across
     # many lines, fall back to repr() which keeps the list visually compact
     # and easier to read in ic()'s prefix/value layout.
-    if is_flat_list and 13 <= len(obj) <= 35:
+    if is_flat_list and isinstance(obj, list) and 13 <= len(obj) <= 35:
         lines = formatted.splitlines()
         if len(lines) > 10:
             one_line = repr(obj)
