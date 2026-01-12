@@ -563,14 +563,12 @@ class TestIceCream(unittest.TestCase):
                 1, 1, 1, 1, 1,
                 0, 1, 0, 1, 0, 1, 0]
 
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disable_coloring(), capture_standard_streams() as (out, err):
             ic(data)
 
         # The whole ic() call should fit on a single line.
         self.assertEqual(len(err.getvalue().strip().splitlines()), 1)
 
-    def testMultilineContainerArgs(self):
-        with disableColoring(), captureStandardStreams() as (out, err):
     def test_multiline_container_args(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
             ic((a,
