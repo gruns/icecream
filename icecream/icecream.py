@@ -227,7 +227,7 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
 class _SingleDispatchCallable:
     def __call__(self, *_: object) -> str:
         # This is a marker class, not a real thing you should use
-        raise NotImplemented
+        raise NotImplementedError
     register: Callable[[Type], Callable]
 
 

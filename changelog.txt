@@ -1,4 +1,13 @@
 ================================================================================
+v2.1.9
+================================================================================
+Removed: Support for Python 3.8.  
+Fixed: Issues #229 and #60, which means improved lists output.  
+
+Big thanks to the community! This release was made possible by the people
+  who contributed to the library.
+
+================================================================================
 v2.1.8
 ================================================================================
 Added: You can pass a pre-configured ic instance to builtins.
