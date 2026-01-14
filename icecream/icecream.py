@@ -184,7 +184,7 @@ class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
         if '\n' in result:
-            result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
+            result = ' ' * node.first_token.start[1] + result  # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()
         return result
@@ -225,10 +225,9 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
 
 
 class _SingleDispatchCallable:
-    def __call__(self, *args: object) -> str:
+    def __call__(self, *_: object) -> str:
         # This is a marker class, not a real thing you should use
         raise NotImplemented
-    
     register: Callable[[Type], Callable]
 
 
