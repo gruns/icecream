@@ -77,7 +77,7 @@ setup(
         'Information and documentation can be found at '
         'https://github.com/gruns/icecream.'),
     platforms=['any'],
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     package_data={'icecream': ['py.typed']},
     classifiers=[
