@@ -49,10 +49,21 @@ def bindStaticVariable(name: str, value: Any) -> Callable:
     return decorator
 
 
+def has_non_ascii_chars(s: str) -> bool:
+    """Check if string contains non-ASCII characters."""
+    return any(ord(char) > 127 for char in s)
+
+
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable('lexer', Py3Lexer(ensurenl=False))
 def colorize(s: str) -> str:
     self = colorize
+    
+    # Skip syntax highlighting for strings with non-ASCII characters to avoid
+    # encoding issues with pygments (fixes issue #222)
+    if has_non_ascii_chars(s):
+        return s
+    
     return highlight(
         s,
         cast(Py3Lexer, self.lexer),
