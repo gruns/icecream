@@ -20,6 +20,7 @@ from os.path import basename, splitext, realpath
 
 import icecream
 from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_WARNING_MESSAGE
+from icecream.icecream import has_non_ascii_chars
 
 TEST_PAIR_DELIMITER = '| '
 MY_FILENAME = basename(__file__)
@@ -678,6 +679,30 @@ ic| (a,
         self.assertIn("ic|", s)
         self.assertIn("hello", s)
         self.assertIn("world", s)
+
+    def test_non_ascii_characters_no_syntax_highlighting(self):
+        """Test that non-ASCII characters skip syntax highlighting to avoid encoding issues."""
+        # Test the helper function
+        self.assertTrue(has_non_ascii_chars('Hello 世界'))
+        self.assertTrue(has_non_ascii_chars('Привет мир'))
+        self.assertFalse(has_non_ascii_chars('Hello World'))
+        self.assertFalse(has_non_ascii_chars('123 ABC'))
+        
+        # Test that non-ASCII strings don't get ANSI escape codes (no syntax highlighting)
+        with captureStandardStreams() as (out, err):
+            ic('Hello 世界')
+        
+        output = err.getvalue()
+        self.assertIn('Hello 世界', output)
+        self.assertFalse(hasAnsiEscapeCodes(output))  # No syntax highlighting
+        
+        # Test that ASCII strings still get syntax highlighting
+        with captureStandardStreams() as (out, err):
+            ic('Hello World')
+        
+        output = err.getvalue()
+        self.assertIn('Hello World', output)
+        self.assertTrue(hasAnsiEscapeCodes(output))  # Has syntax highlighting
 
     def test_sympy_solve_result_does_not_crash(self):
         """Regression: ic() must handle SymPy solve() outputs."""
