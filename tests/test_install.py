@@ -13,21 +13,21 @@
 import unittest
 
 import icecream
-from .test_icecream import (
-    disableColoring, captureStandardStreams, parseOutputIntoPairs)
+from tests.test_icecream import (
+    disable_coloring, capture_standard_streams, parse_output_into_pairs)
 
-from .install_test_import import runMe
+from tests.install_test_import import runMe
 
 
 class TestIceCreamInstall(unittest.TestCase):
-    def testInstall(self):
+    def test_install(self):
         icecream.install()
-        with disableColoring(), captureStandardStreams() as (out, err):
+        with disable_coloring(), capture_standard_streams() as (out, err):
             runMe()
-        assert parseOutputIntoPairs(out, err, 1)[0][0] == ('x', '3')
+        assert parse_output_into_pairs(out, err, 1)[0][0] == ('x', '3')
         icecream.uninstall()  # Clean up builtins.
 
-    def testUninstall(self):
+    def test_uninstall(self):
         try:
             icecream.uninstall()
         except AttributeError:  # Already uninstalled.
