@@ -100,6 +100,10 @@ def stderr_print(*args: object) -> None:
     print(*args, file=sys.stderr)
 
 
+def stdout_print(*args: object) -> None:
+    print(*args)
+
+
 def isLiteral(s: str) -> bool:
     try:
         ast.literal_eval(s)
@@ -296,13 +300,19 @@ class IceCreamDebugger:
     def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
                  outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
-                 contextAbsPath: bool=False):
+                 contextAbsPath: bool=False,
+                 noColor: bool=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
-        self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
+        self.noColor = noColor
+
+        if self.noColor and outputFunction is DEFAULT_OUTPUT_FUNCTION:
+            self.outputFunction = stderr_print
+        else:
+            self.outputFunction = outputFunction
 
     def __call__(self, *args: object) -> object:
         if self.enabled:
@@ -459,10 +469,10 @@ class IceCreamDebugger:
         self.enabled = False
 
     def use_stdout(self) -> None:
-        self.outputFunction = colorizedStdoutPrint
+        self.outputFunction = stdout_print if self.noColor else colorizedStdoutPrint
 
     def use_stderr(self) -> None:
-        self.outputFunction = colorizedStderrPrint
+        self.outputFunction = stderr_print if self.noColor else colorizedStderrPrint
 
     def configureOutput(
         self: "IceCreamDebugger",
@@ -471,12 +481,29 @@ class IceCreamDebugger:
         argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
         contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
-        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent
+        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        noColor: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
     ) -> None:
         noParameterProvided = all(
             v is Sentinel.absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
+
+        if noColor is not Sentinel.absent:
+            self.noColor = noColor
+            # Auto-swap built-in output functions when no explicit
+            # outputFunction is provided alongside noColor.
+            if outputFunction is Sentinel.absent:
+                if self.noColor:
+                    if self.outputFunction is colorizedStderrPrint:
+                        self.outputFunction = stderr_print
+                    elif self.outputFunction is colorizedStdoutPrint:
+                        self.outputFunction = stdout_print
+                else:
+                    if self.outputFunction is stderr_print:
+                        self.outputFunction = colorizedStderrPrint
+                    elif self.outputFunction is stdout_print:
+                        self.outputFunction = colorizedStdoutPrint
 
         if prefix is not Sentinel.absent:
             self.prefix = prefix

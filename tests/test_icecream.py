@@ -723,3 +723,78 @@ ic| (a,
         self.assertIn("ic|", s)
         # Don’t assert exact text; just ensure something printed.
         self.assertTrue(len(s) > 0)
+
+    def test_no_color_disables_coloring(self):
+        originalNoColor = ic.noColor
+        originalOutputFunction = ic.outputFunction
+        try:
+            ic.configureOutput(noColor=True)
+            with capture_standard_streams() as (out, err):
+                ic({1: 'str'})
+            self.assertFalse(has_ansi_escape_codes(err.getvalue()))
+            self.assertIn('ic|', err.getvalue())
+        finally:
+            ic.configureOutput(noColor=originalNoColor)
+            ic.outputFunction = originalOutputFunction
+
+    def test_no_color_with_use_stdout(self):
+        originalNoColor = ic.noColor
+        originalOutputFunction = ic.outputFunction
+        try:
+            ic.configureOutput(noColor=True)
+            ic.use_stdout()
+            with capture_standard_streams() as (out, err):
+                ic({1: 'str'})
+            self.assertFalse(has_ansi_escape_codes(out.getvalue()))
+            self.assertIn('ic|', out.getvalue())
+            self.assertEqual(err.getvalue(), '')
+        finally:
+            ic.configureOutput(noColor=originalNoColor)
+            ic.outputFunction = originalOutputFunction
+
+    def test_no_color_with_use_stderr(self):
+        originalNoColor = ic.noColor
+        originalOutputFunction = ic.outputFunction
+        try:
+            ic.configureOutput(noColor=True)
+            ic.use_stderr()
+            with capture_standard_streams() as (out, err):
+                ic({1: 'str'})
+            self.assertFalse(has_ansi_escape_codes(err.getvalue()))
+            self.assertIn('ic|', err.getvalue())
+        finally:
+            ic.configureOutput(noColor=originalNoColor)
+            ic.outputFunction = originalOutputFunction
+
+    def test_no_color_toggle(self):
+        originalNoColor = ic.noColor
+        originalOutputFunction = ic.outputFunction
+        try:
+            # Disable colors
+            ic.configureOutput(noColor=True)
+            with capture_standard_streams() as (out, err):
+                ic({1: 'str'})
+            self.assertFalse(has_ansi_escape_codes(err.getvalue()))
+
+            # Re-enable colors
+            ic.configureOutput(noColor=False)
+            with capture_standard_streams() as (out, err):
+                ic({1: 'str'})
+            self.assertTrue(has_ansi_escape_codes(err.getvalue()))
+        finally:
+            ic.configureOutput(noColor=originalNoColor)
+            ic.outputFunction = originalOutputFunction
+
+    def test_no_color_with_explicit_output_function(self):
+        originalNoColor = ic.noColor
+        originalOutputFunction = ic.outputFunction
+        captured = []
+        custom_func = lambda s: captured.append(s)
+        try:
+            ic.configureOutput(noColor=True, outputFunction=custom_func)
+            ic(123)
+            self.assertTrue(len(captured) > 0)
+            self.assertIs(ic.outputFunction, custom_func)
+        finally:
+            ic.configureOutput(noColor=originalNoColor)
+            ic.outputFunction = originalOutputFunction
