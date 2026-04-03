@@ -1,4 +1,12 @@
 ================================================================================
+v2.1.11
+================================================================================
+Improved: Fixes Japanese character encoding issues.
+
+Big thanks to the community! This release was made possible by the people
+  who contributed to the library.
+
+================================================================================
 v2.1.10
 ================================================================================
 Improved: This change excludes the test folder from wheels. 
