@@ -296,9 +296,10 @@ class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
+    outputFunction: Callable[..., None]
 
     def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
-                 outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
+                 outputFunction: Callable[..., None]=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
                  contextAbsPath: bool=False,
                  noColor: bool=False):
@@ -469,10 +470,16 @@ class IceCreamDebugger:
         self.enabled = False
 
     def use_stdout(self) -> None:
-        self.outputFunction = stdout_print if self.noColor else colorizedStdoutPrint
+        if self.noColor:
+            self.outputFunction = stdout_print
+        else:
+            self.outputFunction = colorizedStdoutPrint
 
     def use_stderr(self) -> None:
-        self.outputFunction = stderr_print if self.noColor else colorizedStderrPrint
+        if self.noColor:
+            self.outputFunction = stderr_print
+        else:
+            self.outputFunction = colorizedStderrPrint
 
     def configureOutput(
         self: "IceCreamDebugger",
