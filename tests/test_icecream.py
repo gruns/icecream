@@ -689,20 +689,20 @@ ic| (a,
         self.assertFalse(has_non_ascii_chars('123 ABC'))
         
         # Test that non-ASCII strings don't get ANSI escape codes (no syntax highlighting)
-        with captureStandardStreams() as (out, err):
+        with capture_standard_streams() as (out, err):
             ic('Hello 世界')
         
         output = err.getvalue()
         self.assertIn('Hello 世界', output)
-        self.assertFalse(hasAnsiEscapeCodes(output))  # No syntax highlighting
+        self.assertFalse(has_ansi_escape_codes(output))  # No syntax highlighting
         
         # Test that ASCII strings still get syntax highlighting
-        with captureStandardStreams() as (out, err):
+        with capture_standard_streams() as (out, err):
             ic('Hello World')
         
         output = err.getvalue()
         self.assertIn('Hello World', output)
-        self.assertTrue(hasAnsiEscapeCodes(output))  # Has syntax highlighting
+        self.assertTrue(has_ansi_escape_codes(output))  # Has syntax highlighting
 
     def test_sympy_solve_result_does_not_crash(self):
         """Regression: ic() must handle SymPy solve() outputs."""
