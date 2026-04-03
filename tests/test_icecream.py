@@ -19,7 +19,8 @@ from contextlib import contextmanager
 from os.path import basename, splitext, realpath
 
 import icecream
-from icecream import ic, argumentToString, stderrPrint, NO_SOURCE_AVAILABLE_WARNING_MESSAGE
+from icecream import ic, argumentToString, stderr_print
+from icecream import NO_SOURCE_AVAILABLE_WARNING_MESSAGE
 from icecream.icecream import has_non_ascii_chars
 
 TEST_PAIR_DELIMITER = '| '
@@ -32,12 +33,12 @@ b = 2
 c = 3
 
 
-def noop(*args, **kwargs):
+def noop(*args, **kwargs):  # type: ignore
     return
 
 
-def has_ansi_escape_codes(s):
-    # Oversimplified, but ¯\_(ツ)_/¯. TODO(grun): Test with regex.
+def has_ansi_escape_codes(s: str) -> bool:
+    # oversimplified, but ¯\_(ツ)_/¯. TODO(grun): Test with regex.
     return '\x1b[' in s
 
 
@@ -46,7 +47,7 @@ class FakeTeletypeBuffer(StringIO):
     Extend StringIO to act like a TTY so ANSI control codes aren't stripped
     when wrapped with colorama's wrap_stream().
     """
-    def isatty(self):
+    def isatty(self) -> bool:
         return True
 
 
@@ -54,7 +55,7 @@ class FakeTeletypeBuffer(StringIO):
 def disable_coloring():
     originalOutputFunction = ic.outputFunction
 
-    ic.configureOutput(outputFunction=stderrPrint)
+    ic.configureOutput(outputFunction=stderr_print)
     yield
     ic.configureOutput(outputFunction=originalOutputFunction)
 
@@ -328,7 +329,7 @@ class TestIceCream(unittest.TestCase):
 
     def test_prefix_configuration(self):
         prefix = 'lolsup '
-        with configure_icecream_output(prefix, stderrPrint):
+        with configure_icecream_output(prefix, stderr_print):
             with disable_coloring(), capture_standard_streams() as (out, err):
                 ic(a)
         pair = parse_output_into_pairs(out, err, 1, prefix=prefix)[0][0]
