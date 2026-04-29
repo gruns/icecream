@@ -10,6 +10,7 @@
 # License: MIT
 #
 
+import re
 import sys
 import unittest
 import warnings
@@ -37,9 +38,10 @@ def noop(*args, **kwargs):  # type: ignore
     return
 
 
+_ANSI_CSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+
 def has_ansi_escape_codes(s: str) -> bool:
-    # oversimplified, but ¯\_(ツ)_/¯. TODO(grun): Test with regex.
-    return '\x1b[' in s
+    return bool(_ANSI_CSI_RE.search(s))
 
 
 class FakeTeletypeBuffer(StringIO):
