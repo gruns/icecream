@@ -16,6 +16,7 @@ import enum
 import inspect
 import pprint
 import sys
+import time
 from types import FrameType
 from typing import (
     Optional,
@@ -361,7 +362,6 @@ class IceCreamDebugger:
         context: str,
         args: Sequence[object]
     ) -> str:
-
         callNode = Source.executing(callFrame).node
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
@@ -529,6 +529,63 @@ class IceCreamDebugger:
 
         if lineWrapWidth is not Sentinel.absent:
             self.lineWrapWidth = lineWrapWidth
+
+    @property
+    def timer(self) -> "Timer":
+        return Timer(self)
+
+
+class Timer:
+    def __init__(self, ic: IceCreamDebugger):
+        self._ic = ic
+        self._enter_time: Optional[float] = None
+
+    def format_duration(self, seconds: float) -> str:
+        if seconds < 1e-6:
+            return f"{seconds * 1e9:.2f}ns"
+        if seconds < 1e-3:
+            return f"{seconds * 1e6:.2f}us"
+        if seconds < 1:
+            return f"{seconds * 1e3:.2f}ms"
+        if seconds < 60:
+            return f"{seconds:.2f}s"
+        if seconds < 3600:
+            return f"{int(seconds // 60)}m {seconds % 60:.2f}s"
+        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m {seconds % 60:.2f}s"
+
+    def _output(self, duration: float, label: str = "") -> None:
+        if not self._ic.enabled:
+            return
+        prefix = cast(str, call_or_value(self._ic.prefix))
+        formatted_time = self.format_duration(duration)
+        if label:
+            msg = f"{prefix}{label} took {formatted_time}"
+        else:
+            msg = f"{formatted_time}"
+        self._ic.outputFunction(msg)
+
+    def __call__(self, func: Callable[..., Any]):
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any):
+            start_time: float = time.perf_counter()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                duration: float = time.perf_counter() - start_time
+                self._output(duration, func.__name__)
+
+        return wrapper
+
+    def __enter__(self) -> "Timer":
+        self._enter_time = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._enter_time is None:
+            raise RuntimeError("Timer.__exit__ called without __enter__. ")
+        duration: float = time.perf_counter() - self._enter_time
+        self._output(duration)
+        self._enter_time = None
 
 
 ic = IceCreamDebugger()

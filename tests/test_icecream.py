@@ -9,8 +9,9 @@
 #
 # License: MIT
 #
-
+import re
 import sys
+import time
 import unittest
 import warnings
 
@@ -24,6 +25,8 @@ from icecream import NO_SOURCE_AVAILABLE_WARNING_MESSAGE
 from icecream.icecream import has_non_ascii_chars
 
 TEST_PAIR_DELIMITER = '| '
+TIMER_DURATION_RE_DECORATOR = r'\d+\.\d{2}(ns|us|ms|s)'
+TIMER_DURATION_RE_CONTEXT_MANAGER = r'(\d+\.\d{2})(ns|us|ms|s)'
 MY_FILENAME = basename(__file__)
 MY_FILEPATH = realpath(__file__)
 
@@ -35,6 +38,16 @@ c = 3
 
 def noop(*args, **kwargs):  # type: ignore
     return
+
+
+@ic.timer
+def noop_with_time_decorator(*args, **kwargs):  # type: ignore
+    return
+
+
+@ic.timer
+def raise_value_error():
+    raise ValueError('test error')
 
 
 def has_ansi_escape_codes(s: str) -> bool:
@@ -798,3 +811,165 @@ ic| (a,
         finally:
             ic.configureOutput(noColor=originalNoColor)
             ic.outputFunction = originalOutputFunction
+
+    def test_with_timer_decorator(self):
+        @ic.timer
+        def timed_noop():
+            pass
+
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            timed_noop()
+
+        output = err.getvalue().strip()
+        func_name = timed_noop.__name__
+
+        pattern = rf"^ic\| {func_name} took {TIMER_DURATION_RE_DECORATOR}$"
+        self.assertRegex(output, pattern)
+
+    def test_timer_decorator_nested(self):
+        @ic.timer
+        def outer_method():
+            @ic.timer
+            def inner_method():
+                return
+
+            inner_method()
+            return
+
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            outer_method()
+        lines = err.getvalue().strip().splitlines()
+        self.assertEqual(len(lines), 2)
+
+        # Inner finishes first (printed first)
+        self.assertRegex(
+            lines[0], rf"^ic\| inner_method took {TIMER_DURATION_RE_DECORATOR}$"
+        )
+        self.assertRegex(
+            lines[1], rf"^ic\| outer_method took {TIMER_DURATION_RE_DECORATOR}$"
+        )
+
+    def test_timer_decorator_return_value(self):
+        @ic.timer
+        def add(x: int, y: int) -> int:
+            return x + y
+
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            result: int = add(a, b)
+        self.assertEqual(result, a + b)
+        self.assertEqual(out.getvalue(), "")
+        pattern = rf"^ic\| add took {TIMER_DURATION_RE_DECORATOR}$"
+        self.assertRegex(err.getvalue().strip(), pattern)
+
+    def test_timer_decorator_with_arguments(self):
+        @ic.timer
+        def add(x, y=0):
+            return x + y
+
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            result = add(a, y=b)
+        self.assertEqual(result, a + b)
+        self.assertEqual(out.getvalue(), "")
+        pattern = rf"^ic\| add took {TIMER_DURATION_RE_DECORATOR}$"
+        self.assertRegex(err.getvalue().strip(), pattern)
+
+    def test_timer_decorator_when_disabled(self):
+        try:
+            ic.disable()
+            with capture_standard_streams() as (out, err):
+                noop_with_time_decorator()
+        finally:
+            ic.enable()
+        self.assertEqual(err.getvalue(), "")
+        self.assertEqual(out.getvalue(), "")
+
+    def test_timer_decorator_output_on_exception(self):
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            with self.assertRaises(ValueError):
+                raise_value_error()
+        pattern = (
+            rf"^ic\| {raise_value_error.__name__} took {TIMER_DURATION_RE_DECORATOR}$"
+        )
+        self.assertRegex(err.getvalue().strip(), pattern)
+
+    def test_timer_decorator_prefix_configuration(self):
+        prefix = "timer> "
+        with configure_icecream_output(prefix=prefix, outputFunction=stderr_print):
+            with capture_standard_streams() as (out, err):
+                noop_with_time_decorator()
+        pattern = rf"^timer> {noop_with_time_decorator.__name__} took {TIMER_DURATION_RE_DECORATOR}$"
+        self.assertRegex(err.getvalue().strip(), pattern)
+
+    def test_timer_decorator_output_function(self):
+        lst = []
+        with configure_icecream_output(outputFunction=lambda s: lst.append(s)):
+            noop_with_time_decorator()
+        self.assertEqual(len(lst), 1)
+        pattern = rf"^ic\| {noop_with_time_decorator.__name__} took {TIMER_DURATION_RE_DECORATOR}$"
+        self.assertRegex(lst[0], pattern)
+
+    def test_timer_decorator_preserves_function_metadata(self):
+        def original():
+            """My docstring."""
+            pass
+
+        wrapped = ic.timer(original)
+        self.assertEqual(wrapped.__name__, original.__name__)
+        self.assertEqual(wrapped.__doc__, original.__doc__)
+
+    def test_timer_context_manager_basic(self):
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            with ic.timer:
+                noop()
+
+        self.assertRegex(err.getvalue(), TIMER_DURATION_RE_CONTEXT_MANAGER)
+
+    def test_timer_context_manager_measures_elapsed_time(self):
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            with ic.timer:
+                time.sleep(0.1)
+                noop()
+        match = re.search(TIMER_DURATION_RE_CONTEXT_MANAGER, err.getvalue())
+
+        self.assertIsNotNone(match)
+
+        value, unit = float(match.group(1)), match.group(2)
+
+        multiplier = {"ns": 0.000001, "us": 0.001, "ms": 1, "s": 1000}
+        duration_ms = value * multiplier[unit]
+
+        self.assertGreater(duration_ms, 50)
+
+    def test_timer_context_manager_propagates_exception(self):
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            with self.assertRaises(ValueError):
+                with ic.timer:
+                    raise ValueError("Raised Error in timer block.")
+        self.assertRegex(err.getvalue(), TIMER_DURATION_RE_CONTEXT_MANAGER)
+
+    def test_timer_context_manager_exit_without_enter(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            ic.timer.__exit__(None, None, None)
+        self.assertIn("__enter__", str(ctx.exception))
+
+    def test_timer_context_manager_when_disabled(self):
+        try:
+            ic.disable()
+            with disable_coloring(), capture_standard_streams() as (out, err):
+                with ic.timer:
+                    noop()
+        finally:
+            ic.enable()
+        self.assertEqual(out.getvalue(), "")
+        self.assertEqual(err.getvalue(), "")
+
+    def test_timer_context_manager_resets_enter_time_after_exit(self):
+        timer = ic.timer
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            with timer:
+                noop()
+
+        self.assertIsNone(timer._enter_time)
+        with self.assertRaises(RuntimeError) as ctx:
+            timer.__exit__(None, None, None)
+        self.assertIn("__enter__", str(ctx.exception))
