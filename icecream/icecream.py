@@ -17,7 +17,7 @@ import inspect
 import pprint
 import sys
 import time
-from types import FrameType
+from types import FrameType, TracebackType
 from typing import (
     Optional,
     cast,
@@ -564,9 +564,9 @@ class Timer:
             msg = f"{formatted_time}"
         self._ic.outputFunction(msg)
 
-    def __call__(self, func: Callable[..., Any]):
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time: float = time.perf_counter()
             try:
                 return func(*args, **kwargs)
@@ -580,7 +580,7 @@ class Timer:
         self._enter_time = time.perf_counter()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
         if self._enter_time is None:
             raise RuntimeError("Timer.__exit__ called without __enter__. ")
         duration: float = time.perf_counter() - self._enter_time
