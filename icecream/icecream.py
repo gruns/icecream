@@ -243,7 +243,7 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
         argLines = prefix_first_line_indent_remaining(prefix, arg)
         valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
+    looksLikeAString = len(value) >= 2 and (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         valueLines = prefix_lines(' ', value, startAtLine=1)
         value = '\n'.join(valueLines)
