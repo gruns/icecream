@@ -64,48 +64,7 @@ class RunTests(TestCommand):
         result = TextTestRunner().run(suite)
         sys.exit(0 if result.wasSuccessful() else -1)
 
-
 setup(
-    name=meta['__title__'],
-    license=meta['__license__'],
-    version=meta['__version__'],
-    author=meta['__author__'],
-    author_email=meta['__contact__'],
-    url=meta['__url__'],
-    description=meta['__description__'],
-    long_description=(
-        'Information and documentation can be found at '
-        'https://github.com/gruns/icecream.'),
-    platforms=['any'],
-    packages=find_packages(exclude=['tests', 'tests.*']),
-    include_package_data=True,
-    package_data={'icecream': ['py.typed']},
-    classifiers=[
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries',
-        'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
-        'Programming Language :: Python :: 3.13',
-        'Programming Language :: Python :: 3.14',
-        'Programming Language :: Python :: Implementation :: PyPy',
-        'Programming Language :: Python :: Implementation :: CPython',
-    ],
-    tests_require=[
-        'tox>=4',
-    ],
-    install_requires=[
-        'colorama>=0.3.9',
-        'pygments>=2.2.0',
-        'executing>=2.1.0',
-        'asttokens>=2.0.1',
-    ],
     cmdclass={
         'test': RunTests,
         'publish': Publish,
