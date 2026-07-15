@@ -230,6 +230,8 @@ def prefix_lines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
 def prefix_first_line_indent_remaining(prefix: str, s: str) -> List[str]:
     indent = ' ' * len(prefix)
     lines = prefix_lines(indent, s, startAtLine=1)
+    if not lines:  # E.g. an empty string from a repr() returning ''.
+        return [prefix]
     lines[0] = prefix + lines[0]
     return lines
 
@@ -242,7 +244,7 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
         argLines = prefix_first_line_indent_remaining(prefix, arg)
         valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
+    looksLikeAString = len(value) >= 2 and (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
         valueLines = prefix_lines(' ', value, startAtLine=1)
         value = '\n'.join(valueLines)
