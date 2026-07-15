@@ -494,6 +494,27 @@ class TestIceCream(unittest.TestCase):
         pair = parse_output_into_pairs(out, err, 3)[1][0]
         assert pair == ('multilineStr', ic.argToStringFunction(multilineStr))
 
+    def test_empty_repr_multiline_output_no_crash(self):
+        # Regression test for https://github.com/gruns/icecream/pull/240:
+        # formatPair() indexed value[0] unconditionally, which raised
+        # IndexError on multiline output when repr() returned an empty string.
+        class EmptyRepr:
+            def __repr__(self):
+                return ''
+
+        class SingleCharRepr:
+            def __repr__(self):
+                return 'x'
+
+        with configure_icecream_output(prefix='p' * 100):  # Force multiline output.
+            with disable_coloring(), capture_standard_streams() as (out, err):
+                ic(EmptyRepr())
+                ic(SingleCharRepr())
+
+        output = err.getvalue()
+        assert 'EmptyRepr' in output
+        assert 'SingleCharRepr' in output
+
     def test_format(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
             """comment"""; noop(); ic(  # noqa

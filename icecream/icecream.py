@@ -230,6 +230,8 @@ def prefix_lines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
 def prefix_first_line_indent_remaining(prefix: str, s: str) -> List[str]:
     indent = ' ' * len(prefix)
     lines = prefix_lines(indent, s, startAtLine=1)
+    if not lines:  # E.g. an empty string from a repr() returning ''.
+        return [prefix]
     lines[0] = prefix + lines[0]
     return lines
 
