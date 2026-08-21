@@ -302,6 +302,13 @@ def _(obj: str) -> str:
     return "'" + obj.replace('\\', '\\\\') + "'"
 
 
+@functools.lru_cache(maxsize=8192)
+def _cached_frame_context(code, lineNumber: int, contextAbsPath: bool) -> Tuple[str, int, str]:
+    filename = inspect.getsourcefile(code) or code.co_filename
+    filepath = (realpath if contextAbsPath else basename)(filename)
+    parentFunction = code.co_name
+    return filepath, lineNumber, parentFunction
+
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
@@ -465,12 +472,9 @@ class IceCreamDebugger:
         return ' at %s' % formatted
 
     def _getContext(self, callFrame: FrameType) -> Tuple[str, int, str]:
-        frameInfo = inspect.getframeinfo(callFrame)
-        lineNumber = frameInfo.lineno
-        parentFunction = frameInfo.function
-
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)  # type: ignore[operator]
-        return filepath, lineNumber, parentFunction
+        return _cached_frame_context(
+            callFrame.f_code, callFrame.f_lineno, self.contextAbsPath
+        )
 
     def enable(self) -> None:
         self.enabled = True
