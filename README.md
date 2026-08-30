@@ -26,7 +26,7 @@ do. IceCream, or `ic` for short, makes print debugging a little sweeter.
 
 IceCream is well tested, [permissively licensed](LICENSE.txt), and supports Python 3 and PyPy3.
 
-IceCream is maintained by [Jakeroid (Ivan Karabadzhak)](https://github.com/Jakeroid), with support from the confidential computing folks at [🌖 Lunal](https://lunal.dev/).
+IceCream is maintained by [Jakeroid (Ivan Karabadzhak)](https://github.com/Jakeroid), with support from the confidential computing folks at [🥷 Confidential AI](https://confidential.ai/).
 
 
 ### Inspect Variables
