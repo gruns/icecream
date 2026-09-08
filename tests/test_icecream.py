@@ -391,6 +391,35 @@ class TestIceCream(unittest.TestCase):
         pairs = parse_output_into_pairs(out, err, 2)
         assert pairs == [[('a', '1')], [('c', '3')]]
 
+    def test_enable_disable_contexts_restore_previous_state(self):
+        debugger = icecream.IceCreamDebugger()
+        for initially_enabled in (False, True):
+            for method in (debugger.enable, debugger.disable):
+                with self.subTest(initially_enabled=initially_enabled,
+                                  method=method.__name__):
+                    debugger.enabled = initially_enabled
+                    with method():
+                        self.assertEqual(debugger.enabled, method == debugger.enable)
+                    self.assertEqual(debugger.enabled, initially_enabled)
+
+    def test_enable_disable_nested_contexts(self):
+        debugger = icecream.IceCreamDebugger()
+        with debugger.disable():
+            with debugger.disable():
+                self.assertFalse(debugger.enabled)
+            self.assertFalse(debugger.enabled)
+            with debugger.enable():
+                self.assertTrue(debugger.enabled)
+            self.assertFalse(debugger.enabled)
+        self.assertTrue(debugger.enabled)
+
+    def test_enable_disable_context_propagates_exception(self):
+        debugger = icecream.IceCreamDebugger()
+        with self.assertRaisesRegex(ValueError, 'test failure'):
+            with debugger.disable():
+                raise ValueError('test failure')
+        self.assertTrue(debugger.enabled)
+
     def test_arg_to_string_function(self):
         def hello(obj):
             return 'zwei'
