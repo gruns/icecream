@@ -528,6 +528,11 @@ class TestIceCream(unittest.TestCase):
         assert 'EmptyRepr' in output
         assert 'SingleCharRepr' in output
 
+    def test_empty_formatted_literal_without_prefix(self):
+        debugger = icecream.IceCreamDebugger(
+            prefix='', argToStringFunction=lambda value: '')
+        assert debugger.format(None) == ''
+
     def test_format(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
             """comment"""; noop(); ic(  # noqa
