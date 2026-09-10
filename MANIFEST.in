@@ -1,2 +1,2 @@
-include LICENSE.txt README.md
-prune tests
+include LICENSE.txt README.md tox.ini
+include tests/*.py
