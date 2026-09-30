@@ -328,9 +328,13 @@ class IceCreamDebugger:
     def __call__(self, *args: object) -> object:
         if self.enabled:
             currentFrame = inspect.currentframe()
-            assert currentFrame is not None and currentFrame.f_back is not None
-            callFrame = currentFrame.f_back
-            self.outputFunction(self._format(callFrame, *args))
+            try:
+                assert currentFrame is not None and currentFrame.f_back is not None
+                callFrame = currentFrame.f_back
+                self.outputFunction(self._format(callFrame, *args))
+            finally:
+                # Keeping our own frame alive also keeps its arguments alive.
+                del currentFrame
 
         if not args:  # E.g. ic().
             passthrough = None
@@ -343,10 +347,12 @@ class IceCreamDebugger:
 
     def format(self, *args: object) -> str:
         currentFrame = inspect.currentframe()
-        assert currentFrame is not None and currentFrame.f_back is not None
-        callFrame = currentFrame.f_back
-        out = self._format(callFrame, *args)
-        return out
+        try:
+            assert currentFrame is not None and currentFrame.f_back is not None
+            callFrame = currentFrame.f_back
+            return self._format(callFrame, *args)
+        finally:
+            del currentFrame
 
     def _format(self, callFrame: FrameType, *args: object) -> str:
 
