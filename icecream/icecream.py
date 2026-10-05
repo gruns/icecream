@@ -15,6 +15,7 @@ import ast
 import enum
 import inspect
 import pprint
+import re
 import sys
 import time
 from types import FrameType, TracebackType
@@ -295,11 +296,57 @@ def argumentToString(obj: object) -> str:
     return s
 
 
+# Control characters (0x00-0x1F, 0x7F) and invisible Unicode pattern
+_CONTROL_CHAR_PATTERN = re.compile(r'[\x00-\x1f\x7f\u00a0\u200b-\u200f\u202a-\u202e\ufeff]')
+
+# Pattern for control chars excluding newline
+_OTHER_CONTROL_PATTERN = re.compile(r'[\x00-\x09\x0b-\x1f\x7f\u00a0\u200b-\u200f\u202a-\u202e\ufeff]')
+
+# Map of control characters to their preferred escape sequences
+_CONTROL_CHAR_MAP = {
+    '\x00': '\\x00',  # Null byte
+    '\n': '\\n',      # Newline
+    '\t': '\\t',      # Tab
+    '\r': '\\r',      # Carriage return
+    '\x07': '\\a',    # Bell
+    '\x08': '\\b',    # Backspace
+    '\x0c': '\\f',    # Form feed
+    '\x0b': '\\v',    # Vertical tab
+}
+
+# Map of invisible Unicode characters to their escape sequences
+_INVISIBLE_UNICODE_MAP = {
+    '\u200b': '\\u200b',  # Zero-width space
+    '\u00a0': '\\u00a0',  # Non-breaking space
+    '\u200c': '\\u200c',  # Zero-width non-joiner
+    '\u200d': '\\u200d',  # Zero-width joiner
+    '\u200e': '\\u200e',  # Left-to-right mark
+    '\u200f': '\\u200f',  # Right-to-left mark
+}
+
+
 @argumentToString.register(str)
 def _(obj: str) -> str:
+    def replace_char(match):
+        char = match.group(0)
+        if char in _CONTROL_CHAR_MAP:
+            return _CONTROL_CHAR_MAP[char]
+        if char in _INVISIBLE_UNICODE_MAP:
+            return _INVISIBLE_UNICODE_MAP[char]
+        code = ord(char)
+        if code < 0x100:
+            return f'\\x{code:02x}'
+        return f'\\u{code:04x}'
+    
+    # Escape backslashes first so the escapes we add below aren't doubled.
+    escaped = obj.replace('\\', '\\\\')
+
     if '\n' in obj:
-        return "'''" + obj + "'''"
-    return "'" + obj.replace('\\', '\\\\') + "'"
+        escaped = _OTHER_CONTROL_PATTERN.sub(replace_char, escaped)
+        return "'''" + escaped + "'''"
+
+    escaped = _CONTROL_CHAR_PATTERN.sub(replace_char, escaped)
+    return "'" + escaped + "'"
 
 
 class IceCreamDebugger:
