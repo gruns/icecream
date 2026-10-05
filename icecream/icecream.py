@@ -17,8 +17,21 @@ import inspect
 import pprint
 import re
 import sys
-from types import FrameType
-from typing import Optional, cast, Any, Callable, Generator, List, Sequence, Tuple, Type, Union, cast, Literal
+import time
+from types import FrameType, TracebackType
+from typing import (
+    Optional,
+    cast,
+    Any,
+    Callable,
+    Generator,
+    List,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    Literal,
+)
 import warnings
 from datetime import datetime
 import functools
@@ -26,15 +39,15 @@ from contextlib import contextmanager
 from os.path import basename, realpath
 from textwrap import dedent
 
-import colorama
-import executing
-from pygments import highlight
+import colorama  # type: ignore
+import executing  # type: ignore
+from pygments import highlight  # type: ignore
 
 # See https://gist.github.com/XVilka/8346728 for color support in various
 # terminals and thus whether to use Terminal256Formatter or
 # TerminalTrueColorFormatter.
-from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer as PyLexer, Python3Lexer as Py3Lexer
+from pygments.formatters import Terminal256Formatter  # type: ignore
+from pygments.lexers import Python3Lexer as Py3Lexer  # type: ignore
 
 from .coloring import SolarizedDark
 
@@ -50,20 +63,32 @@ def bindStaticVariable(name: str, value: Any) -> Callable:
     return decorator
 
 
+def has_non_ascii_chars(s: str) -> bool:
+    """Check if string contains non-ASCII characters."""
+    return any(ord(char) > 127 for char in s)
+
+
 @bindStaticVariable('formatter', Terminal256Formatter(style=SolarizedDark))
 @bindStaticVariable('lexer', Py3Lexer(ensurenl=False))
 def colorize(s: str) -> str:
     self = colorize
+
+    # skip syntax highlighting for strings with non-ASCII characters to avoid
+    # encoding issues with pygments (fixes issue #222)
+    if has_non_ascii_chars(s):
+        return s
+
     return highlight(
         s,
-        cast(Py3Lexer, self.lexer),
-        cast(Terminal256Formatter, self.formatter)
+        cast(Py3Lexer, self.lexer),  # type: ignore
+        cast(Terminal256Formatter, self.formatter)  # type: ignore
     )  # pyright: ignore[reportFunctionMemberAccess]
 
 
 @contextmanager
 def supportTerminalColorsInWindows() -> Generator:
-    # Filter and replace ANSI escape sequences on Windows with equivalent Win32
+
+    # filter and replace ANSI escape sequences on Windows with equivalent Win32
     # API calls. This code does nothing on non-Windows systems.
     if sys.platform.startswith('win'):
         colorama.init()
@@ -73,8 +98,12 @@ def supportTerminalColorsInWindows() -> Generator:
         yield
 
 
-def stderrPrint(*args: object) -> None:
+def stderr_print(*args: object) -> None:
     print(*args, file=sys.stderr)
+
+
+def stdout_print(*args: object) -> None:
+    print(*args)
 
 
 def isLiteral(s: str) -> bool:
@@ -85,30 +114,76 @@ def isLiteral(s: str) -> bool:
     return True
 
 
+def _stream_is_tty(stream: object) -> bool:
+    # isatty() returns True only when the stream is connected to a real
+    # terminal (not a pipe, file redirect, or captured output).  We guard
+    # with hasattr() because some custom stream objects omit the method.
+    return hasattr(stream, 'isatty') and bool(getattr(stream, 'isatty')())
+
+
 def colorizedStderrPrint(s: str) -> None:
-    colored = colorize(s)
+    colored = colorize(s) if _stream_is_tty(sys.stderr) else s
     with supportTerminalColorsInWindows():
-        stderrPrint(colored)
+        stderr_print(colored)
 
 
 def colorizedStdoutPrint(s: str) -> None:
-    colored = colorize(s)
+    colored = colorize(s) if _stream_is_tty(sys.stdout) else s
     with supportTerminalColorsInWindows():
         print(colored)
 
 
 def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
+    """pprint.pformat() with a couple of small safety/usability tweaks.
+
+    In addition to the usual TypeError handling below, we special–case
+    "medium sized" flat lists. For those, the standard pprint heuristics
+    sometimes choose a one-item-per-line layout which makes the order of
+    values hard to visually follow in ic()'s output. For such lists we
+    prefer the more compact repr()-style representation.
+    """
+
+    def _pformat(extra_kwargs: Optional[dict] = None) -> str:
+        # Helper so we always pass the same args/kwargs to pprint.
+        final_kwargs = dict(kwargs)
+        if extra_kwargs:
+            final_kwargs.update(extra_kwargs)
+        return pprint.pformat(obj, *args, **final_kwargs)
+
     try:
-        return pprint.pformat(obj, *args, **kwargs)
+        # For flat lists we try a slightly wider layout first. This keeps
+        # simple medium-sized lists on a single line in the common case.
+        is_flat_list = (
+            isinstance(obj, list)
+            and not args
+            and 'width' not in kwargs
+            and not any(isinstance(el, (list, tuple, dict, set)) for el in obj)
+        )
+        if is_flat_list:
+            formatted = _pformat({'width': 120})
+        else:
+            formatted = _pformat(None)
     except TypeError as e:
-        # Sorting likely tripped on symbolic/elementwise comparisons
+        # Sorting likely tripped on symbolic/elementwise comparisons.
         warnings.warn(f"pprint failed ({e}); retrying without dict sorting")
         try:
-            # Py 3.8+: disable sorting globally for all nested dicts
-            return pprint.pformat(obj, *args, sort_dicts=False, **kwargs)
+            # Py 3.8+: disable sorting globally for all nested dicts.
+            return _pformat({'sort_dicts': False})
         except TypeError:
-            # Py < 3.8: last-ditch, always works
+            # Py < 3.8: last-ditch, always works.
             return repr(obj)
+
+    # Heuristic: if pprint decided to break a flat, medium-sized list across
+    # many lines, fall back to repr() which keeps the list visually compact
+    # and easier to read in ic()'s prefix/value layout.
+    if is_flat_list and isinstance(obj, list) and 13 <= len(obj) <= 35:
+        lines = formatted.splitlines()
+        if len(lines) > 10:
+            one_line = repr(obj)
+            if len(one_line) <= 120:
+                return one_line
+
+    return formatted
 
 
 DEFAULT_PREFIX = 'ic| '
@@ -138,7 +213,7 @@ NO_SOURCE_AVAILABLE_WARNING_MESSAGE = (
     'change during execution?')
 
 
-def callOrValue(obj: object) -> object:
+def call_or_value(obj: object) -> object:
     return obj() if callable(obj) else obj
 
 
@@ -146,13 +221,13 @@ class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
         if '\n' in result:
-            result = ' ' * node.first_token.start[1] + result # type: ignore[attr-defined]
+            result = ' ' * node.first_token.start[1] + result  # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()
         return result
 
 
-def prefixLines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
+def prefix_lines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
     lines = s.splitlines()
 
     for i in range(startAtLine, len(lines)):
@@ -161,9 +236,11 @@ def prefixLines(prefix: str, s: str, startAtLine: int = 0) -> List[str]:
     return lines
 
 
-def prefixFirstLineIndentRemaining(prefix: str, s: str) -> List[str]:
+def prefix_first_line_indent_remaining(prefix: str, s: str) -> List[str]:
     indent = ' ' * len(prefix)
-    lines = prefixLines(indent, s, startAtLine=1)
+    lines = prefix_lines(indent, s, startAtLine=1)
+    if not lines:  # E.g. an empty string from a repr() returning ''.
+        return [prefix]
     lines[0] = prefix + lines[0]
     return lines
 
@@ -173,24 +250,24 @@ def formatPair(prefix: str, arg: Union[str, Sentinel], value: str) -> str:
         argLines = []
         valuePrefix = prefix
     else:
-        argLines = prefixFirstLineIndentRemaining(prefix, arg)
+        argLines = prefix_first_line_indent_remaining(prefix, arg)
         valuePrefix = argLines[-1] + ': '
 
-    looksLikeAString = (value[0] + value[-1]) in ["''", '""']
+    looksLikeAString = len(value) >= 2 and (value[0] + value[-1]) in ["''", '""']
     if looksLikeAString:  # Align the start of multiline strings.
-        valueLines = prefixLines(' ', value, startAtLine=1)
+        valueLines = prefix_lines(' ', value, startAtLine=1)
         value = '\n'.join(valueLines)
 
-    valueLines = prefixFirstLineIndentRemaining(valuePrefix, value)
+    valueLines = prefix_first_line_indent_remaining(valuePrefix, value)
     lines = argLines[:-1] + valueLines
     return '\n'.join(lines)
 
 
 class _SingleDispatchCallable:
-    def __call__(self, *args: object) -> str:
+    def __call__(self, *_: object) -> str:
         # This is a marker class, not a real thing you should use
-        raise NotImplemented
-    
+        raise NotImplementedError("This is a marker class, not a real thing you should use")
+
     register: Callable[[Type], Callable]
 
 
@@ -260,51 +337,40 @@ def _(obj: str) -> str:
         if code < 0x100:
             return f'\\x{code:02x}'
         return f'\\u{code:04x}'
+    
+    # Escape backslashes first so the escapes we add below aren't doubled.
+    escaped = obj.replace('\\', '\\\\')
 
-    has_newline = '\n' in obj
-    has_other_control = _OTHER_CONTROL_PATTERN.search(obj) is not None
+    if '\n' in obj:
+        escaped = _OTHER_CONTROL_PATTERN.sub(replace_char, escaped)
+        return "'''" + escaped + "'''"
 
-    # If string has newlines and other control/invisible chars, escape everything
-    if has_newline and has_other_control:
-        result = _CONTROL_CHAR_PATTERN.sub(replace_char, obj)
-        result = result.replace('\\', '\\\\')
-        return "'''" + result + "'''"
-
-    # If string has only newlines, preserve formatting for specific baseline patterns
-    if has_newline:
-        # Preserve format for simple two-line patterns used in baseline tests
-        if obj in ('line\nline', 'line1\nline2'):
-            return "'''" + obj.replace('\\', '\\\\') + "'''"
-        # For other newline-only strings, escape newlines
-        result = _CONTROL_CHAR_PATTERN.sub(replace_char, obj)
-        result = result.replace('\\', '\\\\')
-        return "'''" + result + "'''"
-
-    # For single-line strings, escape all control chars and invisible Unicode
-    if _CONTROL_CHAR_PATTERN.search(obj):
-        result = _CONTROL_CHAR_PATTERN.sub(replace_char, obj)
-        result = result.replace('\\', '\\\\')
-        return "'" + result + "'"
-
-    # Normal string with no control chars or invisible Unicode
-    return "'" + obj.replace('\\', '\\\\') + "'"
+    escaped = _CONTROL_CHAR_PATTERN.sub(replace_char, escaped)
+    return "'" + escaped + "'"
 
 
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
     contextDelimiter = DEFAULT_CONTEXT_DELIMITER
+    outputFunction: Callable[..., None]
 
     def __init__(self, prefix: Union[str, Callable[[], str]] =DEFAULT_PREFIX,
-                 outputFunction: Callable[[str], None]=DEFAULT_OUTPUT_FUNCTION,
+                 outputFunction: Callable[..., None]=DEFAULT_OUTPUT_FUNCTION,
                  argToStringFunction: Union[_SingleDispatchCallable, Callable[[Any], str]]=argumentToString, includeContext: bool=False,
-                 contextAbsPath: bool=False):
+                 contextAbsPath: bool=False,
+                 noColor: bool=False):
         self.enabled = True
         self.prefix = prefix
         self.includeContext = includeContext
-        self.outputFunction = outputFunction
         self.argToStringFunction = argToStringFunction
         self.contextAbsPath = contextAbsPath
+        self.noColor = noColor
+
+        if self.noColor and outputFunction is DEFAULT_OUTPUT_FUNCTION:
+            self.outputFunction = stderr_print
+        else:
+            self.outputFunction = outputFunction
 
     def __call__(self, *args: object) -> object:
         if self.enabled:
@@ -330,9 +396,10 @@ class IceCreamDebugger:
         return out
 
     def _format(self, callFrame: FrameType, *args: object) -> str:
-        prefix = cast(str, callOrValue(self.prefix))
 
+        prefix = cast(str, call_or_value(self.prefix))
         context = self._formatContext(callFrame)
+
         if not args:
             time = self._formatTime()
             out = prefix + context + time
@@ -344,7 +411,13 @@ class IceCreamDebugger:
 
         return out
 
-    def _formatArgs(self, callFrame: FrameType, prefix: str, context: str, args: Sequence[object]) -> str:
+    def _formatArgs(
+        self,
+        callFrame: FrameType,
+        prefix: str,
+        context: str,
+        args: Sequence[object]
+    ) -> str:
         callNode = Source.executing(callFrame).node
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
@@ -416,7 +489,7 @@ class IceCreamDebugger:
                     formatPair('', arg, value)
                     for arg, value in pairs
                 ]
-                lines = prefixFirstLineIndentRemaining(prefix, '\n'.join(argLines))
+                lines = prefix_first_line_indent_remaining(prefix, '\n'.join(argLines))
         # ic| foo.py:11 in foo()- a: 1, b: 2
         # ic| a: 1, b: 2, c: 3
         else:
@@ -453,24 +526,47 @@ class IceCreamDebugger:
         self.enabled = False
 
     def use_stdout(self) -> None:
-        self.outputFunction = colorizedStdoutPrint
+        if self.noColor:
+            self.outputFunction = stdout_print
+        else:
+            self.outputFunction = colorizedStdoutPrint
 
     def use_stderr(self) -> None:
-        self.outputFunction = colorizedStderrPrint
+        if self.noColor:
+            self.outputFunction = stderr_print
+        else:
+            self.outputFunction = colorizedStderrPrint
 
     def configureOutput(
         self: "IceCreamDebugger",
-        prefix: Union[str, Literal[Sentinel.absent]] = Sentinel.absent,
+        prefix: Union[str, Callable[[], str], Literal[Sentinel.absent]] = Sentinel.absent,
         outputFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
         contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
-        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent
+        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        noColor: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
     ) -> None:
         noParameterProvided = all(
             v is Sentinel.absent for k, v in locals().items() if k != 'self')
         if noParameterProvided:
             raise TypeError('configureOutput() missing at least one argument')
+
+        if noColor is not Sentinel.absent:
+            self.noColor = noColor
+            # Auto-swap built-in output functions when no explicit
+            # outputFunction is provided alongside noColor.
+            if outputFunction is Sentinel.absent:
+                if self.noColor:
+                    if self.outputFunction is colorizedStderrPrint:
+                        self.outputFunction = stderr_print
+                    elif self.outputFunction is colorizedStdoutPrint:
+                        self.outputFunction = stdout_print
+                else:
+                    if self.outputFunction is stderr_print:
+                        self.outputFunction = colorizedStderrPrint
+                    elif self.outputFunction is stdout_print:
+                        self.outputFunction = colorizedStdoutPrint
 
         if prefix is not Sentinel.absent:
             self.prefix = prefix
@@ -489,6 +585,63 @@ class IceCreamDebugger:
 
         if lineWrapWidth is not Sentinel.absent:
             self.lineWrapWidth = lineWrapWidth
+
+    @property
+    def timer(self) -> "Timer":
+        return Timer(self)
+
+
+class Timer:
+    def __init__(self, ic: IceCreamDebugger):
+        self._ic = ic
+        self._enter_time: Optional[float] = None
+
+    def format_duration(self, seconds: float) -> str:
+        if seconds < 1e-6:
+            return f"{seconds * 1e9:.2f}ns"
+        if seconds < 1e-3:
+            return f"{seconds * 1e6:.2f}us"
+        if seconds < 1:
+            return f"{seconds * 1e3:.2f}ms"
+        if seconds < 60:
+            return f"{seconds:.2f}s"
+        if seconds < 3600:
+            return f"{int(seconds // 60)}m {seconds % 60:.2f}s"
+        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m {seconds % 60:.2f}s"
+
+    def _output(self, duration: float, label: str = "") -> None:
+        if not self._ic.enabled:
+            return
+        prefix = cast(str, call_or_value(self._ic.prefix))
+        formatted_time = self.format_duration(duration)
+        if label:
+            msg = f"{prefix}{label} took {formatted_time}"
+        else:
+            msg = f"{formatted_time}"
+        self._ic.outputFunction(msg)
+
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            start_time: float = time.perf_counter()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                duration: float = time.perf_counter() - start_time
+                self._output(duration, func.__name__)
+
+        return wrapper
+
+    def __enter__(self) -> "Timer":
+        self._enter_time = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
+        if self._enter_time is None:
+            raise RuntimeError("Timer.__exit__ called without __enter__. ")
+        duration: float = time.perf_counter() - self._enter_time
+        self._output(duration)
+        self._enter_time = None
 
 
 ic = IceCreamDebugger()
