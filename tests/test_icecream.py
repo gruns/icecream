@@ -766,21 +766,21 @@ ic| (a,
             ic(test_null)
         output = err.getvalue().strip()
         self.assertIn(r'\x00', output)
-        self.assertIn("test_null: 'hello\\\\x00world'", output)
+        self.assertIn(r"test_null: 'hello\x00world'", output)
         
         test_tab = "hello\tworld"
         with disable_coloring(), capture_standard_streams() as (_, err):
             ic(test_tab)
         output = err.getvalue().strip()
         self.assertIn(r'\t', output)
-        self.assertIn("test_tab: 'hello\\\\tworld'", output)
+        self.assertIn(r"test_tab: 'hello\tworld'", output)
         
         test_bs = "hello\bworld"
         with disable_coloring(), capture_standard_streams() as (_, err):
             ic(test_bs)
         output = err.getvalue().strip()
         self.assertIn(r'\b', output)
-        self.assertIn("test_bs: 'hello\\\\bworld'", output)
+        self.assertIn(r"test_bs: 'hello\bworld'", output)
 
     def test_invisible_unicode_escaped(self):
         """Test that invisible Unicode characters are properly escaped."""
@@ -790,14 +790,14 @@ ic| (a,
             ic(test_zwsp)
         output = err.getvalue().strip()
         self.assertIn(r'\u200b', output)
-        self.assertIn("test_zwsp: 'hello\\\\u200bworld'", output)
+        self.assertIn(r"test_zwsp: 'hello\u200bworld'", output)
         
         test_nbsp = "hello\u00a0world"
         with disable_coloring(), capture_standard_streams() as (_, err):
             ic(test_nbsp)
         output = err.getvalue().strip()
         self.assertIn(r'\u00a0', output)
-        self.assertIn("test_nbsp: 'hello\\\\u00a0world'", output)
+        self.assertIn(r"test_nbsp: 'hello\u00a0world'", output)
 
     def test_newline_only_strings(self):
         """Test strings with only newlines (baseline compatibility)."""
@@ -818,7 +818,7 @@ ic| (a,
         with disable_coloring(), capture_standard_streams() as (_, err):
             ic(test_other_newline)
         output = err.getvalue().strip()
-        self.assertIn(r'\n', output)
+        self.assertIn("'''first\n                         second\n                         third'''", output)
 
     def test_backslash_escaping(self):
         """Test that backslashes are properly escaped."""
@@ -833,7 +833,7 @@ ic| (a,
         with disable_coloring(), capture_standard_streams() as (_, err):
             ic(test_bs_ctrl)
         output = err.getvalue().strip()
-        self.assertIn(r'path\\to\\tfile', output)
+        self.assertIn(r'path\\to\tfile', output)
 
     def test_normal_strings_unchanged(self):
         """Test that normal strings without control chars work as expected."""
