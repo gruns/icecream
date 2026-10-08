@@ -15,6 +15,7 @@ import ast
 import enum
 import inspect
 import pprint
+import re
 import sys
 import time
 from types import FrameType, TracebackType
@@ -291,8 +292,10 @@ def singledispatch(func: Callable) -> _SingleDispatchCallable:
 @singledispatch
 def argumentToString(obj: object) -> str:
     s = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
-    s = s.replace('\\n', '\n')  # Preserve string newlines in output.
-    return s
+    # Preserve string newlines without interpreting an escaped backslash as
+    # the start of a newline escape (for example, in a nested Windows path).
+    return re.sub(r'\\\\|\\n',
+                  lambda match: '\n' if match.group() == r'\n' else match.group(), s)
 
 
 @argumentToString.register(str)
