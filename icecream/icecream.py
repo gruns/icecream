@@ -574,6 +574,18 @@ class Timer:
         self._ic.outputFunction(msg)
 
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                start_time = time.perf_counter()
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    duration = time.perf_counter() - start_time
+                    self._output(duration, func.__name__)
+
+            return async_wrapper
+
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time: float = time.perf_counter()
