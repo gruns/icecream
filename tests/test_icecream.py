@@ -14,6 +14,7 @@ import sys
 import time
 import unittest
 import warnings
+from unittest.mock import patch
 
 from io import StringIO
 from contextlib import contextmanager
@@ -994,3 +995,71 @@ ic| (a,
         with self.assertRaises(RuntimeError) as ctx:
             timer.__exit__(None, None, None)
         self.assertIn("__enter__", str(ctx.exception))
+
+
+    def test_timer_context_manager_reentrant(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        timer = debugger.timer
+        with patch('icecream.icecream.time.perf_counter', side_effect=[0, 1, 2, 4, 6, 9]):
+            with timer:
+                with timer:
+                    with timer:
+                        pass
+        self.assertEqual(output, ['2.00s', '5.00s', '9.00s'])
+        self.assertIsNone(timer._enter_time)
+
+    def test_timer_context_manager_reentrant_exception(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        timer = debugger.timer
+        error = ValueError('from nested block')
+        with patch('icecream.icecream.time.perf_counter', side_effect=[0, 1, 3, 5]):
+            with self.assertRaises(ValueError) as caught:
+                with timer:
+                    with timer:
+                        raise error
+        self.assertIs(caught.exception, error)
+        self.assertEqual(output, ['2.00s', '5.00s'])
+        self.assertIsNone(timer._enter_time)
+
+    def test_timer_context_manager_restores_state_if_output_raises(self):
+        error = ValueError('from output callback')
+        def output(message):
+            raise error
+        debugger = icecream.IceCreamDebugger(outputFunction=output)
+        timer = debugger.timer
+        with self.assertRaises(ValueError) as caught:
+            with timer:
+                pass
+        self.assertIs(caught.exception, error)
+        self.assertIsNone(timer._enter_time)
+        with self.assertRaises(RuntimeError):
+            timer.__exit__(None, None, None)
+
+    def test_timer_context_manager_reuses_after_nested_block(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        timer = debugger.timer
+        with patch('icecream.icecream.time.perf_counter', side_effect=[0, 1, 3, 5, 8, 9]):
+            with timer:
+                try:
+                    with timer:
+                        raise ValueError('caught inside outer block')
+                except ValueError:
+                    pass
+            with timer:
+                pass
+        self.assertEqual(output, ['2.00s', '5.00s', '1.00s'])
+        self.assertIsNone(timer._enter_time)
+
+    def test_timer_context_manager_reentrant_disabled(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        debugger.disable()
+        timer = debugger.timer
+        with timer:
+            with timer:
+                pass
+        self.assertEqual(output, [])
+        self.assertIsNone(timer._enter_time)
