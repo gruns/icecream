@@ -548,6 +548,7 @@ class Timer:
     def __init__(self, ic: IceCreamDebugger):
         self._ic = ic
         self._enter_time: Optional[float] = None
+        self._previous_enter_times: List[float] = []
 
     def format_duration(self, seconds: float) -> str:
         if seconds < 1e-6:
@@ -586,6 +587,8 @@ class Timer:
         return wrapper
 
     def __enter__(self) -> "Timer":
+        if self._enter_time is not None:
+            self._previous_enter_times.append(self._enter_time)
         self._enter_time = time.perf_counter()
         return self
 
@@ -593,8 +596,8 @@ class Timer:
         if self._enter_time is None:
             raise RuntimeError("Timer.__exit__ called without __enter__. ")
         duration: float = time.perf_counter() - self._enter_time
+        self._enter_time = self._previous_enter_times.pop() if self._previous_enter_times else None
         self._output(duration)
-        self._enter_time = None
 
 
 ic = IceCreamDebugger()
