@@ -369,6 +369,11 @@ ic| example.py:18 in foo()- i: 3
 
 `contextAbsPath` is False by default.
 
+`lineWrapWidth` accepts an integer number of characters, for example
+`ic.configureOutput(lineWrapWidth=120)`. The default is 70. This controls
+when IceCream wraps multiple arguments; an individual value may still
+span multiple lines according to `argToStringFunction`.
+
 If you want to use icecream with multiple log levels, like with Python’s
 `logging` module, you can use `ic.format()` to integrate icecream’s
 debugging with your logger:

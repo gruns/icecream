@@ -497,7 +497,7 @@ class IceCreamDebugger:
         argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
         contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
-        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        lineWrapWidth: Union[int, Literal[Sentinel.absent]] = Sentinel.absent,
         noColor: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
     ) -> None:
         noParameterProvided = all(
