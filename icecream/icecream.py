@@ -581,7 +581,8 @@ class Timer:
                 return func(*args, **kwargs)
             finally:
                 duration: float = time.perf_counter() - start_time
-                self._output(duration, func.__name__)
+                label = getattr(func, '__name__', type(func).__name__)
+                self._output(duration, label)
 
         return wrapper
 
