@@ -13,6 +13,7 @@
 
 import ast
 import enum
+import importlib.machinery
 import inspect
 import pprint
 import sys
@@ -188,6 +189,7 @@ def safe_pformat(obj: object, *args: Any, **kwargs: Any) -> str:
 DEFAULT_PREFIX = 'ic| '
 DEFAULT_LINE_WRAP_WIDTH = 70  # Characters.
 DEFAULT_CONTEXT_DELIMITER = '- '
+_BYTECODE_SUFFIXES = tuple(importlib.machinery.BYTECODE_SUFFIXES)
 DEFAULT_OUTPUT_FUNCTION = colorizedStderrPrint
 DEFAULT_ARG_TO_STRING_FUNCTION = safe_pformat
 
@@ -465,11 +467,15 @@ class IceCreamDebugger:
         return ' at %s' % formatted
 
     def _getContext(self, callFrame: FrameType) -> Tuple[str, int, str]:
-        frameInfo = inspect.getframeinfo(callFrame)
-        lineNumber = frameInfo.lineno
-        parentFunction = frameInfo.function
+        code = callFrame.f_code
+        lineNumber = callFrame.f_lineno
+        parentFunction = code.co_name
 
-        filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)  # type: ignore[operator]
+        filename = code.co_filename
+        if filename.endswith(_BYTECODE_SUFFIXES):
+            filename = inspect.getsourcefile(callFrame) or filename
+
+        filepath = (realpath if self.contextAbsPath else basename)(filename)  # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
     def enable(self) -> None:
