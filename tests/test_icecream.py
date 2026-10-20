@@ -9,11 +9,14 @@
 #
 # License: MIT
 #
+import os
 import re
 import sys
+import tempfile
 import time
 import unittest
 import warnings
+from unittest.mock import patch
 
 from io import StringIO
 from contextlib import contextmanager
@@ -22,7 +25,7 @@ from os.path import basename, splitext, realpath
 import icecream
 from icecream import ic, argumentToString, stderr_print
 from icecream import NO_SOURCE_AVAILABLE_WARNING_MESSAGE
-from icecream.icecream import has_non_ascii_chars
+from icecream.icecream import IceCreamDebugger, has_non_ascii_chars
 
 TEST_PAIR_DELIMITER = '| '
 TIMER_DURATION_RE_DECORATOR = r'\d+\.\d{2}(ns|us|ms|s)'
@@ -473,6 +476,46 @@ class TestIceCream(unittest.TestCase):
         # Output with absolute path can easily exceed line width, so no assert line num here.
         pairs = parse_output_into_pairs(out, err, 0)
         assert [('i', '3')] in pairs
+
+    def test_get_context_uses_frame_metadata_directly(self):
+        debugger = IceCreamDebugger()
+        frame = sys._getframe()
+        expected_filename = basename(frame.f_code.co_filename)
+        expected_function = frame.f_code.co_name
+
+        with patch('icecream.icecream.inspect.getframeinfo', side_effect=AssertionError):
+            filename, line_number, function = debugger._getContext(frame)
+
+        assert filename == expected_filename
+        assert isinstance(line_number, int)
+        assert function == expected_function
+
+    def test_get_context_resolves_bytecode_filename_to_adjacent_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bytecode_filename = os.path.join(directory, 'context_fixture.pyc')
+            source_filename = os.path.join(directory, 'context_fixture.py')
+            with open(source_filename, 'w') as source:
+                source.write('# adjacent source file\n')
+
+            code = compile('import sys\nframe = sys._getframe()\n', bytecode_filename, 'exec')
+            namespace = {}
+            exec(code, namespace)
+            frame = namespace['frame']
+
+            with patch('icecream.icecream.inspect.getframeinfo', side_effect=AssertionError):
+                for has_source_file in (True, False):
+                    if not has_source_file:
+                        os.remove(source_filename)
+
+                    for use_absolute_path in (False, True):
+                        debugger = IceCreamDebugger(contextAbsPath=use_absolute_path)
+                        filename, line_number, function = debugger._getContext(frame)
+                        expected_path = source_filename if has_source_file else bytecode_filename
+                        expected_filename = realpath(expected_path) if use_absolute_path else basename(expected_path)
+
+                        assert filename == expected_filename
+                        assert isinstance(line_number, int)
+                        assert function == '<module>'
 
     def test_values(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
