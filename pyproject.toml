@@ -1,3 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icecream"
+authors = [
+    {name = "Ansgar Grunseid", email = "grunseid@gmail.com"},
+]
+description = """
+Never use print() to debug again: inspect variables, expressions, and \
+program execution with a single, simple function call.\
+"""
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "colorama>=0.3.9",
+    "pygments>=2.2.0",
+    "executing>=2.1.0",
+    "asttokens>=2.0.1",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/gruns/icecream"
+
+[project.optional-dependencies]
+test = [
+    "tox>=4",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "icecream.__version__.__version__"}
+
+[tool.setuptools]
+include-package-data = true
+
 [tool.mypy]
 show_error_codes=true
 disallow_untyped_defs=true
