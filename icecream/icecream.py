@@ -216,6 +216,59 @@ def call_or_value(obj: object) -> object:
     return obj() if callable(obj) else obj
 
 
+def _fallback_arg_strings(callFrame: FrameType, num_args: int):
+    """Best-effort recovery of ic() argument source when executing fails.
+
+    Third-party import hooks / decorators (e.g. type_enforced) can confuse
+    the ``executing`` bytecode analysis so that ``Source.executing(frame).node``
+    is ``None`` even though the source file is perfectly readable.  In that
+    case parse the file with ``ast`` and look for a call spanning the current
+    line with a matching arity.  Returns a list of source segments or ``None``
+    when the source is genuinely unavailable (REPL, frozen app, eval, ...)
+    or ambiguous.
+    """
+    import linecache
+    filename = callFrame.f_code.co_filename
+    # Pseudo-filenames such as '<string>' (eval/exec/REPL) have no source.
+    if not filename or filename.startswith('<'):
+        return None
+    try:
+        lines = linecache.getlines(filename)
+        if not lines:
+            return None
+        source_text = ''.join(lines)
+        tree = ast.parse(source_text)
+    except Exception:
+        return None
+    lineno = callFrame.f_lineno
+    candidates = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        start = getattr(node, 'lineno', None)
+        end = getattr(node, 'end_lineno', None)
+        if start is None or end is None:
+            continue
+        if not (start <= lineno <= end):
+            continue
+        if len(node.args) != num_args or node.keywords:
+            continue
+        candidates.append(node)
+    if len(candidates) != 1:
+        return None
+    call_node = candidates[0]
+    try:
+        texts = [ast.get_source_segment(source_text, arg) for arg in call_node.args]
+    except Exception:
+        return None
+    if any(t is None for t in texts):
+        return None
+    cleaned = [t.strip() for t in texts]  # type: ignore[union-attr]
+    if any(not t for t in cleaned):
+        return None
+    return cleaned
+
+
 class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
@@ -371,7 +424,11 @@ class IceCreamDebugger:
         context: str,
         args: Sequence[object]
     ) -> str:
-        callNode = Source.executing(callFrame).node
+        callNode = None
+        try:
+            callNode = Source.executing(callFrame).node
+        except Exception:
+            callNode = None
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
             source = cast(Source, Source.for_frame(callFrame))
@@ -379,10 +436,14 @@ class IceCreamDebugger:
                 source.get_text_with_indentation(arg)
                 for arg in callNode.args]
         else:
-            warnings.warn(
-                NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
-                category=RuntimeWarning, stacklevel=4)
-            sanitizedArgStrs = [Sentinel.absent] * len(args)
+            fallback = _fallback_arg_strings(callFrame, len(args))
+            if fallback is not None:
+                sanitizedArgStrs = fallback  # type: ignore[assignment]
+            else:
+                warnings.warn(
+                    NO_SOURCE_AVAILABLE_WARNING_MESSAGE,
+                    category=RuntimeWarning, stacklevel=4)
+                sanitizedArgStrs = [Sentinel.absent] * len(args)
 
         pairs = list(zip(sanitizedArgStrs, cast(List[str], args)))
 

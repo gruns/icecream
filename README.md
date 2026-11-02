@@ -83,6 +83,13 @@ ic| klass.attr: 'yep'
 
 Just give `ic()` a variable or expression and you're done. Easy.
 
+If `ic()` cannot inspect its own call site through `executing` — for
+example when a third-party import hook or decorator alters bytecode
+analysis — it falls back to parsing the calling file to recover argument
+names. A `RuntimeWarning` is then only emitted when the source is
+genuinely unavailable, such as in a REPL, a frozen application, or when
+the source changed during execution.
+
 
 ### Inspect Execution
 
