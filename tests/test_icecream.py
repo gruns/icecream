@@ -391,7 +391,23 @@ class TestIceCream(unittest.TestCase):
         pairs = parse_output_into_pairs(out, err, 2)
         assert pairs == [[('a', '1')], [('c', '3')]]
 
-    def test_arg_to_string_function(self):
+def test_ic_kwargs_passed_to_arg_to_string(self):
+        def to_string(obj, short=True):
+                return 'short' if short else 'long %r'  % (obj,)
+                    with configure_icecream_output(argToStringFunction=to_string):
+                            with disable_coloring(), capture_standard_streams() as (out, err):
+                            value = [1, 2, 3]
+                        returned = ic(value, short=False)
+            pair = parse_output_into_pairs(out, err, 1)[0][0]
+assert returned == value
+assert pair == ('value', 'long [1, 2, 3]')
+assert 'short=False' not in err.getvalue()
+                with disable_coloring(), capture_standard_streams() as (out, err):
+    ic(value)
+pair = parse_output_into_pairs(out, err, 1)[0][0]
+assert pair == ('value', 'short')
+
+def test_arg_to_string_function(self):
         def hello(obj):
             return 'zwei'
 
