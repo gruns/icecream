@@ -325,12 +325,12 @@ class IceCreamDebugger:
         else:
             self.outputFunction = outputFunction
 
-    def __call__(self, *args: object) -> object:
+    def __call__(self, *args: object, **kwargs: object) -> object:
         if self.enabled:
             currentFrame = inspect.currentframe()
             assert currentFrame is not None and currentFrame.f_back is not None
             callFrame = currentFrame.f_back
-            self.outputFunction(self._format(callFrame, *args))
+            self.outputFunction(self._format(callFrame, *args, **kwargs))
 
         if not args:  # E.g. ic().
             passthrough = None
@@ -341,14 +341,14 @@ class IceCreamDebugger:
 
         return passthrough
 
-    def format(self, *args: object) -> str:
+    def format(self, *args: object, **kwargs: object) -> str:
         currentFrame = inspect.currentframe()
         assert currentFrame is not None and currentFrame.f_back is not None
         callFrame = currentFrame.f_back
-        out = self._format(callFrame, *args)
+        out = self._format(callFrame, *args, **kwargs)
         return out
 
-    def _format(self, callFrame: FrameType, *args: object) -> str:
+    def _format(self, callFrame: FrameType, *args: object, **kwargs: object) -> str:
 
         prefix = cast(str, call_or_value(self.prefix))
         context = self._formatContext(callFrame)
@@ -360,7 +360,7 @@ class IceCreamDebugger:
             if not self.includeContext:
                 context = ''
             out = self._formatArgs(
-                callFrame, prefix, context, args)
+                callFrame, prefix, context, args, **kwargs)
 
         return out
 
@@ -369,7 +369,7 @@ class IceCreamDebugger:
         callFrame: FrameType,
         prefix: str,
         context: str,
-        args: Sequence[object]
+        args: Sequence[object], **kwargs: object
     ) -> str:
         callNode = Source.executing(callFrame).node
         if callNode is not None:
@@ -386,14 +386,14 @@ class IceCreamDebugger:
 
         pairs = list(zip(sanitizedArgStrs, cast(List[str], args)))
 
-        out = self._constructArgumentOutput(prefix, context, pairs)
+        out = self._constructArgumentOutput(prefix, context, pairs, **kwargs)
         return out
 
-    def _constructArgumentOutput(self, prefix: str, context: str, pairs: Sequence[Tuple[Union[str, Sentinel], str]]) -> str:
+    def _constructArgumentOutput(self, prefix: str, context: str, pairs: Sequence[Tuple[Union[str, Sentinel], str]], **kwargs: object) -> str:
         def argPrefix(arg: str) -> str:
             return '%s: ' % arg
 
-        pairs = [(arg, self.argToStringFunction(val)) for arg, val in pairs]
+        pairs = [(arg, self.argToStringFunction(val, **kwargs)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, eg 3, "a string",
         # b'bytes', etc, only output the value, not the argument and the
         # value, because the argument and the value will be identical or
