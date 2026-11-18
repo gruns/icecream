@@ -870,6 +870,18 @@ ic| (a,
             lines[1], rf"^ic\| outer_method took {TIMER_DURATION_RE_DECORATOR}$"
         )
 
+    def test_timer_format_duration_rounds_up_into_next_unit(self):
+        timer = ic.timer
+        self.assertEqual(timer.format_duration(0.9999996), "1.00s")
+        self.assertEqual(timer.format_duration(0.0009999996), "1.00ms")
+        self.assertEqual(timer.format_duration(9.99999999e-7), "1.00us")
+        self.assertEqual(timer.format_duration(59.999), "1m 0.00s")
+        self.assertEqual(timer.format_duration(119.996), "2m 0.00s")
+        self.assertEqual(timer.format_duration(3599.999), "1h 0m 0.00s")
+        self.assertEqual(timer.format_duration(3661.5), "1h 1m 1.50s")
+        self.assertEqual(timer.format_duration(3252.905), "54m 12.91s")
+        self.assertEqual(timer.format_duration(0.5), "500.00ms")
+
     def test_timer_decorator_return_value(self):
         @ic.timer
         def add(x: int, y: int) -> int:

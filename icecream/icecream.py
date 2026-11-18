@@ -550,17 +550,22 @@ class Timer:
         self._enter_time: Optional[float] = None
 
     def format_duration(self, seconds: float) -> str:
-        if seconds < 1e-6:
-            return f"{seconds * 1e9:.2f}ns"
-        if seconds < 1e-3:
-            return f"{seconds * 1e6:.2f}us"
-        if seconds < 1:
-            return f"{seconds * 1e3:.2f}ms"
-        if seconds < 60:
-            return f"{seconds:.2f}s"
-        if seconds < 3600:
-            return f"{int(seconds // 60)}m {seconds % 60:.2f}s"
-        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m {seconds % 60:.2f}s"
+        # Round to the two printed decimals before choosing the unit, so a
+        # value like 59.999s is not printed as "60.00s" or "1000.00ms".
+        for scale, unit, limit in (
+                (1e9, "ns", 1000), (1e6, "us", 1000),
+                (1e3, "ms", 1000), (1, "s", 60)):
+            value = round(seconds * scale, 2)
+            if value < limit:
+                return f"{value:.2f}{unit}"
+        minutes = int(seconds // 60)
+        rest = round(seconds % 60, 2)
+        if rest >= 60:
+            minutes, rest = minutes + 1, 0.0
+        if minutes < 60:
+            return f"{minutes}m {rest:.2f}s"
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours}h {minutes}m {rest:.2f}s"
 
     def _output(self, duration: float, label: str = "") -> None:
         if not self._ic.enabled:
