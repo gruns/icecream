@@ -219,7 +219,10 @@ def call_or_value(obj: object) -> object:
 class Source(executing.Source):
     def get_text_with_indentation(self, node: ast.expr) -> str:
         result = self.asttokens().get_text(node)
-        if '\n' in result:
+        if not result:
+            # asttokens can't map nodes inside f-strings (Python 3.12+).
+            result = dedent(ast.get_source_segment(self.text, node, padded=True) or '')
+        elif '\n' in result:
             result = ' ' * node.first_token.start[1] + result  # type: ignore[attr-defined]
             result = dedent(result)
         result = result.strip()

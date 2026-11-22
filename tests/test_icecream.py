@@ -551,6 +551,14 @@ class TestIceCream(unittest.TestCase):
         pairs = parse_output_into_pairs(out, err, 1)[0]
         assert pairs == [('a', '1'), ('b', '2')]
 
+    def test_call_inside_fstring(self):
+        with disable_coloring(), capture_standard_streams() as (out, err):
+            s = f"{ic(a + 1)} {ic(a, b)}"
+
+        assert s == "2 (1, 2)"
+        pairs = parse_output_into_pairs(out, err, 2)
+        assert pairs == [[('a + 1', '2')], [('a', '1'), ('b', '2')]]
+
     def test_no_source_available_prints_values(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
             with warnings.catch_warnings():
