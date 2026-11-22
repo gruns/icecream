@@ -208,6 +208,93 @@ def parse_output_into_pairs(out, err, assert_num_lines,
     return line_pairs
 
 
+class TestStarredArguments(unittest.TestCase):
+    def setUp(self):
+        self.debug = icecream.IceCreamDebugger()
+
+    def test_unpacked_arguments(self):
+        for values in ([10], [10, 20, 30], (10, 20, 30)):
+            with self.subTest(values=values):
+                self.assertEqual(
+                    self.debug.format(*values),
+                    'ic| ' + ', '.join(map(str, values)))
+
+    def test_mixed_arguments(self):
+        first, last = 5, 99
+        values = [10, 20, 30]
+        self.assertEqual(self.debug.format(first, *values, last),
+                         'ic| 5, 10, 20, 30, 99')
+
+    def test_empty_expansion_with_other_arguments(self):
+        values = []
+        last = 99
+        self.assertEqual(self.debug.format(*values, last), 'ic| 99')
+
+    def test_multiple_expansions(self):
+        first, last = [10, 20], [30, 40]
+        self.assertEqual(self.debug.format(*first, *last),
+                         'ic| 10, 20, 30, 40')
+        # Equal expression and value counts do not establish matching labels.
+        self.assertEqual(self.debug.format(*[], *first), 'ic| 10, 20')
+
+    def test_generator_is_not_evaluated_again(self):
+        calls = []
+
+        def values():
+            calls.append('called')
+            for value in (10, 20, 30):
+                calls.append(value)
+                yield value
+
+        self.assertEqual(self.debug.format(*values()), 'ic| 10, 20, 30')
+        self.assertEqual(calls, ['called', 10, 20, 30])
+
+    def test_custom_formatter_receives_every_value(self):
+        formatted = []
+
+        def format_value(value):
+            formatted.append(value)
+            return '<%s>' % value
+
+        self.debug.configureOutput(argToStringFunction=format_value)
+        values = [10, 20, 30]
+        self.assertEqual(self.debug.format(*values), 'ic| <10>, <20>, <30>')
+        self.assertEqual(formatted, values)
+
+    def test_wrapped_output_with_context(self):
+        self.debug.configureOutput(includeContext=True, lineWrapWidth=1)
+        values = [10, 20, 30]
+        lines = self.debug.format(*values).splitlines()
+        self.assertRegex(lines[0],
+                         r'ic\| test_icecream.py:\d+ in '
+                         r'test_wrapped_output_with_context\(\)')
+        self.assertEqual(lines[1:], ['    10', '    20', '    30'])
+
+    def test_call_returns_every_value(self):
+        output = []
+        self.debug.configureOutput(outputFunction=output.append)
+        values = [10, 20, 30]
+        self.assertEqual(self.debug(*values), tuple(values))
+        self.assertEqual(output, ['ic| 10, 20, 30'])
+        self.debug.disable()
+        self.assertEqual(self.debug(*values), tuple(values))
+        self.assertEqual(output, ['ic| 10, 20, 30'])
+
+    def test_empty_expansion_uses_no_argument_output(self):
+        output = []
+        self.debug.configureOutput(outputFunction=output.append)
+        self.assertIsNone(self.debug(*[]))
+        self.assertRegex(output[0],
+                         r'ic\| test_icecream.py:\d+ in '
+                         r'test_empty_expansion_uses_no_argument_output\(\) at ')
+
+    def test_nested_expansion_keeps_expression_labels(self):
+        values = [10, 20, 30]
+        last = 99
+        self.assertEqual(self.debug.format([*values], last),
+                         'ic| [*values]: [10, 20, 30], last: 99')
+
+
 class TestIceCream(unittest.TestCase):
     def setUp(self):
         ic._pairDelimiter = TEST_PAIR_DELIMITER

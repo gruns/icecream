@@ -372,12 +372,19 @@ class IceCreamDebugger:
         args: Sequence[object]
     ) -> str:
         callNode = Source.executing(callFrame).node
+        sanitizedArgStrs: List[Union[str, Sentinel]]
         if callNode is not None:
             assert isinstance(callNode, ast.Call)
-            source = cast(Source, Source.for_frame(callFrame))
-            sanitizedArgStrs = [
-                source.get_text_with_indentation(arg)
-                for arg in callNode.args]
+            if any(isinstance(arg, ast.Starred) for arg in callNode.args):
+                # Unpacking breaks the one-to-one correspondence between
+                # expressions and values. Print every value without labels
+                # rather than guessing which expression produced it.
+                sanitizedArgStrs = [Sentinel.absent] * len(args)
+            else:
+                source = cast(Source, Source.for_frame(callFrame))
+                sanitizedArgStrs = [
+                    source.get_text_with_indentation(arg)
+                    for arg in callNode.args]
         else:
             warnings.warn(
                 NO_SOURCE_AVAILABLE_WARNING_MESSAGE,

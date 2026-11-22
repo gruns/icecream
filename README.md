@@ -83,6 +83,18 @@ ic| klass.attr: 'yep'
 
 Just give `ic()` a variable or expression and you're done. Easy.
 
+When unpacking arguments with `*`, IceCream prints all the values without
+expression labels:
+
+```python
+values = [10, 20, 30]
+ic(*values)
+# ic| 10, 20, 30
+```
+
+This also applies to mixed calls such as `ic(first, *values, last)`: after
+unpacking, the values cannot reliably be matched to their source expressions.
+
 
 ### Inspect Execution
 
