@@ -302,6 +302,19 @@ def _(obj: str) -> str:
     return "'" + obj.replace('\\', '\\\\') + "'"
 
 
+class _EnabledContext:
+    def __init__(self, debugger: 'IceCreamDebugger', enabled: bool) -> None:
+        self.debugger = debugger
+        self.previous = debugger.enabled
+        debugger.enabled = enabled
+
+    def __enter__(self) -> None:
+        return None
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        self.debugger.enabled = self.previous
+
+
 class IceCreamDebugger:
     _pairDelimiter = ', '  # Used by the tests in tests/.
     lineWrapWidth = DEFAULT_LINE_WRAP_WIDTH
@@ -472,11 +485,11 @@ class IceCreamDebugger:
         filepath = (realpath if self.contextAbsPath else basename)(frameInfo.filename)  # type: ignore[operator]
         return filepath, lineNumber, parentFunction
 
-    def enable(self) -> None:
-        self.enabled = True
+    def enable(self) -> _EnabledContext:
+        return _EnabledContext(self, True)
 
-    def disable(self) -> None:
-        self.enabled = False
+    def disable(self) -> _EnabledContext:
+        return _EnabledContext(self, False)
 
     def use_stdout(self) -> None:
         if self.noColor:

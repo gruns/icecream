@@ -185,6 +185,20 @@ ic| 3: 3
 `ic()` continues to return its arguments when disabled, of course; no existing
 code with `ic()` breaks.
 
+Both methods also work as context managers. They restore the previous
+enabled state when the block exits, including when an exception is raised.
+Nested blocks restore their enclosing block's state.
+
+```python
+with ic.disable():
+    ic('hidden')
+    with ic.enable():
+        ic('visible inside the nested block')
+    ic('hidden again')
+
+ic('back to the original state')
+```
+
 
 ### Import Tricks
 
