@@ -30,6 +30,9 @@ from typing import (
     Type,
     Union,
     Literal,
+    KeysView,
+    ValuesView,
+    ItemsView,
 )
 import warnings
 from datetime import datetime
@@ -300,6 +303,15 @@ def _(obj: str) -> str:
     if '\n' in obj:
         return "'''" + obj + "'''"
     return "'" + obj.replace('\\', '\\\\') + "'"
+
+
+@argumentToString.register(type({}.keys()))
+@argumentToString.register(type({}.values()))
+@argumentToString.register(type({}.items()))
+def _(obj: Union[KeysView[Any], ValuesView[Any], ItemsView[Any, Any]]) -> str:
+    prefix = type(obj).__name__ + '('
+    contents = argumentToString(list(obj))
+    return prefix + contents.replace('\n', '\n' + ' ' * len(prefix)) + ')'
 
 
 class IceCreamDebugger:

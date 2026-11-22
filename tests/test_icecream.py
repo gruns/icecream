@@ -9,6 +9,7 @@
 #
 # License: MIT
 #
+import ast
 import re
 import sys
 import time
@@ -390,6 +391,23 @@ class TestIceCream(unittest.TestCase):
 
         pairs = parse_output_into_pairs(out, err, 2)
         assert pairs == [[('a', '1')], [('c', '3')]]
+
+    def test_dictionary_views_are_pretty_printed(self):
+        data = {'long-key-%02d' % i: 'long-value-%02d' % i for i in range(18)}
+        for view in (data.keys(), data.values(), data.items()):
+            with self.subTest(view_type=type(view).__name__):
+                result = argumentToString(view)
+                prefix = type(view).__name__ + '('
+                self.assertTrue(result.startswith(prefix))
+                self.assertIn('\n', result)
+                self.assertEqual(ast.literal_eval(result[len(prefix):-1]), list(view))
+                self.assertTrue(all(line.startswith(' ' * len(prefix))
+                                    for line in result.splitlines()[1:]))
+
+    def test_empty_dictionary_views_keep_their_type(self):
+        for view in ({}.keys(), {}.values(), {}.items()):
+            with self.subTest(view_type=type(view).__name__):
+                self.assertEqual(argumentToString(view), repr(view))
 
     def test_arg_to_string_function(self):
         def hello(obj):
