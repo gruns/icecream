@@ -325,6 +325,24 @@ mappingproxy({object: <function icecream.icecream.argumentToString(obj)>,
 ic| x: array([[0., 0.]])
 ```
 
+The same pattern works for other data-heavy types, like pandas
+DataFrames, where the default `repr()` is often too long or noisy to be
+useful in debug output:
+
+```pycon
+>>> from icecream import ic, argumentToString
+>>> import pandas as pd
+>>>
+>>> # Register a function to summarize a DataFrame instead of printing it in full
+>>> @argumentToString.register(pd.DataFrame)
+>>> def _(obj):
+>>>     return f"DataFrame, shape={obj.shape}, columns={list(obj.columns)}"
+>>>
+>>> df = pd.DataFrame({'a': [1, 2], 'b': [3, 4]})
+>>> ic(df)
+ic| df: DataFrame, shape=(2, 2), columns=['a', 'b']
+```
+
 `includeContext`, if provided and True, adds the `ic()` call's filename,
 line number, and parent function to `ic()`'s output.
 
