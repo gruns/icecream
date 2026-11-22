@@ -665,6 +665,17 @@ ic| (a,
         with self.assertRaises(TypeError):
             ic.configureOutput()
 
+    def test_configure_integer_line_wrap_width(self):
+        debugger = icecream.IceCreamDebugger()
+        for width, expected in [
+            (1, 'ic| a: 1\n    b: 2'),
+            (120, 'ic| a: 1, b: 2'),
+        ]:
+            with self.subTest(width=width):
+                debugger.configureOutput(lineWrapWidth=width)
+                self.assertEqual(debugger.lineWrapWidth, width)
+                self.assertEqual(debugger.format(a, b), expected)
+
     def test_multiline_strings_output(self):
 
         test1 = "A\\veryvery\\long\\path\\to\\no\\even\\longer\\HelloWorld _01_Heritisfinallythe file.file"
