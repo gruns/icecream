@@ -694,6 +694,48 @@ ic| (a,
             self.assertEqual(curr_res, expected)
             del curr_res, expected
 
+    def test_nested_strings_preserve_literal_newline_escapes(self):
+        settings = {'path': r'C:\new\report.csv'}
+        with disable_coloring(), capture_standard_streams() as (_, err):
+            ic(settings)
+
+        self.assertEqual(err.getvalue(), "ic| settings: " + repr(settings) + '\n')
+        for value in ([settings], (settings,), {r'C:\new\report.csv'}):
+            with self.subTest(value=value):
+                self.assertEqual(argumentToString(value), icecream.safe_pformat(value))
+
+    def test_nested_string_backslash_parity(self):
+        for count in range(7):
+            backslashes = '\\' * count
+            with self.subTest(count=count, newline=False):
+                value = [backslashes + 'n']
+                self.assertEqual(argumentToString(value), repr(value))
+            with self.subTest(count=count, newline=True):
+                value = [backslashes + '\n']
+                expected = "['" + '\\\\' * count + "\n']"
+                self.assertEqual(argumentToString(value), expected)
+
+    def test_bytes_preserve_literal_newline_escapes(self):
+        for value in (br'C:\new\report.csv', bytearray(br'C:\new\report.csv')):
+            with self.subTest(value=value):
+                self.assertEqual(argumentToString(value), repr(value))
+        self.assertEqual(argumentToString(b'first\nsecond'), "b'first\nsecond'")
+
+    def test_custom_repr_preserves_literal_newline_escapes(self):
+        class PathRepr:
+            def __repr__(self):
+                return r"Path('C:\\new\\report.csv')"
+
+        value = PathRepr()
+        self.assertEqual(argumentToString(value), repr(value))
+
+    def test_newline_escape_formatting_preserves_other_escapes(self):
+        value = {'message': '"quoted"\r\nnext', 'path': r'C:\new'}
+        expected = repr(value).replace(r'\r\n', '\\r\n')
+        self.assertEqual(argumentToString(value), expected)
+        self.assertEqual(argumentToString(r'C:\new'), repr(r'C:\new'))
+        self.assertEqual(argumentToString('first\nsecond'), "'''first\nsecond'''")
+
     def test_sympy_dict_keys_do_not_crash(self):
         """Regression: ic() must not raise when dict keys are SymPy symbols."""
 
