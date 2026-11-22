@@ -81,6 +81,10 @@ ic| d['key'][1]: 'one'
 ic| klass.attr: 'yep'
 ```
 
+For short, single-line output, literal arguments are displayed as values only.
+For example, `ic(123)` prints `ic| 123`, while `ic(foo)` includes both `foo` and
+its value.
+
 Just give `ic()` a variable or expression and you're done. Easy.
 
 
@@ -178,8 +182,8 @@ ic(3)
 Prints
 
 ```
-ic| 1: 1
-ic| 3: 3
+ic| 1
+ic| 3
 ```
 
 `ic()` continues to return its arguments when disabled, of course; no existing
@@ -256,7 +260,7 @@ or a function.
 >>>
 >>> ic.configureOutput(prefix=unixTimestamp)
 >>> ic('world')
-1519185860 |> 'world': 'world'
+1519185860 |> 'world'
 ```
 
 `prefix`'s default value is `ic| `.
@@ -274,7 +278,7 @@ stderr (the default).
 >>>
 >>> ic.configureOutput(outputFunction=warn)
 >>> ic('eep')
-WARNING:root:ic| 'eep': 'eep'
+WARNING:root:ic| 'eep'
 ```
 
 `argToStringFunction`, if provided, is called with argument values to be
@@ -293,7 +297,7 @@ in a custom fashion.
 >>>
 >>> ic.configureOutput(argToStringFunction=toString)
 >>> ic(7, 'hello')
-ic| 7: 7, 'hello': [!string 'hello' with length 5!]
+ic| 7, [!string 'hello' with length 5!]
 ```
 
 The default `argToStringFunction` is `icecream.argumentToString`, and
