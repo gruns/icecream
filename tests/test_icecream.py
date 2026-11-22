@@ -9,6 +9,7 @@
 #
 # License: MIT
 #
+import functools
 import re
 import sys
 import time
@@ -937,6 +938,52 @@ ic| (a,
         wrapped = ic.timer(original)
         self.assertEqual(wrapped.__name__, original.__name__)
         self.assertEqual(wrapped.__doc__, original.__doc__)
+
+    def test_timer_decorator_unnamed_callables(self):
+        class Adder:
+            def __call__(self, value, increment=1):
+                return value + increment
+
+        for enabled in (True, False):
+            for func in (Adder(), functools.partial(Adder(), increment=3)):
+                with self.subTest(enabled=enabled, callable=type(func).__name__):
+                    output = []
+                    debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+                    debugger.enabled = enabled
+                    wrapped = debugger.timer(func)
+                    self.assertEqual(wrapped(4, increment=2), 6)
+                    self.assertIs(wrapped.__wrapped__, func)
+                    if enabled:
+                        self.assertRegex(
+                            output[0],
+                            rf"^ic\| {type(func).__name__} took {TIMER_DURATION_RE_DECORATOR}$"
+                        )
+                    else:
+                        self.assertEqual(output, [])
+
+    def test_timer_decorator_unnamed_callable_exception(self):
+        error = ValueError('original failure')
+
+        class Failing:
+            def __call__(self):
+                raise error
+
+        for enabled in (True, False):
+            for func in (Failing(), functools.partial(Failing())):
+                with self.subTest(enabled=enabled, callable=type(func).__name__):
+                    output = []
+                    debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+                    debugger.enabled = enabled
+                    with self.assertRaises(ValueError) as caught:
+                        debugger.timer(func)()
+                    self.assertIs(caught.exception, error)
+                    if enabled:
+                        self.assertRegex(
+                            output[0],
+                            rf"^ic\| {type(func).__name__} took {TIMER_DURATION_RE_DECORATOR}$"
+                        )
+                    else:
+                        self.assertEqual(output, [])
 
     def test_timer_context_manager_basic(self):
         with disable_coloring(), capture_standard_streams() as (out, err):
