@@ -9,11 +9,14 @@
 #
 # License: MIT
 #
+import asyncio
+import inspect
 import re
 import sys
 import time
 import unittest
 import warnings
+from unittest.mock import patch
 
 from io import StringIO
 from contextlib import contextmanager
@@ -994,3 +997,84 @@ ic| (a,
         with self.assertRaises(RuntimeError) as ctx:
             timer.__exit__(None, None, None)
         self.assertIn("__enter__", str(ctx.exception))
+
+
+class TestAsyncTimer(unittest.IsolatedAsyncioTestCase):
+    def test_preserves_coroutine_function(self):
+        @ic.timer
+        async def original():
+            """An asynchronous function."""
+
+        self.assertTrue(inspect.iscoroutinefunction(original))
+        self.assertEqual(original.__name__, 'original')
+        self.assertEqual(original.__doc__, 'An asynchronous function.')
+
+    async def test_measures_awaited_function(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+
+        @debugger.timer
+        async def add(x, y=0):
+            await asyncio.sleep(0)
+            self.assertEqual(output, [])
+            return x + y
+
+        with patch('icecream.icecream.time.perf_counter', side_effect=[10, 12]):
+            coroutine = add(2, y=3)
+            try:
+                self.assertEqual(output, [])
+            finally:
+                result = await coroutine
+
+        self.assertEqual(result, 5)
+        self.assertEqual(output, ['ic| add took 2.00s'])
+
+    async def test_reports_time_and_preserves_exception(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        error = ValueError('asynchronous failure')
+
+        @debugger.timer
+        async def fail():
+            await asyncio.sleep(0)
+            raise error
+
+        with patch('icecream.icecream.time.perf_counter', side_effect=[10, 12]):
+            with self.assertRaises(ValueError) as caught:
+                await fail()
+
+        self.assertIs(caught.exception, error)
+        self.assertEqual(output, ['ic| fail took 2.00s'])
+
+    async def test_disabled_timer(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        debugger.disable()
+
+        @debugger.timer
+        async def original():
+            await asyncio.sleep(0)
+            return 42
+
+        self.assertEqual(await original(), 42)
+        self.assertEqual(output, [])
+
+    async def test_reports_time_when_cancelled(self):
+        output = []
+        debugger = icecream.IceCreamDebugger(outputFunction=output.append)
+        started = asyncio.Event()
+
+        @debugger.timer
+        async def wait():
+            started.set()
+            await asyncio.Event().wait()
+
+        with patch('icecream.icecream.time.perf_counter', side_effect=[10, 12]):
+            task = asyncio.create_task(wait())
+            await started.wait()
+            self.assertEqual(output, [])
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+
+        self.assertEqual(output, ['ic| wait took 2.00s'])

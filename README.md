@@ -186,6 +186,25 @@ ic| 3: 3
 code with `ic()` breaks.
 
 
+### Timing Asynchronous Functions
+
+`@ic.timer` measures a coroutine function from when it is awaited until it
+returns, raises, or is cancelled. The decorated function remains a coroutine
+function and preserves its return value and exceptions.
+
+```python
+import asyncio
+from icecream import ic
+
+@ic.timer
+async def pause():
+    await asyncio.sleep(0.1)
+
+asyncio.run(pause())
+# ic| pause took 100.00ms (approximately)
+```
+
+
 ### Import Tricks
 
 To make `ic()` available in every file without needing to be imported in
