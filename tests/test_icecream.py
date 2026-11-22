@@ -14,6 +14,7 @@ import sys
 import time
 import unittest
 import warnings
+from unittest import mock
 
 from io import StringIO
 from contextlib import contextmanager
@@ -660,6 +661,21 @@ ic| (a,
             ic({1: 'str'})  # Output should be colored with ANSI control codes.
 
         assert has_ansi_escape_codes(err.getvalue())
+
+    def test_windows_color_support_cleans_up_after_output_error(self):
+        for output_function in (icecream.colorizedStderrPrint,
+                                icecream.colorizedStdoutPrint):
+            with self.subTest(output_function=output_function.__name__):
+                error = OSError('output stream closed')
+                with mock.patch.object(sys, 'platform', 'win32'), \
+                        mock.patch('icecream.icecream.colorama.init') as initialize, \
+                        mock.patch('icecream.icecream.colorama.deinit') as deinitialize, \
+                        mock.patch('builtins.print', side_effect=error):
+                    with self.assertRaises(OSError) as raised:
+                        output_function('test output')
+                    self.assertIs(raised.exception, error)
+                    initialize.assert_called_once_with()
+                    deinitialize.assert_called_once_with()
 
     def test_configure_output_with_no_parameters(self):
         with self.assertRaises(TypeError):

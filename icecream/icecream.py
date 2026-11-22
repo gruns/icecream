@@ -91,8 +91,10 @@ def supportTerminalColorsInWindows() -> Generator:
     # API calls. This code does nothing on non-Windows systems.
     if sys.platform.startswith('win'):
         colorama.init()
-        yield
-        colorama.deinit()
+        try:
+            yield
+        finally:
+            colorama.deinit()
     else:
         yield
 
