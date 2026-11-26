@@ -448,6 +448,13 @@ class TestIceCream(unittest.TestCase):
             lines[2].startswith(' ' * len(ic.prefix)) and
             lines[3].startswith(' ' * len(ic.prefix)))
 
+    def test_line_wrapping_can_be_disabled(self):
+        val = '*' * int(ic.lineWrapWidth / 4)
+        debugger = icecream.IceCreamDebugger()
+        debugger.configureOutput(lineWrapWidth=None)
+        output = debugger.format(val, val, val, val)
+        assert len(output.splitlines()) == 1
+
     def test_multiline_value_wrapped(self):
         # Multiline values are line wrapped.
         multilineStr = 'line1\nline2'
