@@ -417,7 +417,8 @@ class IceCreamDebugger:
 
         contextDelimiter = self.contextDelimiter if context else ''
         allPairs = prefix + context + contextDelimiter + allArgsOnOneLine
-        firstLineTooLong = len(allPairs.splitlines()[0]) > self.lineWrapWidth
+        firstLineTooLong = self.lineWrapWidth is not None and len(
+            allPairs.splitlines()[0]) > self.lineWrapWidth
 
         if multilineArgs or firstLineTooLong:
             # ic| foo.py:11 in foo()
@@ -497,7 +498,7 @@ class IceCreamDebugger:
         argToStringFunction: Union[Callable, Literal[Sentinel.absent]] = Sentinel.absent,
         includeContext: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
         contextAbsPath: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
-        lineWrapWidth: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
+        lineWrapWidth: Union[int, None, Literal[Sentinel.absent]] = Sentinel.absent,
         noColor: Union[bool, Literal[Sentinel.absent]] = Sentinel.absent,
     ) -> None:
         noParameterProvided = all(
